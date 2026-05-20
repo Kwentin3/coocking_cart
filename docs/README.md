@@ -11,6 +11,7 @@
 - [PRD MVP v0.2](prd/PRD_AI_TECH_CARDS_MVP_v0.2.md) - актуальный продуктовый refine.
 - [PRD MVP v0.1](prd/PRD_AI_TECH_CARDS_MVP_v0.1.md) - сохраненный первый черновик.
 - [Research: нормативная база РФ](research/RESEARCH_TECH_CARDS_RU_NORMATIVE_BASE_v0.1.md) - краткие выводы по ТК, ТТК, ТИ и связанным требованиям.
+- [Research addendum v0.2](research/RESEARCH_TECH_CARDS_RU_NORMATIVE_BASE_ADDENDUM_v0.2.md) - уточнения нормативного контекста для PRD v0.2.
 - [Research: справочные данные и экспорты](research/RESEARCH_REFERENCE_DATA_AND_EXPORTS_v0.1.md) - заметки по БЖУ, справочникам пищевой ценности и будущим интеграциям.
 - [Product workflow v0.2](product/PRODUCT_WORKFLOW_v0.2.md) - актуальный путь пользователя от идеи блюда до проекта документа.
 - [Product workflow v0.1](product/PRODUCT_WORKFLOW_v0.1.md) - сохраненная первая версия workflow.

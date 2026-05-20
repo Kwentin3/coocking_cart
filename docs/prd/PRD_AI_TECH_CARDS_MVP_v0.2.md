@@ -390,6 +390,7 @@ MVP формирует:
 ## Связанные документы
 
 - [Research: нормативная база](../research/RESEARCH_TECH_CARDS_RU_NORMATIVE_BASE_v0.1.md)
+- [Research addendum v0.2](../research/RESEARCH_TECH_CARDS_RU_NORMATIVE_BASE_ADDENDUM_v0.2.md)
 - [Research: справочные данные и экспорты](../research/RESEARCH_REFERENCE_DATA_AND_EXPORTS_v0.1.md)
 - [Product workflow](../product/PRODUCT_WORKFLOW_v0.2.md)
 - [Decision log](../decisions/DECISION_LOG.md)
