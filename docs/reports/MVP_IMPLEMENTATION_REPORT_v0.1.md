@@ -1,6 +1,6 @@
 # MVP implementation report v0.1
 
-- Статус: Demo MVP реализован локально, подготовлен к контролируемому деплою
+- Статус: Demo MVP реализован, задеплоен и проверен
 - Дата: 2026-05-24
 - Ветка: `implementation/demo-mvp`
 
@@ -146,7 +146,7 @@ Phase 11:
 
 - deployment artifacts подготовлены;
 - server read-only audit выполнен;
-- deployment готов к отдельному контролируемому запуску или выполнению текущим проходом без изменения существующих сервисов.
+- deployment выполнен контролируемо без изменения существующих сервисов.
 
 ## Реальный Gemini-backed прогон
 
@@ -290,6 +290,42 @@ Compose использует:
 - Traefik host rule: `coocking-cart.speechbattle.com`;
 - TLS certresolver: `le`.
 
+## Deployment result
+
+Deployment выполнен 2026-05-24 на:
+
+- URL: `https://coocking-cart.speechbattle.com/`;
+- server: `91.132.48.224`;
+- deployed code commit: `aa4f5a6`;
+- container: `coocking-cart-app`;
+- Docker network: `edge`;
+- reverse proxy: existing Traefik;
+- runtime env file: `/opt/coocking-cart/runtime/.env` outside Git;
+- SQLite data path: `/opt/coocking-cart/data`.
+
+Что было изменено на сервере:
+
+- создан release under `/opt/coocking-cart/releases/aa4f5a6`;
+- обновлен symlink `/opt/coocking-cart/current`;
+- скопирован runtime `.env` в `/opt/coocking-cart/runtime/.env` без вывода содержимого;
+- создан/обновлен только контейнер `coocking-cart-app`;
+- существующие Traefik и другие контейнеры не останавливались и не пересоздавались.
+
+Проверки после деплоя:
+
+- `docker ps`: `coocking-cart-app` is up on network `edge`;
+- `HEAD https://coocking-cart.speechbattle.com/`: HTTP 200;
+- `GET https://coocking-cart.speechbattle.com/api/config`: `config_errors: []`;
+- demo user login: OK;
+- remote Gemini-backed chicken scenario: final turn has `document_draft=true`, `structured_json=true`;
+- remote Gemini-backed egg scenario: final turn has `document_draft=true`, `structured_json=true`;
+- user session payload does not expose trace;
+- admin login: OK;
+- admin Context Inspector: OK, 8 layers, trace present;
+- admin trace did not expose API key/session secret/bootstrap credentials.
+
+Remote egg scenario required a third confirmation turn before draft generation. This is acceptable for MVP dialogue behavior and was not fixed through hardcoded scenario logic.
+
 ## Локальный запуск
 
 1. Создать локальный `.env` вне Git на базе `.env.example`.
@@ -325,6 +361,7 @@ python -m app.main --host 127.0.0.1 --port 8000
 
 ## Follow-up
 
-- Выполнить контролируемый deployment task на `coocking-cart.speechbattle.com`.
-- После деплоя проверить HTTPS, login, один remote Gemini turn и admin Context Inspector.
-- По итогам демо собрать feedback от владельца продукта и отдельно решить, нужно ли усиливать расчеты, валидацию и production state.
+- Провести демонстрацию владельцу продукта на `https://coocking-cart.speechbattle.com/`.
+- После демо собрать feedback по качеству уточняющих вопросов, draft-структуре и UI.
+- Отдельно решить, нужно ли усиливать расчеты, валидацию и production state.
+- Для production hardening позже перейти с root SSH на dedicated deploy user и формализовать backup/log policy.
