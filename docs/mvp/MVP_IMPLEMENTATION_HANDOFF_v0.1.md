@@ -39,6 +39,7 @@
 - [LLM provider adapter note](MVP_LLM_PROVIDER_ADAPTER_NOTE_v0.1.md)
 - [Roles and access](MVP_ROLES_AND_ACCESS_v0.1.md)
 - [Environment contract](MVP_ENVIRONMENT_CONTRACT_v0.1.md)
+- [Safe env example](../../.env.example)
 - [Bootstrap data contract](MVP_BOOTSTRAP_DATA_CONTRACT_v0.1.md)
 - [Ops README](../ops/README.md)
 - [Deployment context template](../ops/DEPLOYMENT_CONTEXT_TEMPLATE_v0.1.md)
@@ -119,6 +120,9 @@
 - Bootstrap admin создается через env/bootstrap contract.
 - Secrets не хардкодятся.
 - LLM provider/model/API key приходят через environment.
+- Для MVP ожидается `LLM_PROVIDER=gemini`, но exact model id берется из `LLM_MODEL`.
+- `LLM_API_KEY` должен быть заполнен вне Git; пустой или placeholder key должен давать понятную user-safe ошибку и admin/debug hint.
+- Реальный `.env` не коммитится; корневой `.env.example` используется только как безопасный шаблон.
 - Context paths приходят через env или config boundary.
 - Deployment details не должны быть выдуманы агентом.
 
@@ -142,19 +146,24 @@ Environment values и secrets должны быть внешними: не в к
 1. Поднять пустой чатовый сценарий.
 2. Научить runtime читать `context_manifest.yml`.
 3. Научить runtime загружать markdown layers в указанном порядке.
-4. Прочитать environment settings без хардкода secrets.
-5. Создать bootstrap admin и роли `user`/`admin` через bootstrap contract.
-6. Добавить SQLite-хранение session/message/turn result на концептуально минимальном уровне.
-7. Собрать context window: markdown pack, короткая история, последнее сообщение пользователя, инструкция structured output.
-8. Сохранить или подготовить минимальный context trace.
-9. Вызвать LLM через provider adapter boundary и получить structured output.
-10. Показать `user_answer`.
-11. Показать служебные блоки для демо: warnings, data statuses, document draft, structured JSON.
-12. Реализовать copy document / copy JSON.
-13. Показать icon-first contextual hints для важных блоков.
-14. Показать debug-view основных частей context window для `admin`.
-15. Проверить desktop и mobile layout.
-16. Прогнать два demo scenarios.
+4. Скопировать `.env.example` в локальный `.env` вне Git.
+5. Заполнить `LLM_API_KEY` безопасным способом вне репозитория.
+6. Подтвердить актуальный `LLM_MODEL` по официальной документации Gemini/Google AI.
+7. Проверить, что `.env` не попадает в Git.
+8. Прочитать environment settings без хардкода secrets.
+9. Проверить, что приложение не стартует с пустым или placeholder `LLM_API_KEY` без понятной ошибки.
+10. Создать bootstrap admin и роли `user`/`admin` через bootstrap contract.
+11. Добавить SQLite-хранение session/message/turn result на концептуально минимальном уровне.
+12. Собрать context window: markdown pack, короткая история, последнее сообщение пользователя, инструкция structured output.
+13. Сохранить или подготовить минимальный context trace.
+14. Вызвать Gemini через provider adapter boundary и получить structured output.
+15. Показать `user_answer`.
+16. Показать служебные блоки для демо: warnings, data statuses, document draft, structured JSON.
+17. Реализовать copy document / copy JSON.
+18. Показать icon-first contextual hints для важных блоков.
+19. Показать debug-view основных частей context window для `admin`.
+20. Проверить desktop и mobile layout.
+21. Прогнать два demo scenarios.
 
 ## 8. Критерий остановки
 

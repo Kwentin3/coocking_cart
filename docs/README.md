@@ -25,6 +25,7 @@
 - [MVP Context Inspector](mvp/MVP_CONTEXT_INSPECTOR_v0.1.md) - концепт debug-view для сборки контекстного окна.
 - [MVP LLM provider adapter](mvp/MVP_LLM_PROVIDER_ADAPTER_NOTE_v0.1.md) - минимальная граница интеграции с LLM provider.
 - [MVP roles/env/bootstrap](mvp/MVP_ROLES_AND_ACCESS_v0.1.md) - минимальные роли, environment contract и bootstrap data contract.
+- [Safe env example](../.env.example) - безопасный шаблон переменного окружения; реальные `.env` не коммитятся.
 - [Demo MVP context layers](mvp/context/) - markdown-слои статического контекста для будущего runtime context pack.
 - [Ops docs](ops/README.md) - deployment context, server audit и шаблоны будущего deployment task.
 - [Deployment context: coocking-cart.speechbattle.com](ops/DEPLOYMENT_CONTEXT_coocking-cart.speechbattle.com_v0.1.md) - target domain/server для будущего Demo MVP.

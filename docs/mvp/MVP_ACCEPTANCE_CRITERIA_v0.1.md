@@ -32,6 +32,9 @@
 - roles/access contract;
 - environment contract;
 - bootstrap data contract;
+- `.env.example`;
+- `.env.example` содержит non-secret deployment values и placeholders для secrets;
+- `.gitignore` защищает реальные `.env` и SQLite runtime-файлы;
 - ops placeholder docs;
 - structured output contract;
 - SQLite dialogue storage concept;
@@ -77,6 +80,11 @@
 - можно увидеть structured output;
 - можно увидеть debug-представление собранного context window или его основных частей;
 - LLM provider вызов изолирован минимальным adapter boundary;
+- приложение может прочитать `.env` или эквивалентный runtime env/config;
+- `LLM_PROVIDER=gemini` берется из env/config;
+- `LLM_MODEL` берется из env/config и не хардкодится;
+- `LLM_API_KEY` берется из env/config и не хардкодится;
+- при отсутствующем или placeholder `LLM_API_KEY` показывается безопасная ошибка;
 - есть роли `user` и `admin`;
 - bootstrap admin можно создать без ручного вмешательства в код;
 - LLM provider/model/API key не хардкодятся;

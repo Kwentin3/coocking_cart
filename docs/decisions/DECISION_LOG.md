@@ -62,6 +62,12 @@
 | D-053 | 2026-05-24 | Context Inspector is admin/debug UI. | Prompt layers, context trace и assembled context относятся к диагностике и не должны показываться обычному user. | `user` видит результат своей сессии; `admin` видит Context Inspector без secrets/API keys. |
 | D-054 | 2026-05-24 | MVP target LLM provider family is Gemini, exact model via env. | Для первой реализации выбран практичный provider family, но точный model id может меняться. | `LLM_PROVIDER=gemini` ожидается для MVP; `LLM_MODEL=<GEMINI_FLASH_MODEL_ID>` задается через environment. |
 | D-055 | 2026-05-24 | LLM adapter boundary remains mandatory regardless of provider. | Даже при одном provider нельзя размазывать SDK/model-specific детали по доменной логике. | Runtime вызывает LLM через provider adapter; provider factory/capability matrix остаются future track. |
+| D-056 | 2026-05-24 | В репозитории допускается `.env.example` только с безопасными non-secret values и placeholders. | Реализатору нужен стартовый env pack, но публичный репозиторий не должен содержать secrets. | Добавлен root `.env.example`; реальные `.env` файлы остаются вне Git. |
+| D-057 | 2026-05-24 | Реальные `.env`, API keys, session secrets и bootstrap credentials не коммитятся. | LLM key, session secret и admin credentials являются чувствительными данными. | `.gitignore` защищает `.env`, `.env.*` и runtime SQLite-файлы; secrets передаются вне Git. |
+| D-058 | 2026-05-24 | Для Demo MVP target LLM provider value: `LLM_PROVIDER=gemini`. | Gemini выбран как целевое provider family для первой реализации. | Provider задается через env/config и вызывается только через adapter boundary. |
+| D-059 | 2026-05-24 | Exact Gemini model id задается через `LLM_MODEL` и подтверждается на момент реализации. | Имена моделей могут меняться, поэтому документация не должна фиксировать model id как константу. | `.env.example` содержит `LLM_MODEL=<GEMINI_FLASH_MODEL_ID>`; агент реализации проверяет актуальное имя модели перед запуском. |
+| D-060 | 2026-05-24 | Deployment non-secret values могут быть отражены в `.env.example`. | Домен, IP и deploy user уже переданы как deployment context и не являются secrets. | `.env.example` содержит `APP_BASE_URL`, `PUBLIC_DOMAIN`, `DEPLOY_HOST` и `DEPLOY_USER`; Traefik values остаются placeholders. |
+| D-061 | 2026-05-24 | Runtime SQLite-файлы не коммитятся. | SQLite содержит runtime dialogue state и служебные результаты тактов, а не проектную документацию. | `.gitignore` исключает `*.sqlite`, `*.sqlite3`, `data/*.sqlite` и `data/*.sqlite3`. |
 
 ## Как обновлять журнал
 
