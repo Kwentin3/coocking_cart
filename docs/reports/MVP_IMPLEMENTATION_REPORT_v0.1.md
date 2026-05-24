@@ -10,13 +10,14 @@
 
 - авторизация через bootstrap admin и demo user;
 - роли `user` и `admin`;
+- admin-only CRUD пользователей для демо-операций;
 - чатовые сессии;
 - загрузка markdown context layers через `docs/mvp/context/context_manifest.yml`;
 - SQLite-хранение сессий, сообщений, turn result и document draft;
 - Gemini provider adapter через REST boundary;
 - schema-first Structured Output через Gemini generation config;
-- frontend с чатом, result panel, warnings/statuses, structured JSON и admin Context Inspector;
-- тесты для context loader, placeholder validation, bootstrap, LLM error path, Gemini payload и inspector access;
+- frontend с чатом, result panel, warnings/statuses, structured JSON, admin Context Inspector и user management panel;
+- тесты для context loader, placeholder validation, bootstrap, LLM error path, Gemini payload, inspector access и admin user CRUD;
 - Dockerfile и compose-шаблон для будущего деплоя за существующим Traefik.
 
 MVP не является production-ready системой. Любая ТК/ТТК в интерфейсе помечается как проект, требующий проверки ответственным лицом предприятия.
@@ -245,7 +246,7 @@ python -m compileall app tests
 
 Результат:
 
-- `unittest`: 8 tests, OK;
+- `unittest`: 10 tests, OK;
 - `compileall`: OK.
 
 Тестовое покрытие включает:
@@ -257,7 +258,28 @@ python -m compileall app tests
 - non-admin inspector denial;
 - admin inspector payload;
 - bootstrap admin creation/authentication;
+- admin user CRUD create/update/delete;
+- current/last admin guard;
 - derived neutral `structured_json` when draft exists.
+
+## Admin user CRUD update
+
+Добавлен минимальный admin-only CRUD пользователей:
+
+- blueprint: `docs/mvp/MVP_ADMIN_USER_CRUD_BLUEPRINT_v0.1.md`;
+- API: `GET/POST /api/admin/users`, `PATCH/DELETE /api/admin/users/{id}`;
+- storage contract: public user DTO без `password_hash`;
+- UI: вкладка "Пользователи" доступна только `admin`;
+- guard: текущий admin не может удалить или понизить сам себя;
+- guard: последний admin не может быть удален или понижен;
+- deletion behavior: hard delete в MVP каскадно удаляет demo auth/chat sessions через SQLite FK.
+
+Локальный HTTP smoke:
+
+- admin login: OK;
+- list/create/update/delete user: OK;
+- non-admin access to `/api/admin/users`: 403 OK;
+- secrets/password hashes в ответах не возвращались.
 
 ## Deployment preparation
 
@@ -354,7 +376,7 @@ python -m app.main --host 127.0.0.1 --port 8000
 - Нет validation layer уровня production.
 - Нет integrations с iiko/r_keeper/1C/StoreHouse.
 - Нет PDF/Word/Excel export.
-- Нет production IAM/RBAC.
+- Нет production IAM/RBAC; admin user CRUD является demo operations.
 - Нет production audit/event log.
 - Structured JSON не является готовым импортом в учетную систему.
 - MVP UI рассчитан на демонстрацию, не на production admin panel.
