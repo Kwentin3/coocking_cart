@@ -37,6 +37,10 @@
 - SQLite dialogue storage concept;
 - demo limitations;
 - implementation handoff;
+- implementation roadmap;
+- roadmap содержит phases;
+- roadmap содержит gate/acceptance criteria per phase;
+- roadmap содержит global stop rules;
 - demo scenarios;
 - acceptance criteria.
 
@@ -52,6 +56,8 @@
 Будущий прототип можно считать демонстрационно готовым, если:
 
 - приложение загружает markdown context layers через `context_manifest.yml`;
+- агент прошел roadmap phases по порядку;
+- каждый phase acceptance выполнен;
 - код не содержит захардкоженных доменных prompt rules;
 - история user/assistant хранится в SQLite;
 - каждый такт собирает context window;
@@ -84,6 +90,8 @@
 - secrets не попадают в репозиторий;
 - работает сценарий "курица по-вьетнамски";
 - работает сценарий "яичница/омлет";
+- demo scenarios проходят после Phase 8;
+- deployment не выполнялся без отдельного task;
 - результат явно помечен как проект, требующий проверки;
 - structured JSON не выдается за формат iiko, r_keeper, StoreHouse или 1С;
 - LLM не создает и не подключает новые context layers автоматически.
@@ -123,6 +131,8 @@
 - правила, что markdown context layers являются источником статического контекста;
 - правила, что SQLite хранит динамическую историю и результаты тактов;
 - правила, что provider integration изолируется через adapter boundary;
+- implementation roadmap;
+- roadmap gate rules;
 - frontend visual contract;
 - UI states/errors contract;
 - language/theme policy;
