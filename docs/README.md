@@ -16,6 +16,9 @@
 - [Product workflow v0.2](product/PRODUCT_WORKFLOW_v0.2.md) - актуальный путь пользователя от идеи блюда до проекта документа.
 - [Product workflow v0.1](product/PRODUCT_WORKFLOW_v0.1.md) - сохраненная первая версия workflow.
 - [Demo MVP documentation pack](mvp/README.md) - минимальный пакет документации для демонстрационного прототипа.
+- [MVP implementation handoff](mvp/MVP_IMPLEMENTATION_HANDOFF_v0.1.md) - порядок чтения и инварианты для будущей реализации.
+- [MVP demo scenarios](mvp/MVP_DEMO_SCENARIOS_v0.1.md) - первые сценарии проверки демо.
+- [MVP acceptance criteria](mvp/MVP_ACCEPTANCE_CRITERIA_v0.1.md) - критерии готовности документации и будущего прототипа.
 - [Demo MVP context layers](mvp/context/) - markdown-слои статического контекста для будущего runtime context pack.
 - [Production future track](production/README.md) - placeholder будущей production-архитектуры.
 - [Documentation audits](audits/) - аудит документационного пула и рекомендация по разделению MVP/production.

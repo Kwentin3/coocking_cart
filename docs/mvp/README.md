@@ -34,6 +34,9 @@ Production architecture остается future track. Managed state, state mach
 ## Документы MVP-пакета
 
 - [MVP scope](MVP_SCOPE_v0.1.md) - цель, сценарии, включения, исключения и сознательные ограничения Demo MVP.
+- [Implementation handoff](MVP_IMPLEMENTATION_HANDOFF_v0.1.md) - порядок чтения и инварианты для будущей реализации прототипа.
+- [Demo scenarios](MVP_DEMO_SCENARIOS_v0.1.md) - первые сценарии проверки: "курица по-вьетнамски" и "яичница/омлет".
+- [Acceptance criteria](MVP_ACCEPTANCE_CRITERIA_v0.1.md) - критерии готовности документации и будущего демо-прототипа.
 - [Context window contract](MVP_CONTEXT_WINDOW_CONTRACT_v0.1.md) - из чего состоит контекстное окно каждого такта.
 - [File-driven context architecture](MVP_FILE_DRIVEN_CONTEXT_ARCHITECTURE_v0.1.md) - как runtime собирает контекст без хардкода prompt/domain rules в коде.
 - [Markdown context layers](MVP_MARKDOWN_CONTEXT_LAYERS_v0.1.md) - назначение каждого markdown-слоя.
