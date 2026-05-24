@@ -62,6 +62,26 @@ Adapter не должен:
 
 Не нужно строить сложную multi-provider архитектуру до появления реальной необходимости.
 
+## Target provider defaults
+
+Для первой реализации Demo MVP целевое provider family: Gemini.
+
+Ожидаемый env value:
+
+- `LLM_PROVIDER=gemini`;
+- `LLM_MODEL=<GEMINI_FLASH_MODEL_ID>`.
+
+Likely model family: Gemini Flash. Точное model id должно быть задано через `LLM_MODEL` и подтверждено на момент реализации. Его нельзя хардкодить в доменной логике, prompt/context assembly или UI.
+
+Пример "Gemini Flash 3.1 Preview" можно рассматривать только как ориентир семейства модели, если такое имя актуально и доступно на момент реализации. Документация MVP не фиксирует его как окончательное.
+
+Adapter boundary остается обязательным даже при одном provider:
+
+- runtime передает adapter assembled context window и config;
+- adapter вызывает provider;
+- adapter возвращает normalized structured output или normalized error;
+- provider/model пишутся в context trace.
+
 ## Future production direction
 
 Позже можно рассмотреть:
