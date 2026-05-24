@@ -22,7 +22,7 @@
 - [MVP implementation roadmap](mvp/MVP_IMPLEMENTATION_ROADMAP_v0.1.md) - фазовый порядок реализации Demo MVP с gate-критериями и stop rules.
 - [MVP demo scenarios](mvp/MVP_DEMO_SCENARIOS_v0.1.md) - первые сценарии проверки демо.
 - [MVP acceptance criteria](mvp/MVP_ACCEPTANCE_CRITERIA_v0.1.md) - критерии готовности документации и будущего прототипа.
-- [MVP frontend visual contract](mvp/MVP_FRONTEND_VISUAL_CONTRACT_v0.1.md) - UI contract для чата, результата, Context Inspector, desktop/mobile и states.
+- [MVP frontend visual contract](mvp/MVP_FRONTEND_VISUAL_CONTRACT_v0.1.md) - UI/composition contract для чата, результата, Context Inspector, desktop/mobile и states.
 - [MVP frontend states and errors](mvp/MVP_FRONTEND_STATES_AND_ERRORS_v0.1.md) - loading/error/empty/success states для будущего UI.
 - [MVP context contracts](mvp/MVP_CONTEXT_WINDOW_CONTRACT_v0.1.md) - контракт context window и связанные prompt/turn contracts.
 - [MVP Context Inspector](mvp/MVP_CONTEXT_INSPECTOR_v0.1.md) - концепт debug-view для сборки контекстного окна.

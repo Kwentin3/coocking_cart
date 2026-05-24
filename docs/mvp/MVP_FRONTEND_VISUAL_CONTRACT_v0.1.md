@@ -45,6 +45,68 @@ Left sidebar со списком demo sessions допускается, но не
 
 Причина: основной демо-сценарий должен быстро показывать диалог и результат, а не управление большим списком документов.
 
+## Composition layer
+
+Композиционный слой является частью visual contract. Он фиксирует не стиль, а распределение внимания, ширину чтения и владение контентом между зонами интерфейса.
+
+### Базовая композиция
+
+На desktop интерфейс состоит из трех функциональных зон:
+
+- sessions rail: узкая вторичная зона для выбора demo sessions;
+- chat stage: центральная рабочая зона диалога;
+- artifact panel: правая зона для document draft, warnings, statuses, JSON, trace и admin tools.
+
+Chat stage может занимать свободное пространство, но сам читаемый чат внутри него не должен растягиваться на всю ширину экрана. На широком desktop лишняя ширина остается воздухом вокруг chat column или отдается artifact/debug панелям.
+
+### Readability rules
+
+Чат должен быть колоночным.
+
+Правила:
+
+- chat column имеет ограниченную максимальную ширину;
+- assistant message не должен превращаться в длинную строку на весь экран;
+- user message обычно короче assistant message и может быть визуально уже;
+- длинные документы, structured JSON, trace и admin tables не рендерятся как chat bubble;
+- line-height должен поддерживать чтение длинных уточняющих ответов;
+- длинные слова, JSON fragments и технические идентификаторы не должны ломать ширину layout.
+
+Ориентиры для реализации:
+
+- chat column: примерно `640-760px`;
+- assistant message: примерно `64-72ch`;
+- user message: примерно `48-60ch`;
+- result/artifact panel: отдельная колонка или mobile sheet/tab, а не часть chat bubble.
+
+### Content ownership
+
+Chat отвечает за диалог:
+
+- `user_answer`;
+- уточняющие вопросы;
+- краткое резюме текущего состояния;
+- следующий conversational step.
+
+Artifact panel отвечает за артефакты:
+
+- `document_draft`;
+- warnings;
+- data statuses;
+- structured JSON;
+- Context Inspector;
+- admin user management.
+
+Если structured output содержит большой draft, JSON или trace, чат показывает только user-facing ответ. Большой блок показывается в artifact panel.
+
+### Priority rules
+
+- Основной пользовательский фокус: chat column.
+- Вторичный пользовательский фокус: current document/result panel.
+- Admin/debug panels не должны вытеснять чат как главный рабочий поток.
+- Sessions rail не должен доминировать над экраном.
+- На mobile главный поток один: сначала чат, затем result/status/JSON/admin panels через вкладки или stacked sections.
+
 ## Mobile layout
 
 На mobile интерфейс должен быть single-flow:

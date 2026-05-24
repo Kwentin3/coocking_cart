@@ -70,6 +70,8 @@
 - frontend или debug view показывает warnings, data statuses, document draft и structured JSON;
 - desktop layout usable;
 - mobile layout usable;
+- chat column не растягивает текстовые строки на всю ширину wide desktop;
+- длинные drafts, JSON, trace и admin tables остаются в result/artifact panels, а не внутри chat bubble;
 - чат отображает user/assistant сообщения;
 - есть explicit loading state;
 - есть user-safe error states;
