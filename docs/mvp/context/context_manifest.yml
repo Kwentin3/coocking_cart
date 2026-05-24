@@ -1,0 +1,32 @@
+version: "0.1"
+purpose: "Demo MVP markdown context pack"
+order_is_significant: true
+dialogue_history:
+  added_by_runtime: true
+  markdown_layer: false
+  note: "User/assistant history is stored in SQLite and appended by runtime after static markdown layers."
+layers:
+  - order: 0
+    file: "00_AGENT_ROLE.md"
+    description: "Assistant role, domain, target result, and promise boundaries."
+  - order: 1
+    file: "01_PRODUCT_RULES.md"
+    description: "Product behavior rules for questions, warnings, ТК/ТТК distinction, and project status."
+  - order: 2
+    file: "02_WORKFLOW.md"
+    description: "Compressed dialogue workflow from dish idea to project document and JSON."
+  - order: 3
+    file: "03_NORMATIVE_BASE_SHORT.md"
+    description: "Short normative context derived from research; no long citations."
+  - order: 4
+    file: "04_TECH_CARD_STRUCTURE.md"
+    description: "Expected blocks of a ТК/ТТК project."
+  - order: 5
+    file: "05_DATA_STATUSES.md"
+    description: "Allowed data statuses and where to apply them."
+  - order: 6
+    file: "06_OUTPUT_RULES.md"
+    description: "User-facing answer rules and minimal structured JSON behavior."
+  - order: 7
+    file: "07_DEMO_LIMITATIONS.md"
+    description: "Demo boundaries and explicit non-production constraints."
