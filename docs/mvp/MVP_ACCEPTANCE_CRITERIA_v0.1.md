@@ -36,7 +36,7 @@
 - `.env.example` содержит non-secret deployment values и placeholders для secrets;
 - есть placeholder validation rule для всех `<...>` values;
 - `.gitignore` защищает реальные `.env` и SQLite runtime-файлы;
-- ops placeholder docs;
+- ops/deployment docs;
 - structured output contract;
 - SQLite dialogue storage concept;
 - demo limitations;
@@ -105,7 +105,7 @@
 - deployment не выполнялся без отдельного task;
 - результат явно помечен как проект, требующий проверки;
 - structured JSON не выдается за формат iiko, r_keeper, StoreHouse или 1С;
-- LLM не создает и не подключает новые context layers автоматически.
+- LLM не создает и не подключает новые context layers автоматически;
 - trace/debug output не выдается за production audit/event log.
 
 ## Минимальная демонстрационная проверка
@@ -150,4 +150,4 @@
 - roles/access contract;
 - environment contract;
 - bootstrap data contract;
-- ops placeholder docs.
+- ops/deployment docs.
