@@ -20,14 +20,15 @@
 2. [Product workflow v0.2](../product/PRODUCT_WORKFLOW_v0.2.md)
 3. [Demo MVP README](README.md)
 4. [MVP scope](MVP_SCOPE_v0.1.md)
-5. [Context window contract](MVP_CONTEXT_WINDOW_CONTRACT_v0.1.md)
-6. [File-driven context architecture](MVP_FILE_DRIVEN_CONTEXT_ARCHITECTURE_v0.1.md)
-7. [Structured output contract](MVP_STRUCTURED_OUTPUT_CONTRACT_v0.1.md)
-8. [Prompt layer contract](MVP_PROMPT_LAYER_CONTRACT_v0.1.md)
-9. [Turn contract](MVP_TURN_CONTRACT_v0.1.md)
-10. [Frontend visual contract](MVP_FRONTEND_VISUAL_CONTRACT_v0.1.md)
-11. [Frontend states and errors](MVP_FRONTEND_STATES_AND_ERRORS_v0.1.md)
-12. [Context manifest](context/context_manifest.yml)
+5. [Implementation roadmap](MVP_IMPLEMENTATION_ROADMAP_v0.1.md)
+6. [Context window contract](MVP_CONTEXT_WINDOW_CONTRACT_v0.1.md)
+7. [File-driven context architecture](MVP_FILE_DRIVEN_CONTEXT_ARCHITECTURE_v0.1.md)
+8. [Structured output contract](MVP_STRUCTURED_OUTPUT_CONTRACT_v0.1.md)
+9. [Prompt layer contract](MVP_PROMPT_LAYER_CONTRACT_v0.1.md)
+10. [Turn contract](MVP_TURN_CONTRACT_v0.1.md)
+11. [Frontend visual contract](MVP_FRONTEND_VISUAL_CONTRACT_v0.1.md)
+12. [Frontend states and errors](MVP_FRONTEND_STATES_AND_ERRORS_v0.1.md)
+13. [Context manifest](context/context_manifest.yml)
 
 Дополнительно полезно прочитать:
 
@@ -53,6 +54,7 @@
 
 На уровне задачи, без выбора стека:
 
+- выполнение roadmap по фазам с gate-критериями;
 - простой чат;
 - загрузку markdown context layers через `context_manifest.yml`;
 - хранение истории диалога в SQLite;
@@ -125,6 +127,9 @@
 - Реальный `.env` не коммитится; корневой `.env.example` используется только как безопасный шаблон.
 - Context paths приходят через env или config boundary.
 - Deployment details не должны быть выдуманы агентом.
+- Реализация должна следовать [implementation roadmap](MVP_IMPLEMENTATION_ROADMAP_v0.1.md) по фазам.
+- Нельзя переходить к следующей фазе roadmap без выполнения gate-критериев текущей фазы.
+- Если roadmap конфликтует с более детальным contract doc, нужно остановиться и зафиксировать вопрос, а не молча выбирать вариант.
 
 ## 6. Deployment context
 
