@@ -3,7 +3,7 @@
 - Статус документа: deployment context для будущего Demo MVP
 - Дата: 2026-05-24
 - Deployment status: not deployed yet
-- Audit status: pending
+- Audit status: completed, read-only on 2026-05-24
 
 ## Назначение
 
@@ -44,9 +44,27 @@
 - Docker: known to be present.
 - Traefik: known to be present.
 - Existing containers: present, exact list must be confirmed by read-only audit.
+- Existing containers: confirmed by read-only audit.
 - Deployment path: unknown.
-- Traefik network: unknown.
+- Traefik network: `edge`.
 - TLS/certresolver policy: unknown.
+
+## Read-only audit summary
+
+Read-only audit confirmed:
+
+- SSH access works as `root`.
+- Hostname: `r1121293`.
+- OS/kernel: Debian-based Linux, kernel `5.10.0-32-amd64`.
+- Docker is installed.
+- Docker Compose is installed.
+- Existing Traefik containers are running.
+- Public Traefik container exposes ports `80` and `443`.
+- Shared Docker network `edge` exists.
+- Existing project paths under `/opt` include `platform`, `seminar`, `doctorbridge` and `switerkoff`.
+- Traefik files are located under `/opt/platform/traefik`.
+
+No server files were changed. Secret files were not read.
 
 ## Unknowns / TODO
 
