@@ -93,6 +93,19 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
             return
         self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND)
 
+    def do_HEAD(self) -> None:
+        parsed = urlparse(self.path)
+        if parsed.path == "/":
+            self._send_file(INDEX_PATH, "text/html; charset=utf-8", body=False)
+            return
+        if parsed.path.startswith("/static/"):
+            self._serve_static(parsed.path, body=False)
+            return
+        if parsed.path == "/api/config":
+            self._json({"ok": True, "config_errors": self.state.config.public_errors()}, body=False)
+            return
+        self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND, body=False)
+
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
         if parsed.path == "/api/login":
@@ -141,7 +154,7 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
             return
         self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND)
 
-    def _serve_static(self, path: str) -> None:
+    def _serve_static(self, path: str, *, body: bool = True) -> None:
         parts = [part for part in path.removeprefix("/static/").split("/") if part]
         file_path = (STATIC_DIR / Path(*parts)).resolve()
         if STATIC_DIR.resolve() not in file_path.parents and file_path != STATIC_DIR.resolve():
@@ -153,9 +166,9 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
         content_type = mimetypes.guess_type(str(file_path))[0] or "application/octet-stream"
         if content_type.startswith("text/") or content_type in {"application/javascript", "text/javascript"}:
             content_type += "; charset=utf-8"
-        self._send_file(file_path, content_type)
+        self._send_file(file_path, content_type, body=body)
 
-    def _send_file(self, path: Path, content_type: str) -> None:
+    def _send_file(self, path: Path, content_type: str, *, body: bool = True) -> None:
         try:
             data = path.read_bytes()
         except OSError:
@@ -166,7 +179,8 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
-        self.wfile.write(data)
+        if body:
+            self.wfile.write(data)
 
     def _read_json(self) -> dict[str, Any]:
         length = int(self.headers.get("Content-Length") or 0)
@@ -184,16 +198,18 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
         payload: dict[str, Any],
         status: HTTPStatus = HTTPStatus.OK,
         headers: list[tuple[str, str]] | None = None,
+        body: bool = True,
     ) -> None:
-        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
-        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Content-Length", str(len(data)))
         for key, value in headers or []:
             self.send_header(key, value)
         self.end_headers()
-        self.wfile.write(body)
+        if body:
+            self.wfile.write(data)
 
     def _current_token(self) -> str | None:
         if not self.state.config.auth_ready:
