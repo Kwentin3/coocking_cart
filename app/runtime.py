@@ -5,7 +5,7 @@ from typing import Any
 from .config import AppConfig
 from .context_loader import ContextLoader, ContextPack
 from .llm import GeminiAdapter
-from .storage import Storage, User, utc_now
+from .storage import Storage, User, estimate_tokens, utc_now
 from .structured_output import STRUCTURED_OUTPUT_SCHEMA, TURN_TASK_INSTRUCTION, empty_structured_output, parse_structured_output
 
 
@@ -146,6 +146,33 @@ class DemoRuntime:
             "layers": context_pack.public_layers(include_text=True),
             "latest_turn": latest_turn,
             "messages": self.storage.list_messages(session_id),
+        }
+
+    def admin_context_payload(self, user: User) -> dict[str, Any]:
+        if user.role != "admin":
+            return {"ok": False, "error": "Context workspace доступен только admin."}
+        context_pack = self.load_context_pack()
+        static_context = context_pack.static_text()
+        latest_turn = self.storage.latest_turn_result_any()
+        return {
+            "ok": True,
+            "manifest": {
+                "path": context_pack.manifest_path,
+                "version": context_pack.version,
+                "purpose": context_pack.purpose,
+                "layer_count": len(context_pack.layers),
+            },
+            "layers": context_pack.public_layers(include_text=True),
+            "static_context_preview": static_context,
+            "static_context_estimated_tokens": estimate_tokens(static_context),
+            "structured_output_schema": STRUCTURED_OUTPUT_SCHEMA,
+            "latest_turn": latest_turn,
+            "health": {
+                "manifest_readable": True,
+                "layers_loaded": len(context_pack.layers),
+                "empty_layers": [layer.file for layer in context_pack.layers if not layer.text.strip()],
+            },
+            "token_policy": "provider_usage_when_available_otherwise_estimated_not_billing_usage",
         }
 
     @staticmethod

@@ -90,7 +90,11 @@ class GeminiAdapter:
             provider="gemini",
             model=self.config.llm_model,
             timestamp=timestamp,
-            metadata={"request_metadata": request_metadata or {}, "finish": self._finish_reason(body)},
+            metadata={
+                "request_metadata": request_metadata or {},
+                "finish": self._finish_reason(body),
+                "usage_metadata": body.get("usageMetadata") or {},
+            },
         )
 
     def _config_error(self, public_error: str, admin_hint: str, timestamp: str) -> LlmResult:

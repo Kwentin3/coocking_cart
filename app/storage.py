@@ -40,6 +40,11 @@ def normalize_session_title(title: str) -> str:
     return str(title or "Новая сессия").strip()[:120] or "Новая сессия"
 
 
+def estimate_tokens(value: Any) -> int:
+    text = value if isinstance(value, str) else json.dumps(value or "", ensure_ascii=False)
+    return max(0, (len(text) + 3) // 4)
+
+
 @dataclass(frozen=True)
 class User:
     id: int
@@ -340,6 +345,52 @@ class Storage:
                 ).fetchall()
             return [dict(row) for row in rows]
 
+    def admin_dashboard(self) -> dict[str, Any]:
+        now = datetime.now(timezone.utc)
+        periods = [
+            ("day", "Сегодня", datetime(now.year, now.month, now.day, tzinfo=timezone.utc)),
+            ("week", "7 дней", now - timedelta(days=7)),
+            ("month", "30 дней", now - timedelta(days=30)),
+            ("year", "365 дней", now - timedelta(days=365)),
+            ("all_time", "Все время", None),
+        ]
+        with self.connect() as conn:
+            period_metrics = [self._period_metrics(conn, key, label, cutoff) for key, label, cutoff in periods]
+            latest = conn.execute(
+                """
+                SELECT
+                    chat_sessions.id,
+                    chat_sessions.title,
+                    chat_sessions.owner_user_id,
+                    users.email AS owner_email,
+                    chat_sessions.created_at,
+                    chat_sessions.updated_at,
+                    COUNT(DISTINCT messages.id) AS message_count,
+                    COUNT(DISTINCT turn_results.id) AS turn_count,
+                    MAX(messages.created_at) AS last_message_at
+                FROM chat_sessions
+                JOIN users ON users.id = chat_sessions.owner_user_id
+                LEFT JOIN messages ON messages.session_id = chat_sessions.id
+                LEFT JOIN turn_results ON turn_results.session_id = chat_sessions.id
+                GROUP BY chat_sessions.id
+                ORDER BY COALESCE(MAX(messages.created_at), chat_sessions.updated_at) DESC
+                LIMIT 20
+                """
+            ).fetchall()
+            latest_activity = [self._admin_activity_row(conn, row) for row in latest]
+            totals = {
+                "users": self._count(conn, "users"),
+                "sessions": self._count(conn, "chat_sessions"),
+                "messages": self._count(conn, "messages"),
+                "turns": self._count(conn, "turn_results"),
+            }
+        return {
+            "periods": period_metrics,
+            "totals": totals,
+            "latest_activity": latest_activity,
+            "token_policy": "provider_usage_when_available_otherwise_estimated_not_billing_usage",
+        }
+
     def can_access_session(self, session_id: int, user: User) -> bool:
         with self.connect() as conn:
             row = conn.execute("SELECT owner_user_id FROM chat_sessions WHERE id = ?", (session_id,)).fetchone()
@@ -443,12 +494,155 @@ class Storage:
             "created_at": row["created_at"],
         }
 
+    def latest_turn_result_any(self) -> dict[str, Any] | None:
+        with self.connect() as conn:
+            row = conn.execute(
+                """
+                SELECT
+                    turn_results.*,
+                    chat_sessions.title AS session_title,
+                    users.email AS owner_email
+                FROM turn_results
+                JOIN chat_sessions ON chat_sessions.id = turn_results.session_id
+                JOIN users ON users.id = chat_sessions.owner_user_id
+                ORDER BY turn_results.id DESC
+                LIMIT 1
+                """
+            ).fetchone()
+        if not row:
+            return None
+        return {
+            "id": row["id"],
+            "session_id": row["session_id"],
+            "session_title": row["session_title"],
+            "owner_email": row["owner_email"],
+            "structured_output": json.loads(row["structured_output"]),
+            "trace": json.loads(row["trace"]),
+            "document_draft": json.loads(row["document_draft"]) if row["document_draft"] else None,
+            "created_at": row["created_at"],
+        }
+
     def session_payload(self, session_id: int, user: User) -> dict[str, Any]:
         with self.connect() as conn:
-            session = conn.execute("SELECT * FROM chat_sessions WHERE id = ?", (session_id,)).fetchone()
+            session = conn.execute(
+                """
+                SELECT chat_sessions.*, users.email AS owner_email
+                FROM chat_sessions
+                JOIN users ON users.id = chat_sessions.owner_user_id
+                WHERE chat_sessions.id = ?
+                """,
+                (session_id,),
+            ).fetchone()
         return {
             "session": dict(session) if session else None,
             "messages": self.list_messages(session_id),
             "latest_turn": self.latest_turn_result(session_id),
             "is_admin": user.role == "admin",
         }
+
+    @staticmethod
+    def _count(conn: sqlite3.Connection, table: str) -> int:
+        row = conn.execute(f"SELECT COUNT(*) AS count FROM {table}").fetchone()
+        return int(row["count"])
+
+    def _period_metrics(
+        self,
+        conn: sqlite3.Connection,
+        key: str,
+        label: str,
+        cutoff: datetime | None,
+    ) -> dict[str, Any]:
+        if cutoff is None:
+            params: tuple[Any, ...] = ()
+            session_where = ""
+            message_where = ""
+            turn_where = ""
+            active_where = ""
+        else:
+            cutoff_value = cutoff.isoformat(timespec="seconds")
+            params = (cutoff_value,)
+            session_where = "WHERE created_at >= ?"
+            message_where = "WHERE created_at >= ?"
+            turn_where = "WHERE created_at >= ?"
+            active_where = "WHERE updated_at >= ?"
+
+        sessions = conn.execute(f"SELECT COUNT(*) AS count FROM chat_sessions {session_where}", params).fetchone()
+        messages = conn.execute(f"SELECT COUNT(*) AS count FROM messages {message_where}", params).fetchone()
+        turns = conn.execute(f"SELECT COUNT(*) AS count FROM turn_results {turn_where}", params).fetchone()
+        active_users = conn.execute(
+            f"SELECT COUNT(DISTINCT owner_user_id) AS count FROM chat_sessions {active_where}",
+            params,
+        ).fetchone()
+        drafts = conn.execute(
+            f"SELECT COUNT(*) AS count FROM turn_results {turn_where} {'AND' if turn_where else 'WHERE'} document_draft IS NOT NULL",
+            params,
+        ).fetchone()
+        return {
+            "key": key,
+            "label": label,
+            "sessions": int(sessions["count"]),
+            "messages": int(messages["count"]),
+            "turns": int(turns["count"]),
+            "active_users": int(active_users["count"]),
+            "document_drafts": int(drafts["count"]),
+            "estimated_tokens": self._estimated_tokens_for_period(conn, cutoff),
+        }
+
+    def _estimated_tokens_for_period(self, conn: sqlite3.Connection, cutoff: datetime | None) -> int:
+        if cutoff is None:
+            message_rows = conn.execute("SELECT content FROM messages").fetchall()
+            turn_rows = conn.execute("SELECT structured_output, trace FROM turn_results").fetchall()
+        else:
+            cutoff_value = cutoff.isoformat(timespec="seconds")
+            message_rows = conn.execute("SELECT content FROM messages WHERE created_at >= ?", (cutoff_value,)).fetchall()
+            turn_rows = conn.execute(
+                "SELECT structured_output, trace FROM turn_results WHERE created_at >= ?",
+                (cutoff_value,),
+            ).fetchall()
+        total = sum(estimate_tokens(row["content"]) for row in message_rows)
+        for row in turn_rows:
+            total += estimate_tokens(row["structured_output"])
+            trace = json.loads(row["trace"])
+            total += self._provider_token_count(trace) or estimate_tokens(trace.get("assembled_context_preview", ""))
+        return total
+
+    def _admin_activity_row(self, conn: sqlite3.Connection, row: sqlite3.Row) -> dict[str, Any]:
+        latest_turn = conn.execute(
+            "SELECT structured_output, trace, created_at FROM turn_results WHERE session_id = ? ORDER BY id DESC LIMIT 1",
+            (row["id"],),
+        ).fetchone()
+        latest_status = ""
+        latest_turn_at = ""
+        estimated_tokens = 0
+        if latest_turn:
+            structured = json.loads(latest_turn["structured_output"])
+            trace = json.loads(latest_turn["trace"])
+            latest_status = str(structured.get("workflow_status") or "")
+            latest_turn_at = latest_turn["created_at"]
+            estimated_tokens += estimate_tokens(latest_turn["structured_output"])
+            estimated_tokens += self._provider_token_count(trace) or estimate_tokens(trace.get("assembled_context_preview", ""))
+        messages = conn.execute("SELECT content FROM messages WHERE session_id = ?", (row["id"],)).fetchall()
+        estimated_tokens += sum(estimate_tokens(message["content"]) for message in messages)
+        return {
+            "id": row["id"],
+            "title": row["title"],
+            "owner_user_id": row["owner_user_id"],
+            "owner_email": row["owner_email"],
+            "created_at": row["created_at"],
+            "updated_at": row["updated_at"],
+            "last_message_at": row["last_message_at"],
+            "latest_turn_at": latest_turn_at,
+            "message_count": int(row["message_count"]),
+            "turn_count": int(row["turn_count"]),
+            "workflow_status": latest_status,
+            "estimated_tokens": estimated_tokens,
+        }
+
+    @staticmethod
+    def _provider_token_count(trace: dict[str, Any]) -> int:
+        usage = ((trace.get("llm_metadata") or {}).get("usage_metadata") or {})
+        for key in ("totalTokenCount", "total_token_count"):
+            value = usage.get(key)
+            if isinstance(value, int):
+                return value
+        return 0

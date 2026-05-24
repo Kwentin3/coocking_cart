@@ -2,6 +2,10 @@ const state = {
   user: null,
   sessions: [],
   users: [],
+  adminDashboard: null,
+  adminContext: null,
+  adminScreen: "dashboard",
+  adminSelectedSessionId: null,
   sessionId: null,
   latestTurn: null,
   editingSessionId: null,
@@ -54,9 +58,15 @@ function showWorkspace() {
   el("workspace").classList.remove("hidden");
   el("roleBadge").textContent = state.user?.role || "user";
   el("logoutBtn").classList.remove("hidden");
-  el("newSessionBtn").classList.remove("hidden");
+  el("newSessionBtn").classList.toggle("hidden", !!state.user?.is_admin);
+  el("workspace").classList.toggle("admin-mode", !!state.user?.is_admin);
+  el("chatColumn").classList.toggle("hidden", !!state.user?.is_admin);
+  el("adminWorkspace").classList.toggle("hidden", !state.user?.is_admin);
+  el("resultPanel").classList?.toggle?.("hidden", !!state.user?.is_admin);
   el("inspectorTab").classList.toggle("hidden", !state.user?.is_admin);
   el("usersTab").classList.toggle("hidden", !state.user?.is_admin);
+  el("railTitle").textContent = state.user?.is_admin ? "Админка" : "Сессии";
+  el("newSessionRailBtn").classList.toggle("hidden", !!state.user?.is_admin);
   if (!state.user?.is_admin && (!el("usersPanel").classList.contains("hidden") || !el("inspectorPanel").classList.contains("hidden"))) {
     setActiveTab("draft");
   }
@@ -67,7 +77,11 @@ async function init() {
   if (me.user) {
     state.user = me.user;
     showWorkspace();
-    await loadSessions();
+    if (state.user?.is_admin) {
+      setAdminScreen(state.adminScreen || "dashboard");
+    } else {
+      await loadSessions();
+    }
   } else {
     showLogin(me.config_errors || []);
   }
@@ -85,7 +99,11 @@ async function login(event) {
   }
   state.user = payload.user;
   showWorkspace();
-  await loadSessions();
+  if (state.user?.is_admin) {
+    setAdminScreen("dashboard");
+  } else {
+    await loadSessions();
+  }
 }
 
 async function demoLogin() {
@@ -104,6 +122,10 @@ async function logout() {
   state.user = null;
   state.sessions = [];
   state.users = [];
+  state.adminDashboard = null;
+  state.adminContext = null;
+  state.adminScreen = "dashboard";
+  state.adminSelectedSessionId = null;
   state.sessionId = null;
   state.latestTurn = null;
   state.editingSessionId = null;
@@ -377,7 +399,7 @@ async function loadUsers() {
 }
 
 function renderUsers() {
-  const panel = el("usersPanel");
+  const panel = state.user?.is_admin && state.adminScreen === "users" ? el("adminWorkspace") : el("usersPanel");
   if (!state.user?.is_admin) {
     panel.innerHTML = "";
     return;
@@ -508,6 +530,253 @@ async function deleteUser(userId) {
   await loadUsers();
 }
 
+function renderAdminNav() {
+  const items = [
+    {key: "dashboard", icon: "▦", label: "Дашборд", title: "Чаты и активность"},
+    {key: "prompts", icon: "◎", label: "Промты", title: "Prompt/context layers"},
+    {key: "users", icon: "☷", label: "Пользователи", title: "Пользователи Demo MVP"},
+  ];
+  el("sessionsList").innerHTML = items.map((item) => `
+    <button type="button" class="admin-nav-item ${state.adminScreen === item.key ? "active" : ""}" data-admin-screen="${item.key}" title="${item.title}" aria-label="${item.title}">
+      <span class="admin-nav-icon">${item.icon}</span>
+      <span>${item.label}</span>
+    </button>
+  `).join("");
+  document.querySelectorAll("[data-admin-screen]").forEach((button) => {
+    button.addEventListener("click", () => setAdminScreen(button.dataset.adminScreen));
+  });
+}
+
+function setAdminScreen(screen) {
+  if (!state.user?.is_admin) return;
+  state.adminScreen = screen || "dashboard";
+  renderAdminNav();
+  setAdminWorkspaceLoading();
+  if (state.adminScreen === "prompts") {
+    loadAdminContext();
+  } else if (state.adminScreen === "users") {
+    loadUsers();
+  } else {
+    loadAdminDashboard();
+  }
+}
+
+function setAdminWorkspaceLoading() {
+  el("adminWorkspace").innerHTML = `<div class="admin-screen"><div class="empty-state">Загрузка...</div></div>`;
+}
+
+async function loadAdminDashboard() {
+  const payload = await api("/api/admin/dashboard");
+  if (!payload.ok) {
+    el("adminWorkspace").innerHTML = `<div class="warning-list">${escapeHtml(payload.error || "Дашборд недоступен.")}</div>`;
+    return;
+  }
+  state.adminDashboard = payload.dashboard;
+  renderAdminDashboard();
+}
+
+function renderAdminDashboard() {
+  const dashboard = state.adminDashboard || {};
+  const periods = dashboard.periods || [];
+  const latest = dashboard.latest_activity || [];
+  el("adminWorkspace").innerHTML = `
+    <div class="admin-screen">
+      <div class="admin-screen-header">
+        <div>
+          <h1>Дашборд чатов</h1>
+          <p class="muted">Read-only обзор demo sessions, активности и approximate token usage.</p>
+        </div>
+        <button type="button" class="icon-btn" id="refreshDashboardBtn" title="Обновить" aria-label="Обновить">↻</button>
+      </div>
+      <div class="metrics-grid">
+        ${periods.map(periodMetricCard).join("")}
+      </div>
+      <div class="admin-two-column">
+        <section class="admin-card">
+          <h2>Последняя активность</h2>
+          ${latest.length ? latestActivityTable(latest) : `<div class="empty-state">Активных чатов пока нет.</div>`}
+        </section>
+        <section class="admin-card" id="adminChatPreview">
+          <h2>Просмотр чата</h2>
+          <div class="empty-state">Выберите чат в таблице слева.</div>
+        </section>
+      </div>
+    </div>
+  `;
+  el("refreshDashboardBtn").addEventListener("click", loadAdminDashboard);
+  document.querySelectorAll("[data-admin-session-preview]").forEach((button) => {
+    button.addEventListener("click", () => loadAdminSessionPreview(Number(button.dataset.adminSessionPreview)));
+  });
+}
+
+function periodMetricCard(period) {
+  const maxTokens = Math.max(...(state.adminDashboard?.periods || []).map((item) => item.estimated_tokens || 0), 1);
+  const width = Math.max(4, Math.round(((period.estimated_tokens || 0) / maxTokens) * 100));
+  return `
+    <section class="metric-card">
+      <div class="metric-title">${escapeHtml(period.label)}</div>
+      <div class="metric-main">${formatNumber(period.sessions)} чатов</div>
+      <div class="metric-sub">${formatNumber(period.messages)} сообщений · ${formatNumber(period.turns)} turns</div>
+      <div class="metric-sub">${formatNumber(period.active_users)} активных users · ${formatNumber(period.document_drafts)} drafts</div>
+      <div class="metric-sub">≈ ${formatNumber(period.estimated_tokens)} tokens</div>
+      <div class="metric-bar" aria-hidden="true"><span style="width:${width}%"></span></div>
+    </section>
+  `;
+}
+
+function latestActivityTable(items) {
+  return `
+    <div class="activity-list">
+      ${items.map((item) => `
+        <button type="button" class="activity-row ${state.adminSelectedSessionId === item.id ? "active" : ""}" data-admin-session-preview="${item.id}" title="Открыть read-only просмотр чата" aria-label="Открыть чат ${item.id}">
+          <span class="activity-title">${escapeHtml(item.title)}</span>
+          <span>${escapeHtml(item.owner_email || "")}</span>
+          <span>${formatDate(item.last_message_at || item.updated_at)}</span>
+          <span>${formatNumber(item.message_count)} msg · ${formatNumber(item.turn_count)} turns</span>
+          <span>${escapeHtml(item.workflow_status || "no status")}</span>
+          <span>≈ ${formatNumber(item.estimated_tokens)} tok</span>
+        </button>
+      `).join("")}
+    </div>
+  `;
+}
+
+async function loadAdminSessionPreview(sessionId) {
+  state.adminSelectedSessionId = sessionId;
+  renderAdminDashboard();
+  const target = el("adminChatPreview");
+  target.innerHTML = `<h2>Просмотр чата</h2><div class="empty-state">Загрузка...</div>`;
+  const payload = await api(`/api/sessions/${sessionId}`);
+  if (!payload.ok) {
+    target.innerHTML = `<h2>Просмотр чата</h2><div class="warning-list">${escapeHtml(payload.error || "Чат недоступен.")}</div>`;
+    return;
+  }
+  const session = payload.session || {};
+  const messages = payload.messages || [];
+  const latest = payload.latest_turn || {};
+  target.innerHTML = `
+    <div class="admin-preview-header">
+      <div>
+        <h2>${escapeHtml(session.title || `Чат #${sessionId}`)}</h2>
+        <p class="muted">${escapeHtml(session.owner_email || "")} · ${formatDate(session.updated_at)}</p>
+      </div>
+      <button type="button" class="icon-btn" id="openPromptForSessionBtn" title="Открыть context trace" aria-label="Открыть context trace">◎</button>
+    </div>
+    <div class="admin-message-preview">
+      ${messages.map((message) => `<div class="message ${escapeHtml(message.role)}">${escapeHtml(message.content)}</div>`).join("") || `<div class="empty-state">Сообщений нет.</div>`}
+    </div>
+    <h3>Latest structured output</h3>
+    <pre>${escapeHtml(JSON.stringify(latest.structured_output || null, null, 2))}</pre>
+  `;
+  el("openPromptForSessionBtn").addEventListener("click", () => setAdminScreen("prompts"));
+}
+
+async function loadAdminContext() {
+  const payload = await api("/api/admin/context");
+  if (!payload.ok) {
+    el("adminWorkspace").innerHTML = `<div class="warning-list">${escapeHtml(payload.error || "Context workspace недоступен.")}</div>`;
+    return;
+  }
+  if (state.adminSelectedSessionId) {
+    const selected = await api(`/api/sessions/${state.adminSelectedSessionId}/inspector`);
+    if (selected.ok) {
+      payload.selected_session = selected;
+      payload.selected_session_id = state.adminSelectedSessionId;
+    }
+  }
+  state.adminContext = payload;
+  renderAdminContext();
+}
+
+function renderAdminContext() {
+  const payload = state.adminContext || {};
+  const selected = payload.selected_session || null;
+  const latest = selected?.latest_turn || payload.latest_turn || {};
+  const trace = latest.trace || {};
+  el("adminWorkspace").innerHTML = `
+    <div class="admin-screen">
+      <div class="admin-screen-header">
+        <div>
+          <h1>Промты и context window</h1>
+          <p class="muted">Read-only просмотр manifest, markdown layers, schema и последнего assembled context.</p>
+        </div>
+        <button type="button" class="icon-btn" id="refreshContextBtn" title="Обновить" aria-label="Обновить">↻</button>
+      </div>
+      <div class="context-summary-grid">
+        <section class="admin-card">
+          <h2>Manifest</h2>
+          <pre>${escapeHtml(JSON.stringify(payload.manifest || {}, null, 2))}</pre>
+        </section>
+        <section class="admin-card">
+          <h2>Health</h2>
+          <pre>${escapeHtml(JSON.stringify(payload.health || {}, null, 2))}</pre>
+          <p class="muted">Token usage: ${escapeHtml(payload.token_policy || "")}</p>
+        </section>
+      </div>
+      <div class="admin-two-column wide-left">
+        <section class="admin-card">
+          <div class="admin-card-title">
+            <h2>Markdown layers</h2>
+            <button type="button" class="icon-btn compact-icon" data-copy-admin="static" title="Скопировать static context" aria-label="Скопировать static context">⧉</button>
+          </div>
+          ${(payload.layers || []).map(promptLayerHtml).join("") || `<div class="empty-state">Layers не загружены.</div>`}
+        </section>
+        <section class="admin-card">
+          <div class="admin-card-title">
+          <h2>Context window</h2>
+          <button type="button" class="icon-btn compact-icon" data-copy-admin="assembled" title="Скопировать assembled preview" aria-label="Скопировать assembled preview">⧉</button>
+        </div>
+        <h3>Latest turn</h3>
+          <p class="muted">${latest.id ? `${selected ? `Selected session #${payload.selected_session_id} · ` : ""}Turn #${latest.id} · ${escapeHtml(latest.owner_email || "")} · ${formatDate(latest.created_at)}` : "Turn results еще нет."}</p>
+          <h3>Assembled preview</h3>
+          <pre>${escapeHtml(trace.assembled_context_preview || "Нет assembled context preview.")}</pre>
+          <h3>Structured output schema</h3>
+          <pre>${escapeHtml(JSON.stringify(payload.structured_output_schema || null, null, 2))}</pre>
+          <h3>Latest structured output</h3>
+          <pre>${escapeHtml(JSON.stringify(latest.structured_output || null, null, 2))}</pre>
+        </section>
+      </div>
+    </div>
+  `;
+  el("refreshContextBtn").addEventListener("click", loadAdminContext);
+  document.querySelectorAll("[data-copy-layer]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const layer = (payload.layers || []).find((item) => item.file === button.dataset.copyLayer);
+      copyText(layer?.text || "");
+    });
+  });
+  document.querySelectorAll("[data-copy-admin]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = button.dataset.copyAdmin;
+      if (key === "static") {
+        copyText(payload.static_context_preview || "");
+      } else if (key === "assembled") {
+        copyText(trace.assembled_context_preview || "");
+      }
+    });
+  });
+}
+
+function promptLayerHtml(layer) {
+  return `
+    <details class="prompt-layer">
+      <summary>
+        <span>${formatNumber(layer.order)}. ${escapeHtml(layer.file)}</span>
+        <span class="badge">${escapeHtml(layer.status || "")}</span>
+      </summary>
+      <div class="layer-meta">
+        <div><strong>role:</strong> ${escapeHtml(layer.role || "")}</div>
+        <div><strong>source:</strong> ${escapeHtml(layer.source || "")}</div>
+        <div><strong>description:</strong> ${escapeHtml(layer.description || "")}</div>
+      </div>
+      <div class="copy-row">
+        <button type="button" class="icon-btn compact-icon" data-copy-layer="${escapeHtml(layer.file)}" title="Скопировать layer" aria-label="Скопировать layer">⧉</button>
+      </div>
+      <pre>${escapeHtml(layer.text || "")}</pre>
+    </details>
+  `;
+}
+
 function setButtonBusy(button, isBusy) {
   if (!button) return;
   button.disabled = isBusy;
@@ -570,6 +839,22 @@ async function copyText(text) {
   } catch (_error) {
     showToast("Не удалось скопировать автоматически.");
   }
+}
+
+function formatNumber(value) {
+  return new Intl.NumberFormat("ru-RU").format(Number(value || 0));
+}
+
+function formatDate(value) {
+  if (!value) return "нет данных";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 }
 
 function escapeHtml(value) {

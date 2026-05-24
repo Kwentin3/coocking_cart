@@ -36,14 +36,14 @@
       <main id="workspace" class="workspace hidden">
         <aside class="sessions-panel">
           <div class="panel-title-row">
-            <div class="panel-title">Сессии</div>
+            <div id="railTitle" class="panel-title">Сессии</div>
             <button id="newSessionRailBtn" class="icon-btn compact-icon" title="Новый чат" aria-label="Новый чат">＋</button>
           </div>
           <div id="sessionsList" class="sessions-list"></div>
         </aside>
 
         <section class="chat-panel">
-          <div class="chat-column" aria-label="Диалог с ассистентом">
+          <div id="chatColumn" class="chat-column" aria-label="Диалог с ассистентом">
             <div class="quick-actions">
               <button data-demo="Хочу технологическую карту для курицы по-вьетнамски">Курица по-вьетнамски</button>
               <button data-demo="Хочу технологическую карту яичницы или омлета">Яичница/омлет</button>
@@ -54,9 +54,10 @@
               <button id="sendBtn" type="submit" title="Отправить" aria-label="Отправить">➤</button>
             </form>
           </div>
+          <section id="adminWorkspace" class="admin-workspace hidden" aria-label="Служебный экран admin"></section>
         </section>
 
-        <aside class="result-panel">
+        <aside id="resultPanel" class="result-panel">
           <nav class="tabs" aria-label="Результат">
             <button class="tab active" data-tab="draft">Проект</button>
             <button class="tab" data-tab="warnings">Риски</button>

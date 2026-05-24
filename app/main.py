@@ -63,6 +63,18 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
                 return
             self._json({"ok": True, "users": self.state.storage.list_users(current_user_id=admin.id)})
             return
+        if parsed.path == "/api/admin/dashboard":
+            admin = self._require_admin()
+            if not admin:
+                return
+            self._json({"ok": True, "dashboard": self.state.storage.admin_dashboard()})
+            return
+        if parsed.path == "/api/admin/context":
+            admin = self._require_admin()
+            if not admin:
+                return
+            self._json(self.state.runtime.admin_context_payload(admin))
+            return
         if parsed.path == "/api/sessions":
             user = self._require_user()
             if not user:
