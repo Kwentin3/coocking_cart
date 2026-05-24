@@ -90,6 +90,67 @@ class CoreContractsTest(unittest.TestCase):
             self.assertEqual(len(admin_payload["layers"]), 8)
             self.assertFalse(user_payload["ok"])
 
+    def test_admin_context_workspace_payload_is_read_only_and_admin_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = test_config(Path(tmp) / "demo.sqlite", api_key="")
+            storage = Storage(config.sqlite_db_path)
+            admin = storage.bootstrap_admin(config.bootstrap_admin_email, config.bootstrap_admin_password)
+            user = storage.ensure_demo_user()
+            session_id = storage.create_chat_session(user.id, "context workspace")
+            runtime = DemoRuntime(config, storage)
+            runtime.process_user_message(session_id, user, "Хочу технологическую карту омлета")
+
+            assert admin is not None
+            admin_payload = runtime.admin_context_payload(admin)
+            user_payload = runtime.admin_context_payload(user)
+
+            self.assertTrue(admin_payload["ok"])
+            self.assertEqual(admin_payload["manifest"]["layer_count"], 8)
+            self.assertEqual(len(admin_payload["layers"]), 8)
+            self.assertIn("static_context_preview", admin_payload)
+            self.assertIn("structured_output_schema", admin_payload)
+            self.assertIn("latest_turn", admin_payload)
+            self.assertGreater(admin_payload["static_context_estimated_tokens"], 0)
+            self.assertFalse(user_payload["ok"])
+
+    def test_admin_dashboard_aggregates_chat_activity(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = test_config(Path(tmp) / "demo.sqlite", api_key="")
+            storage = Storage(config.sqlite_db_path)
+            user = storage.ensure_demo_user()
+            session_id = storage.create_chat_session(user.id, "dashboard smoke")
+            user_message_id = storage.add_message(session_id, "user", "Хочу карту яичницы")
+            assistant_message_id = storage.add_message(session_id, "assistant", "Уточню выход порции.")
+            storage.save_turn_result(
+                session_id,
+                user_message_id,
+                assistant_message_id,
+                {
+                    "user_answer": "Уточню выход порции.",
+                    "workflow_status": "clarification",
+                    "known_facts": [],
+                    "open_questions": [],
+                    "warnings": [],
+                    "data_statuses": [],
+                    "document_draft": None,
+                    "structured_json": None,
+                    "next_step": "Уточнить порцию.",
+                },
+                {
+                    "assembled_context_preview": "context preview",
+                    "llm_metadata": {"usage_metadata": {"totalTokenCount": 123}},
+                },
+            )
+
+            dashboard = storage.admin_dashboard()
+            day = next(item for item in dashboard["periods"] if item["key"] == "day")
+            self.assertEqual(day["sessions"], 1)
+            self.assertEqual(day["messages"], 2)
+            self.assertEqual(day["turns"], 1)
+            self.assertGreaterEqual(day["estimated_tokens"], 123)
+            self.assertEqual(dashboard["latest_activity"][0]["id"], session_id)
+            self.assertEqual(dashboard["latest_activity"][0]["workflow_status"], "clarification")
+
     def test_bootstrap_admin_is_created_from_env_contract(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             config = test_config(Path(tmp) / "demo.sqlite", api_key="")
