@@ -72,6 +72,8 @@ Demo MVP проверяет продуктовую ценность чатово
 | --- | --- | --- |
 | Вести чат | Да | Да |
 | Создавать demo session | Да | Да |
+| Переименовывать свои demo sessions | Да | Да |
+| Удалять свои demo sessions | Да | Да |
 | Видеть свой `user_answer` | Да | Да |
 | Видеть warnings/data statuses | Да | Да |
 | Видеть document draft | Да | Да |
@@ -80,6 +82,7 @@ Demo MVP проверяет продуктовую ценность чатово
 | Смотреть context layers | Нет | Да |
 | Смотреть context trace | Нет | Да |
 | Смотреть чужие demo sessions для отладки | Нет | Да |
+| Управлять чужими demo sessions для отладки | Нет | Да |
 | Управлять demo-настройками | Нет | Да |
 | Редактировать prompt/context assets | Нет | Future |
 

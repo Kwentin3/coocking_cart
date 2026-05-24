@@ -73,6 +73,9 @@
 - chat column не растягивает текстовые строки на всю ширину wide desktop;
 - длинные drafts, JSON, trace и admin tables остаются в result/artifact panels, а не внутри chat bubble;
 - чат отображает user/assistant сообщения;
+- sessions rail поддерживает create/read/open/rename/delete для доступных demo sessions;
+- session CRUD использует icon-first controls с `title`/`aria-label`;
+- delete session требует явного подтверждения и не является primary action;
 - есть explicit loading state;
 - есть user-safe error states;
 - warnings визуально отделены от основного ответа;

@@ -137,6 +137,25 @@ Artifact panel отвечает за артефакты:
 
 Чат показывает `user_answer`. Остальные поля structured output отображаются в отдельных блоках результата или debug/admin area.
 
+## Chat/session management
+
+Demo sessions являются рабочими чатами MVP. Интерфейс должен поддерживать минимальный CRUD с icon-first controls:
+
+- create: иконка `+` / new session button;
+- read/open: выбор session в sessions rail;
+- update/rename: иконка edit рядом с session title;
+- delete: destructive icon рядом с session title с явным подтверждением.
+
+Правила:
+
+- `user` управляет только своими demo sessions;
+- `admin` может управлять видимыми demo sessions для отладки demo;
+- действия rename/delete не должны быть спрятаны в длинных текстовых легендах;
+- каждая icon action имеет `title` и `aria-label`;
+- destructive delete не является primary action и требует подтверждения;
+- после create/rename/delete пользователь получает toast или иной terminal feedback;
+- удаление session в MVP удаляет связанные messages и turn results через SQLite cascade и не является production retention policy.
+
 ## Result/document panel
 
 Result panel должен показывать рабочие блоки результата:
