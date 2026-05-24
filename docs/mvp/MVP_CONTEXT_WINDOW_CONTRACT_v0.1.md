@@ -23,7 +23,7 @@
 7. Ограничения Demo MVP.
 8. Короткую цепочку текущего диалога user/assistant.
 9. Последнее сообщение пользователя.
-10. Инструкцию вернуть structured output.
+10. Инструкцию вернуть полный structured output.
 
 ## Статическая часть
 
@@ -65,6 +65,8 @@
 
 Каждый такт должен явно требовать structured output по MVP-контракту.
 
+Structured output - это полный ответ LLM для runtime. Он включает пользовательский `user_answer` и служебные поля. Structured JSON - только один из блоков structured output; он появляется, когда сформирован проект ТК/ТТК.
+
 Минимально ожидаются:
 
 - `user_answer`;
@@ -78,6 +80,8 @@
 - `next_step`.
 
 Полный смысл полей описан в [MVP_STRUCTURED_OUTPUT_CONTRACT_v0.1.md](MVP_STRUCTURED_OUTPUT_CONTRACT_v0.1.md).
+
+Если проект карты еще не сформирован, `document_draft` и `structured_json` должны быть пустыми или `null`. Runtime не должен трактовать `structured_json` как формат iiko, r_keeper, 1С, StoreHouse или production-интеграционную схему.
 
 ## Не-goals
 

@@ -10,6 +10,15 @@ Demo MVP - демонстрационный прототип AI-ассистен
 
 Demo MVP не является production-ready системой. Он не утверждает документы юридически, не подтверждает лабораторные данные, не заменяет технолога и не реализует полноценную production-архитектуру.
 
+Терминология MVP:
+
+- structured output - полный ответ LLM для runtime: `user_answer` и служебные поля;
+- user-facing answer / `user_answer` - текст, который видит пользователь в чате;
+- document draft / `document_draft` - проект ТК/ТТК, если пользователь запросил карту и данных достаточно;
+- structured JSON / `structured_json` - один из блоков structured output, нейтральное машинно-читаемое представление проекта документа для будущих интеграций.
+
+Structured JSON не является форматом iiko, r_keeper, 1С, StoreHouse, production-интеграционной схемой или юридически утвержденным документом.
+
 ## Чем Demo MVP отличается от production architecture
 
 В Demo MVP принимается простой file-driven context approach:
@@ -52,7 +61,7 @@ Production architecture остается future track. Managed state, state mach
 
 Markdown context layers содержат только статический контекст. Динамическая история user/assistant сообщений и служебный structured result хранятся отдельно в SQLite.
 
-LLM не имеет собственной памяти. На каждом такте runtime должен заново собрать рабочее контекстное окно: markdown context pack, короткую историю диалога, последнее сообщение пользователя и инструкцию вернуть structured output.
+LLM не имеет собственной памяти. На каждом такте runtime должен заново собрать рабочее контекстное окно: markdown context pack, короткую историю диалога, последнее сообщение пользователя и инструкцию вернуть полный structured output.
 
 ## Вне текущего прохода
 

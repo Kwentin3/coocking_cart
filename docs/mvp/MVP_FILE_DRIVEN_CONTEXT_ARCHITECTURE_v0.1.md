@@ -30,11 +30,12 @@ Demo MVP использует file-driven context architecture: статичес
 2. Runtime загружает markdown context pack.
 3. Runtime достает короткую историю диалога из SQLite.
 4. Runtime добавляет последнее сообщение пользователя.
-5. Runtime добавляет инструкцию вернуть structured output.
+5. Runtime добавляет инструкцию вернуть полный structured output.
 6. Runtime отправляет собранное окно в LLM.
-7. LLM возвращает structured output.
+7. LLM возвращает structured output: `user_answer` и служебные поля.
 8. Frontend показывает пользователю `user_answer`.
-9. Runtime сохраняет user/assistant сообщения и служебный structured result.
+9. Если сформирован проект карты, frontend или debug view показывает `warnings`, `data_statuses`, `document_draft` и `structured_json`.
+10. Runtime сохраняет user/assistant сообщения и служебный structured result.
 
 ## Роль runtime
 
@@ -66,6 +67,7 @@ Runtime не должен интерпретировать production state mach
 - Он не делает расчетный движок.
 - Он не подтверждает нормативные значения.
 - Он не является audit/event log.
+- Он не превращает `structured_json` в production-интеграционную схему.
 
 ## Граница
 
