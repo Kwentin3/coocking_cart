@@ -49,6 +49,7 @@ Production architecture остается future track. Managed state, state mach
 - [LLM provider adapter note](MVP_LLM_PROVIDER_ADAPTER_NOTE_v0.1.md) - граница интеграции с LLM provider.
 - [Roles and access](MVP_ROLES_AND_ACCESS_v0.1.md) - минимальные роли `user` и `admin`.
 - [Environment contract](MVP_ENVIRONMENT_CONTRACT_v0.1.md) - env-переменные и placeholders для будущей реализации.
+- [Safe env example](../../.env.example) - безопасный root-шаблон `.env.example`; реальные `.env` не коммитятся.
 - [Bootstrap data contract](MVP_BOOTSTRAP_DATA_CONTRACT_v0.1.md) - стартовые данные первого запуска без реальных секретов.
 - [Markdown context layers](MVP_MARKDOWN_CONTEXT_LAYERS_v0.1.md) - назначение каждого markdown-слоя.
 - [Structured output contract](MVP_STRUCTURED_OUTPUT_CONTRACT_v0.1.md) - минимальный контракт ответа LLM для MVP.

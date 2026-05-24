@@ -25,6 +25,19 @@
 - Docker network `edge` существует.
 - Traefik-related path: `/opt/platform/traefik`.
 
+## SSH access and hardening note
+
+`root@91.132.48.224` принят как текущий demo deployment context, потому что этот доступ был передан владельцем проекта для read-only audit и будущей подготовки деплоя.
+
+Правила:
+
+- private SSH key не хранится в Git;
+- SSH password, tokens и key material не документируются в репозитории;
+- любые изменения SSH-доступа не входят в Demo MVP implementation task;
+- для production hardening желательно перейти на dedicated deploy user с минимальными правами.
+
+Dedicated deploy user, sudo policy и SSH hardening остаются future ops hardening и не блокируют Demo MVP.
+
 ## Что нужно проверить перед деплоем
 
 - Где безопасно разместить приложение.

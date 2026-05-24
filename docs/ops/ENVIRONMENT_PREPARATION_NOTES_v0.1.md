@@ -79,7 +79,7 @@ Root [`.env.example`](../../.env.example) является безопасным 
 - Traefik entrypoint/certresolver policy;
 - confirmation that Docker network `edge` can be used or an alternative network plan;
 - ports/TLS policy;
-- способ передачи secrets.
+- способ передачи secrets;
 - актуальный Gemini model id для `LLM_MODEL`;
 - Gemini API key, переданный вне Git.
 
@@ -91,7 +91,7 @@ Root [`.env.example`](../../.env.example) является безопасным 
 - заполнить deployment context;
 - предложить безопасный deployment plan;
 - создать или обновить `.env.example` с placeholders;
-- подготовить инструкции по реальному `.env` без коммита secrets.
+- подготовить инструкции по реальному `.env` без коммита secrets;
 - разместить real `.env` только в согласованном deploy path и только после подтвержденного deployment task.
 
 ## Что не делать сейчас

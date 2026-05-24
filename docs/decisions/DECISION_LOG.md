@@ -73,6 +73,8 @@
 | D-064 | 2026-05-24 | Exact Gemini model id задается через `LLM_MODEL` и подтверждается на момент реализации. | Имена моделей могут меняться, поэтому документация не должна фиксировать model id как константу. | `.env.example` содержит `LLM_MODEL=<GEMINI_FLASH_MODEL_ID>`; агент реализации проверяет актуальное имя модели перед запуском. |
 | D-065 | 2026-05-24 | Deployment non-secret values могут быть отражены в `.env.example`. | Домен, IP и deploy user уже переданы как deployment context и не являются secrets. | `.env.example` содержит `APP_BASE_URL`, `PUBLIC_DOMAIN`, `DEPLOY_HOST` и `DEPLOY_USER`; Traefik values остаются placeholders. |
 | D-066 | 2026-05-24 | Runtime SQLite-файлы не коммитятся. | SQLite содержит runtime dialogue state и служебные результаты тактов, а не проектную документацию. | `.gitignore` исключает `*.sqlite`, `*.sqlite3`, `data/*.sqlite` и `data/*.sqlite3`. |
+| D-067 | 2026-05-24 | Любое значение вида `<...>` в `.env.example` считается placeholder и not configured. | Placeholder не должен случайно пройти как реальный API key, model id, admin credential или Traefik value. | Реализация должна валидировать placeholders и показывать user-safe/admin-debug ошибку конфигурации для обязательных значений. |
+| D-068 | 2026-05-24 | `root@91.132.48.224` фиксируется только как текущий demo deployment context. | Root-доступ был передан для read-only audit и будущей подготовки демо, но это не production hardening pattern. | Private SSH key не хранится в Git; dedicated deploy user остается future ops hardening и не блокирует Demo MVP. |
 
 ## Как обновлять журнал
 
