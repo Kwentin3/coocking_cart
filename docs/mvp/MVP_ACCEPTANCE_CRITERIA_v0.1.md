@@ -95,6 +95,9 @@
 - реализация не принимает `<...>` placeholders как реальные значения;
 - required env variables с placeholder считаются `not configured`;
 - есть роли `user` и `admin`;
+- `admin` может управлять пользователями через минимальный CRUD без production IAM/RBAC;
+- user CRUD не возвращает password hashes и не раскрывает secrets;
+- последний admin защищен от удаления или понижения;
 - bootstrap admin можно создать без ручного вмешательства в код;
 - LLM provider/model/API key не хардкодятся;
 - context manifest path не хардкодится глубоко в доменной логике;

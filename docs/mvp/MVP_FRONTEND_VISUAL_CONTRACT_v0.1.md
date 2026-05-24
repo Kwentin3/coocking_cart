@@ -184,6 +184,7 @@ Context Inspector является admin/debug UI.
 - context trace;
 - markdown layers;
 - sessions для отладки demo;
+- панель управления пользователями Demo MVP;
 - technical diagnostics, если они безопасны для показа.
 
 `admin` не должен видеть:
@@ -193,6 +194,21 @@ Context Inspector является admin/debug UI.
 - bootstrap credentials;
 - SSH keys;
 - raw `.env` values.
+
+### Admin user management panel
+
+Панель пользователей доступна только роли `admin`.
+
+Минимально показывает:
+
+- список пользователей;
+- email;
+- роль `user`/`admin`;
+- признак текущего admin;
+- статус наличия пароля без показа hash;
+- действия создать, сохранить, удалить.
+
+Панель не является production admin console и не должна вводить роли, permissions, организации или SSO.
 
 ## Theme policy
 
@@ -279,4 +295,5 @@ Frontend не должен:
 - [MVP structured output contract](MVP_STRUCTURED_OUTPUT_CONTRACT_v0.1.md)
 - [MVP Context Inspector](MVP_CONTEXT_INSPECTOR_v0.1.md)
 - [MVP roles and access](MVP_ROLES_AND_ACCESS_v0.1.md)
+- [MVP admin user CRUD blueprint](MVP_ADMIN_USER_CRUD_BLUEPRINT_v0.1.md)
 - [MVP implementation handoff](MVP_IMPLEMENTATION_HANDOFF_v0.1.md)

@@ -125,3 +125,23 @@ Context Inspector является admin/debug-инструментом MVP.
 - Admin diagnostics не должны показывать API keys или secrets.
 - Context Inspector не должен раскрывать секреты из environment.
 - Любая production IAM-модель проектируется отдельно.
+
+## Admin user management в MVP
+
+В Demo MVP роль `admin` может управлять пользователями через минимальный CRUD:
+
+- создать пользователя с ролью `user` или `admin`;
+- посмотреть список пользователей;
+- изменить email, роль или пароль;
+- удалить пользователя.
+
+Это остается частью demo operations, а не production IAM. В CRUD не добавляются организации, команды, права на отдельные действия, SSO или сложная RBAC/ABAC-модель.
+
+Ограничения:
+
+- API/UI не возвращают password hashes;
+- текущий admin не может удалить сам себя;
+- последний admin не может быть удален или понижен до `user`;
+- удаление пользователя в MVP может удалить его demo sessions через SQLite cascade и не является production retention policy.
+
+Подробный контракт описан в [MVP admin user CRUD blueprint](MVP_ADMIN_USER_CRUD_BLUEPRINT_v0.1.md).
