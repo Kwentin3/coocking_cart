@@ -30,9 +30,9 @@ Demo MVP использует file-driven context architecture: статичес
 2. Runtime загружает markdown context pack.
 3. Runtime достает короткую историю диалога из SQLite.
 4. Runtime добавляет последнее сообщение пользователя.
-5. Runtime добавляет инструкцию вернуть полный structured output.
-6. Runtime отправляет собранное окно в LLM.
-7. LLM возвращает structured output: `user_answer` и служебные поля.
+5. Runtime добавляет task instruction: продолжить диалог, уточнить данные или подготовить проект документа.
+6. Runtime передает assembled context window и structured output schema в LLM provider adapter.
+7. Gemini adapter задает JSON MIME type и response schema через generation config; LLM возвращает structured output: `user_answer` и служебные поля.
 8. Frontend показывает пользователю `user_answer`.
 9. Если сформирован проект карты, frontend или debug view показывает `warnings`, `data_statuses`, `document_draft` и `structured_json`.
 10. Runtime сохраняет user/assistant сообщения и служебный structured result.

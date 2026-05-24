@@ -103,7 +103,7 @@ Demo user опционален.
 
 `LLM_API_KEY` должен приходить только из environment/secrets management и не попадать в репозиторий.
 
-Для текущего env-шаблона ожидается `LLM_PROVIDER=gemini`, а `LLM_MODEL` остается placeholder до проверки актуального Gemini Flash model id перед реализацией.
+Для текущего env-шаблона ожидается `LLM_PROVIDER=gemini`, а `LLM_MODEL` берется из env/config. Если значение является placeholder вида `<...>`, оно считается not configured; если указан concrete model id, его нужно проверить по актуальной документации Google AI перед первым LLM call.
 
 ## Deployment context defaults
 

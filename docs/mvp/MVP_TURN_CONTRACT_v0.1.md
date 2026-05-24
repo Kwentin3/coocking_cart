@@ -31,10 +31,12 @@ Runtime должен собрать context window в воспроизводим
 2. Загрузить markdown layers в указанном порядке.
 3. Добавить короткую историю user/assistant сообщений из SQLite.
 4. Добавить последнее сообщение пользователя.
-5. Добавить инструкцию вернуть полный structured output.
+5. Добавить task instruction: что сделать в текущем такте.
 6. Сформировать assembled context window.
 
-Context window должен быть воспроизводимым артефактом: можно понять, какие слои, какая история и какая инструкция ушли в LLM.
+Context window должен быть воспроизводимым артефактом: можно понять, какие слои, какая история и какая task instruction ушли в LLM.
+
+Форма structured output не должна задаваться только текстом prompt. Для Gemini adapter передает JSON MIME type и response schema через generation config.
 
 ## Вызов LLM
 
@@ -42,9 +44,11 @@ Runtime передает assembled context window в LLM через provider ada
 
 Для MVP может быть один provider. Важно, чтобы доменная логика не зависела напрямую от конкретного SDK или API провайдера.
 
+Provider adapter получает не только context window, но и structured output schema. Для Gemini schema передается через structured output mechanism provider API.
+
 ## Structured output
 
-LLM должна вернуть structured output по MVP-контракту:
+LLM должна вернуть structured output по MVP-контракту и provider-level schema:
 
 - `user_answer`;
 - `workflow_status`;
@@ -73,7 +77,7 @@ LLM должна вернуть structured output по MVP-контракту:
 
 Следующий такт начинается с нового сообщения пользователя.
 
-LLM не хранит память между тактами. Runtime снова приносит context window: markdown pack, историю, последнее сообщение и structured output instruction.
+LLM не хранит память между тактами. Runtime снова приносит context window: markdown pack, историю, последнее сообщение и task instruction; provider adapter снова передает structured output schema.
 
 ## Что такт не делает в MVP
 

@@ -120,6 +120,7 @@ Required before implementation starts:
 - Structured output является полным ответом LLM для runtime.
 - `user_answer` является пользовательской частью structured output.
 - `structured_json` является только одним блоком structured output и не является форматом учетной системы.
+- Structured output для Gemini должен задаваться provider-level schema в generation config, а не только текстовой инструкцией в prompt.
 - Итоговый документ всегда является проектом, требующим проверки ответственным лицом предприятия.
 - Роли MVP: только `user` и `admin`.
 - Bootstrap admin создается через env/bootstrap contract.
@@ -129,7 +130,7 @@ Required before implementation starts:
 - `LLM_API_KEY` должен быть заполнен вне Git; пустой или placeholder key должен давать понятную user-safe ошибку и admin/debug hint.
 - Реальный `.env` не коммитится; корневой `.env.example` используется только как безопасный шаблон.
 - Любое значение вида `<...>` в `.env.example` является placeholder и должно считаться `not configured`.
-- Реализация не должна принимать `<GEMINI_API_KEY>`, `<GEMINI_FLASH_MODEL_ID>`, `<BOOTSTRAP_ADMIN_EMAIL>`, `<BOOTSTRAP_ADMIN_PASSWORD>`, `<AUTH_SESSION_SECRET>` или Traefik placeholders как реальные значения.
+- Реализация не должна принимать `<GEMINI_API_KEY>`, `<GEMINI_FLASH_MODEL_ID>`, `<BOOTSTRAP_ADMIN_EMAIL>`, `<BOOTSTRAP_ADMIN_PASSWORD>`, `<AUTH_SESSION_SECRET>` или Traefik placeholders как реальные значения. Concrete `LLM_MODEL` из env не является secret, но должен быть проверен перед первым LLM call.
 - Context paths приходят через env или config boundary.
 - Deployment details не должны быть выдуманы агентом.
 - Реализация должна следовать [implementation roadmap](MVP_IMPLEMENTATION_ROADMAP_v0.1.md) по фазам.
@@ -165,9 +166,9 @@ Environment values и secrets должны быть внешними: не в к
 10. Проверить, что приложение не стартует с пустым или placeholder `LLM_API_KEY` без понятной ошибки.
 11. Создать bootstrap admin и роли `user`/`admin` через bootstrap contract.
 12. Добавить SQLite-хранение session/message/turn result на концептуально минимальном уровне.
-13. Собрать context window: markdown pack, короткая история, последнее сообщение пользователя, инструкция structured output.
+13. Собрать context window: markdown pack, короткая история, последнее сообщение пользователя, task instruction.
 14. Сохранить или подготовить минимальный context trace.
-15. Вызвать Gemini через provider adapter boundary и получить structured output.
+15. Вызвать Gemini через provider adapter boundary, передав structured output schema в provider generation config, и получить structured output.
 16. Показать `user_answer`.
 17. Показать служебные блоки для демо: warnings, data statuses, document draft, structured JSON.
 18. Реализовать copy document / copy JSON.

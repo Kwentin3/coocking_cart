@@ -25,7 +25,9 @@
 7. Ограничения Demo MVP.
 8. Короткую цепочку текущего диалога user/assistant.
 9. Последнее сообщение пользователя.
-10. Инструкцию вернуть полный structured output.
+10. Task instruction: что сделать в текущем такте.
+
+Structured output schema передается Gemini adapter отдельно через provider generation config. Контекстное окно не должно полагаться на prompt-only форматирование для управления формой ответа.
 
 ## Reproducible assembled artifact
 
@@ -40,7 +42,8 @@
 - сколько сообщений истории добавлено;
 - какие user/assistant сообщения добавлены;
 - последнее сообщение пользователя;
-- structured output instruction;
+- task instruction;
+- structured output schema/config, переданную provider adapter;
 - итоговый assembled context window или его preview.
 
 В MVP это debug-возможность, а не production audit/event log.
@@ -83,11 +86,13 @@
 
 Если оно уже есть в истории, runtime должен избегать смыслового дублирования. Важен принцип: LLM должна видеть актуальный пользовательский запрос как текущий фокус.
 
-## Инструкция structured output
+## Structured output schema
 
-Каждый такт должен явно требовать structured output по MVP-контракту.
+Каждый такт должен использовать structured output по MVP-контракту.
 
 Structured output - это полный ответ LLM для runtime. Он включает пользовательский `user_answer` и служебные поля. Structured JSON - только один из блоков structured output; он появляется, когда сформирован проект ТК/ТТК.
+
+Для Gemini MVP форма ответа задается через provider-level structured output mechanism: JSON MIME type и JSON Schema/response schema в generation config. Prompt/context объясняет задачу и доменные правила, но не управляет форматом ответа в одиночку.
 
 Минимально ожидаются:
 

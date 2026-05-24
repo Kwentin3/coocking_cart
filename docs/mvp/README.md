@@ -78,7 +78,7 @@ Production architecture остается future track. Managed state, state mach
 
 Markdown context layers содержат только статический контекст. Динамическая история user/assistant сообщений и служебный structured result хранятся отдельно в SQLite.
 
-LLM не имеет собственной памяти. На каждом такте runtime должен заново собрать рабочее контекстное окно: markdown context pack, короткую историю диалога, последнее сообщение пользователя и инструкцию вернуть полный structured output.
+LLM не имеет собственной памяти. На каждом такте runtime должен заново собрать рабочее контекстное окно: markdown context pack, короткую историю диалога, последнее сообщение пользователя и task instruction. Structured output schema передается Gemini adapter отдельно через provider generation config.
 
 ## Вне текущего прохода
 

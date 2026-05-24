@@ -201,7 +201,7 @@ Roadmap не заменяет PRD, implementation handoff, frontend visual contr
 - Учитывать target provider family для MVP: Gemini.
 - Брать точный model id из env, не хардкодить его.
 - Перед первым LLM call подтвердить актуальный Gemini model id по официальной документации Gemini/Google AI и установить его в локальный `.env`.
-- Adapter получает assembled context window и возвращает normalized structured output или normalized error.
+- Adapter получает assembled context window и structured output schema, передает schema в provider generation config и возвращает normalized structured output или normalized error.
 - Provider/model сохраняются в trace.
 
 ### Acceptance / gate
@@ -210,7 +210,7 @@ Roadmap не заменяет PRD, implementation handoff, frontend visual contr
 - Доменная логика не зависит напрямую от Gemini SDK/API.
 - Provider/model/API key берутся из env.
 - `LLM_PROVIDER=gemini` берется из env/config.
-- `LLM_MODEL=<GEMINI_FLASH_MODEL_ID>` не используется как реальное значение.
+- Placeholder model id вида `<...>` не используется как реальное значение; concrete `LLM_MODEL` из env нужно проверить по официальной документации Google AI перед первым LLM call.
 - `LLM_API_KEY=<GEMINI_API_KEY>` не используется как реальный ключ.
 - Ошибка provider отображается user-safe и admin-debug отдельно.
 - Provider factory не реализуется.
@@ -232,8 +232,9 @@ Roadmap не заменяет PRD, implementation handoff, frontend visual contr
 
 ### Что сделать
 
-- Собрать context window из markdown pack, history, last user message и structured output instruction.
-- Отправить context window в LLM через provider adapter.
+- Собрать context window из markdown pack, history, last user message и task instruction.
+- Отправить context window в LLM через provider adapter вместе со structured output schema.
+- Для Gemini задавать structured output через generation config: JSON MIME type и response schema, а не prompt-only форматирование.
 - Распарсить structured output.
 - Показать `user_answer`.
 - Сохранить warnings, data_statuses, document_draft, structured_json.
