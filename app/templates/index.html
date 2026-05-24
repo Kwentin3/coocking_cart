@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Coocking Cart Demo MVP</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div id="app" class="app-shell">
+      <header class="topbar">
+        <div>
+          <strong>Coocking Cart</strong>
+          <span class="muted">Demo MVP</span>
+        </div>
+        <div class="topbar-actions">
+          <span id="roleBadge" class="badge">guest</span>
+          <button id="newSessionBtn" class="icon-btn" title="Новая сессия" aria-label="Новая сессия">＋</button>
+          <button id="logoutBtn" class="icon-btn" title="Выйти" aria-label="Выйти">↪</button>
+        </div>
+      </header>
+
+      <main id="loginView" class="login-view">
+        <section class="login-card">
+          <h1>Вход в демо</h1>
+          <div id="configErrors" class="warning-list hidden"></div>
+          <form id="loginForm" class="stack">
+            <input id="emailInput" type="email" placeholder="Email admin" autocomplete="username" />
+            <input id="passwordInput" type="password" placeholder="Пароль" autocomplete="current-password" />
+            <button type="submit">Войти как admin</button>
+          </form>
+          <button id="demoLoginBtn" class="secondary">Войти как demo user</button>
+        </section>
+      </main>
+
+      <main id="workspace" class="workspace hidden">
+        <aside class="sessions-panel">
+          <div class="panel-title">Сессии</div>
+          <div id="sessionsList" class="sessions-list"></div>
+        </aside>
+
+        <section class="chat-panel">
+          <div class="quick-actions">
+            <button data-demo="Хочу технологическую карту для курицы по-вьетнамски">Курица по-вьетнамски</button>
+            <button data-demo="Хочу технологическую карту яичницы или омлета">Яичница/омлет</button>
+          </div>
+          <div id="messages" class="messages empty-state">Создайте или выберите сессию.</div>
+          <form id="messageForm" class="message-form">
+            <textarea id="messageInput" rows="2" placeholder="Опишите блюдо или уточнение"></textarea>
+            <button id="sendBtn" type="submit" title="Отправить" aria-label="Отправить">➤</button>
+          </form>
+        </section>
+
+        <aside class="result-panel">
+          <nav class="tabs" aria-label="Результат">
+            <button class="tab active" data-tab="draft">Проект</button>
+            <button class="tab" data-tab="warnings">Риски</button>
+            <button class="tab" data-tab="json">JSON</button>
+            <button id="inspectorTab" class="tab hidden" data-tab="inspector">Trace</button>
+          </nav>
+
+          <section id="draftTab" class="tab-content"></section>
+          <section id="warningsTab" class="tab-content hidden"></section>
+          <section id="jsonTab" class="tab-content hidden"></section>
+          <section id="inspectorPanel" class="tab-content hidden"></section>
+        </aside>
+      </main>
+
+      <div id="toast" class="toast hidden"></div>
+    </div>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
