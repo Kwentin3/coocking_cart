@@ -19,6 +19,9 @@
 - [MVP implementation handoff](mvp/MVP_IMPLEMENTATION_HANDOFF_v0.1.md) - порядок чтения и инварианты для будущей реализации.
 - [MVP demo scenarios](mvp/MVP_DEMO_SCENARIOS_v0.1.md) - первые сценарии проверки демо.
 - [MVP acceptance criteria](mvp/MVP_ACCEPTANCE_CRITERIA_v0.1.md) - критерии готовности документации и будущего прототипа.
+- [MVP context contracts](mvp/MVP_CONTEXT_WINDOW_CONTRACT_v0.1.md) - контракт context window и связанные prompt/turn contracts.
+- [MVP Context Inspector](mvp/MVP_CONTEXT_INSPECTOR_v0.1.md) - концепт debug-view для сборки контекстного окна.
+- [MVP LLM provider adapter](mvp/MVP_LLM_PROVIDER_ADAPTER_NOTE_v0.1.md) - минимальная граница интеграции с LLM provider.
 - [Demo MVP context layers](mvp/context/) - markdown-слои статического контекста для будущего runtime context pack.
 - [Production future track](production/README.md) - placeholder будущей production-архитектуры.
 - [Documentation audits](audits/) - аудит документационного пула и рекомендация по разделению MVP/production.

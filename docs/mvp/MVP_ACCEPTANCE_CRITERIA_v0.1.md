@@ -20,6 +20,11 @@
 - context window contract;
 - file-driven context architecture;
 - markdown context layers и manifest;
+- prompt layer contract;
+- turn contract;
+- context inspector concept;
+- context trace concept;
+- LLM provider adapter note;
 - structured output contract;
 - SQLite dialogue storage concept;
 - demo limitations;
@@ -45,11 +50,16 @@
 - LLM возвращает structured output;
 - frontend показывает `user_answer`;
 - frontend или debug view показывает warnings, data statuses, document draft и structured JSON;
+- можно увидеть список использованных context layers;
+- можно увидеть structured output;
+- можно увидеть debug-представление собранного context window или его основных частей;
+- LLM provider вызов изолирован минимальным adapter boundary;
 - работает сценарий "курица по-вьетнамски";
 - работает сценарий "яичница/омлет";
 - результат явно помечен как проект, требующий проверки;
 - structured JSON не выдается за формат iiko, r_keeper, StoreHouse или 1С;
 - LLM не создает и не подключает новые context layers автоматически.
+- trace/debug output не выдается за production audit/event log.
 
 ## Минимальная демонстрационная проверка
 
@@ -80,5 +90,8 @@
 - состава MVP-пакета;
 - двух demo scenarios;
 - минимального structured output contract;
+- prompt layer contract;
+- turn contract;
 - правила, что markdown context layers являются источником статического контекста;
-- правила, что SQLite хранит динамическую историю и результаты тактов.
+- правила, что SQLite хранит динамическую историю и результаты тактов;
+- правила, что provider integration изолируется через adapter boundary.

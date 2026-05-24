@@ -38,7 +38,12 @@ Production architecture остается future track. Managed state, state mach
 - [Demo scenarios](MVP_DEMO_SCENARIOS_v0.1.md) - первые сценарии проверки: "курица по-вьетнамски" и "яичница/омлет".
 - [Acceptance criteria](MVP_ACCEPTANCE_CRITERIA_v0.1.md) - критерии готовности документации и будущего демо-прототипа.
 - [Context window contract](MVP_CONTEXT_WINDOW_CONTRACT_v0.1.md) - из чего состоит контекстное окно каждого такта.
+- [Prompt layer contract](MVP_PROMPT_LAYER_CONTRACT_v0.1.md) - контракт отдельного markdown prompt/context layer.
+- [Turn contract](MVP_TURN_CONTRACT_v0.1.md) - контракт одного такта взаимодействия.
 - [File-driven context architecture](MVP_FILE_DRIVEN_CONTEXT_ARCHITECTURE_v0.1.md) - как runtime собирает контекст без хардкода prompt/domain rules в коде.
+- [Context Inspector](MVP_CONTEXT_INSPECTOR_v0.1.md) - концепт debug-view для просмотра сборки context window.
+- [Context trace](MVP_CONTEXT_TRACE_v0.1.md) - минимальная трассировка такта для debug/demo.
+- [LLM provider adapter note](MVP_LLM_PROVIDER_ADAPTER_NOTE_v0.1.md) - граница интеграции с LLM provider.
 - [Markdown context layers](MVP_MARKDOWN_CONTEXT_LAYERS_v0.1.md) - назначение каждого markdown-слоя.
 - [Structured output contract](MVP_STRUCTURED_OUTPUT_CONTRACT_v0.1.md) - минимальный контракт ответа LLM для MVP.
 - [SQLite dialogue storage](MVP_SQLITE_DIALOGUE_STORAGE_v0.1.md) - зачем MVP хранит динамическую историю диалога в SQLite.

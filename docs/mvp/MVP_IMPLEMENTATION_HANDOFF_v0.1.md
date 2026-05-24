@@ -23,13 +23,18 @@
 5. [Context window contract](MVP_CONTEXT_WINDOW_CONTRACT_v0.1.md)
 6. [File-driven context architecture](MVP_FILE_DRIVEN_CONTEXT_ARCHITECTURE_v0.1.md)
 7. [Structured output contract](MVP_STRUCTURED_OUTPUT_CONTRACT_v0.1.md)
-8. [Context manifest](context/context_manifest.yml)
+8. [Prompt layer contract](MVP_PROMPT_LAYER_CONTRACT_v0.1.md)
+9. [Turn contract](MVP_TURN_CONTRACT_v0.1.md)
+10. [Context manifest](context/context_manifest.yml)
 
 Дополнительно полезно прочитать:
 
 - [Markdown context layers](MVP_MARKDOWN_CONTEXT_LAYERS_v0.1.md)
 - [SQLite dialogue storage](MVP_SQLITE_DIALOGUE_STORAGE_v0.1.md)
 - [Demo limitations](MVP_DEMO_LIMITATIONS_v0.1.md)
+- [Context Inspector](MVP_CONTEXT_INSPECTOR_v0.1.md)
+- [Context trace](MVP_CONTEXT_TRACE_v0.1.md)
+- [LLM provider adapter note](MVP_LLM_PROVIDER_ADAPTER_NOTE_v0.1.md)
 - [Demo scenarios](MVP_DEMO_SCENARIOS_v0.1.md)
 - [Acceptance criteria](MVP_ACCEPTANCE_CRITERIA_v0.1.md)
 
@@ -41,10 +46,12 @@
 - загрузку markdown context layers через `context_manifest.yml`;
 - хранение истории диалога в SQLite;
 - сборку context window на каждый такт;
-- вызов LLM;
+- вызов LLM через минимальный provider adapter boundary;
 - обработку structured output;
 - отображение `user_answer`;
 - отображение warnings, data statuses, document draft и structured JSON;
+- debug-view или Context Inspector для основных частей context window;
+- минимальный context trace такта;
 - два демо-сценария: "курица по-вьетнамски" и "яичница/омлет".
 
 ## 4. Что не реализовывать
@@ -60,6 +67,8 @@
 - Production audit/event log.
 - Production document versioning.
 - Миграции и сложный storage design сверх простого SQLite для демо.
+- Provider factory и capability matrix.
+- Production observability вместо MVP debug/trace.
 
 ## 5. Инварианты реализации
 
@@ -70,6 +79,10 @@
 - История диалога не хранится в markdown-файлах.
 - LLM не имеет собственной памяти.
 - Каждый такт получает заново собранное context window.
+- Context window должен быть воспроизводимым assembled artifact.
+- Реализация должна уметь показать, какие markdown layers были использованы в такте.
+- Provider integration должна быть изолирована хотя бы минимальным adapter boundary.
+- Trace/debug output не должен подменять production audit/event log.
 - Structured output является полным ответом LLM для runtime.
 - `user_answer` является пользовательской частью structured output.
 - `structured_json` является только одним блоком structured output и не является форматом учетной системы.
@@ -82,10 +95,12 @@
 3. Научить runtime загружать markdown layers в указанном порядке.
 4. Добавить SQLite-хранение session/message/turn result на концептуально минимальном уровне.
 5. Собрать context window: markdown pack, короткая история, последнее сообщение пользователя, инструкция structured output.
-6. Вызвать LLM и получить structured output.
-7. Показать `user_answer`.
-8. Показать служебные блоки для демо: warnings, data statuses, document draft, structured JSON.
-9. Прогнать два demo scenarios.
+6. Сохранить или подготовить минимальный context trace.
+7. Вызвать LLM через provider adapter boundary и получить structured output.
+8. Показать `user_answer`.
+9. Показать служебные блоки для демо: warnings, data statuses, document draft, structured JSON.
+10. Показать debug-view основных частей context window.
+11. Прогнать два demo scenarios.
 
 ## 7. Критерий остановки
 
