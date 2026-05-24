@@ -30,6 +30,15 @@
 12. [Frontend states and errors](MVP_FRONTEND_STATES_AND_ERRORS_v0.1.md)
 13. [Context manifest](context/context_manifest.yml)
 
+Required before implementation starts:
+
+- [Environment contract](MVP_ENVIRONMENT_CONTRACT_v0.1.md)
+- [Bootstrap data contract](MVP_BOOTSTRAP_DATA_CONTRACT_v0.1.md)
+- [LLM provider adapter note](MVP_LLM_PROVIDER_ADAPTER_NOTE_v0.1.md)
+- [Safe env example](../../.env.example)
+- [Deployment preparation handoff](../ops/DEPLOYMENT_PREPARATION_HANDOFF_v0.1.md)
+- [Server audit report](../ops/SERVER_AUDIT_REPORT_91.132.48.224_v0.1.md)
+
 Дополнительно полезно прочитать:
 
 - [Markdown context layers](MVP_MARKDOWN_CONTEXT_LAYERS_v0.1.md)
@@ -37,16 +46,10 @@
 - [Demo limitations](MVP_DEMO_LIMITATIONS_v0.1.md)
 - [Context Inspector](MVP_CONTEXT_INSPECTOR_v0.1.md)
 - [Context trace](MVP_CONTEXT_TRACE_v0.1.md)
-- [LLM provider adapter note](MVP_LLM_PROVIDER_ADAPTER_NOTE_v0.1.md)
 - [Roles and access](MVP_ROLES_AND_ACCESS_v0.1.md)
-- [Environment contract](MVP_ENVIRONMENT_CONTRACT_v0.1.md)
-- [Safe env example](../../.env.example)
-- [Bootstrap data contract](MVP_BOOTSTRAP_DATA_CONTRACT_v0.1.md)
 - [Ops README](../ops/README.md)
 - [Deployment context template](../ops/DEPLOYMENT_CONTEXT_TEMPLATE_v0.1.md)
 - [Deployment context: coocking-cart.speechbattle.com](../ops/DEPLOYMENT_CONTEXT_coocking-cart.speechbattle.com_v0.1.md)
-- [Deployment preparation handoff](../ops/DEPLOYMENT_PREPARATION_HANDOFF_v0.1.md)
-- [Server audit report](../ops/SERVER_AUDIT_REPORT_91.132.48.224_v0.1.md)
 - [Demo scenarios](MVP_DEMO_SCENARIOS_v0.1.md)
 - [Acceptance criteria](MVP_ACCEPTANCE_CRITERIA_v0.1.md)
 

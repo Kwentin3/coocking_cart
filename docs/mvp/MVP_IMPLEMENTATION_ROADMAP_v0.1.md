@@ -61,7 +61,12 @@ Roadmap не заменяет PRD, implementation handoff, frontend visual contr
   - [Structured output contract](MVP_STRUCTURED_OUTPUT_CONTRACT_v0.1.md);
   - [Frontend visual contract](MVP_FRONTEND_VISUAL_CONTRACT_v0.1.md);
   - [Frontend states and errors](MVP_FRONTEND_STATES_AND_ERRORS_v0.1.md);
-  - [Deployment preparation handoff](../ops/DEPLOYMENT_PREPARATION_HANDOFF_v0.1.md).
+  - [Environment contract](MVP_ENVIRONMENT_CONTRACT_v0.1.md);
+  - [Bootstrap data contract](MVP_BOOTSTRAP_DATA_CONTRACT_v0.1.md);
+  - [LLM provider adapter note](MVP_LLM_PROVIDER_ADAPTER_NOTE_v0.1.md);
+  - [Safe env example](../../.env.example);
+  - [Deployment preparation handoff](../ops/DEPLOYMENT_PREPARATION_HANDOFF_v0.1.md);
+  - [Server audit report](../ops/SERVER_AUDIT_REPORT_91.132.48.224_v0.1.md).
 - Кратко перечислить, какие документы использованы.
 - Подтвердить, что реализуется Demo MVP, а не production system.
 - Подтвердить, что production state machine, semantic context engine, integrations, PDF/Word export, full RBAC и production audit не входят в текущую реализацию.
@@ -72,6 +77,9 @@ Roadmap не заменяет PRD, implementation handoff, frontend visual contr
 - Агент сформулировал, что реализует Demo MVP, а не production system.
 - Агент зафиксировал, что prompt/context layers не хардкодятся в коде.
 - Агент понял, что frontend visual contract обязателен.
+- Агент подтвердил, что прочитал env/bootstrap/LLM docs.
+- Агент подтвердил, что понял placeholder validation rule.
+- Агент подтвердил, что реальные secrets не коммитятся.
 - Агент понял, что deployment не выполняется без отдельного task.
 
 ### Нельзя

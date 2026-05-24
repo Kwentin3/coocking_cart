@@ -6,6 +6,8 @@
 
 На текущем этапе проект находится в фазе product discovery и подготовки Demo MVP-документации. Код приложения, backend, frontend, инфраструктура и зависимости пока не создаются.
 
+Для реализации Demo MVP использовать финальную документационную ветку `docs/mvp-final-docs-before-implementation` или cleanup-ветку после merge. Default branch может быть устаревшим источником для реализации.
+
 ## Навигация
 
 - [PRD MVP v0.2](prd/PRD_AI_TECH_CARDS_MVP_v0.2.md) - актуальный продуктовый refine.
