@@ -21,7 +21,7 @@
 - SQLite доступен из стандартной библиотеки.
 - Env/config можно валидировать в одном entrypoint без дополнительных пакетов.
 - Gemini вызывается через явный provider adapter boundary.
-- Structured output для Gemini задается schema-first через generation config (`responseFormat` с JSON MIME type и JSON Schema), а не prompt-only форматированием.
+- Structured output для Gemini задается schema-first через generation config (`responseMimeType` + `responseJsonSchema`), а не prompt-only форматированием.
 - Frontend остается простым: чат, result panel, Context Inspector и states без тяжелого UI-framework.
 - Локальный запуск прост: `python -m app.main`.
 - Будущая контейнеризация возможна, но не требуется для локального MVP.

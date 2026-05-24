@@ -171,7 +171,7 @@ Structured JSON не является:
 
 - `user_answer` - единственное поле, которое напрямую показывается пользователю без служебного UI.
 - Остальные поля являются служебной частью, которую runtime может сохранить и использовать на следующих тактах.
-- Для Gemini форма ответа задается через `responseFormat` с JSON MIME type и JSON Schema/response schema или через актуальный эквивалент structured output API, а не через prompt text.
+- Для Gemini REST API форма ответа задается через `generationConfig.responseMimeType = "application/json"` и `generationConfig.responseJsonSchema`, а не через prompt text.
 - Prompt может объяснять задачу и бизнес-правила, но не должен быть механизмом управления форматом structured output.
 - Если данных недостаточно, structured output должен содержать вопросы, а не выдуманный документ.
 - Если данные неподтверждены, они должны получить явный статус.

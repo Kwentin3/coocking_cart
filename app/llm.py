@@ -45,12 +45,8 @@ class GeminiAdapter:
         payload = {
             "contents": [{"role": "user", "parts": [{"text": assembled_context}]}],
             "generationConfig": {
-                "responseFormat": {
-                    "text": {
-                        "mimeType": "application/json",
-                        "schema": response_schema,
-                    }
-                }
+                "responseMimeType": "application/json",
+                "responseJsonSchema": response_schema,
             },
         }
         request = urllib.request.Request(

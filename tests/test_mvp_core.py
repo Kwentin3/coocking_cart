@@ -12,7 +12,7 @@ from app.context_loader import ContextLoader
 from app.llm import GeminiAdapter
 from app.runtime import DemoRuntime
 from app.storage import Storage
-from app.structured_output import STRUCTURED_OUTPUT_SCHEMA
+from app.structured_output import STRUCTURED_OUTPUT_SCHEMA, normalize_structured_output
 
 
 def test_config(db_path: Path, *, api_key: str = "") -> AppConfig:
@@ -72,6 +72,49 @@ class CoreContractsTest(unittest.TestCase):
             self.assertIn("user_answer", result["structured_output"])
             self.assertIsNone(result["trace"])
 
+    def test_admin_can_read_inspector_and_user_cannot(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = test_config(Path(tmp) / "demo.sqlite", api_key="")
+            storage = Storage(config.sqlite_db_path)
+            admin = storage.bootstrap_admin(config.bootstrap_admin_email, config.bootstrap_admin_password)
+            user = storage.ensure_demo_user()
+            session_id = storage.create_chat_session(user.id, "inspector smoke")
+            runtime = DemoRuntime(config, storage)
+            runtime.process_user_message(session_id, user, "Хочу технологическую карту яичницы")
+
+            assert admin is not None
+            admin_payload = runtime.context_inspector_payload(session_id, admin)
+            user_payload = runtime.context_inspector_payload(session_id, user)
+
+            self.assertTrue(admin_payload["ok"])
+            self.assertEqual(len(admin_payload["layers"]), 8)
+            self.assertFalse(user_payload["ok"])
+
+    def test_bootstrap_admin_is_created_from_env_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = test_config(Path(tmp) / "demo.sqlite", api_key="")
+            storage = Storage(config.sqlite_db_path)
+            admin = storage.bootstrap_admin(config.bootstrap_admin_email, config.bootstrap_admin_password)
+            self.assertIsNotNone(admin)
+            self.assertEqual(admin.role, "admin")
+            authenticated = storage.authenticate(config.bootstrap_admin_email, config.bootstrap_admin_password)
+            self.assertIsNotNone(authenticated)
+            self.assertEqual(authenticated.role, "admin")
+
+    def test_placeholder_bootstrap_values_are_not_ready(self) -> None:
+        config = test_config(Path("unused.sqlite"), api_key="<GEMINI_API_KEY>")
+        config = AppConfig(
+            **{
+                **config.__dict__,
+                "bootstrap_admin_email": "<BOOTSTRAP_ADMIN_EMAIL>",
+                "bootstrap_admin_password": "<BOOTSTRAP_ADMIN_PASSWORD>",
+                "auth_session_secret": "<AUTH_SESSION_SECRET>",
+            }
+        )
+        self.assertFalse(config.bootstrap_ready)
+        self.assertFalse(config.auth_ready)
+        self.assertFalse(config.llm_ready)
+
     def test_gemini_adapter_sends_response_schema_in_generation_config(self) -> None:
         captured: dict[str, Any] = {}
 
@@ -101,10 +144,32 @@ class CoreContractsTest(unittest.TestCase):
         finally:
             urllib.request.urlopen = original_urlopen  # type: ignore[assignment]
 
-        response_format = captured["payload"]["generationConfig"]["responseFormat"]["text"]
-        self.assertEqual(response_format["mimeType"], "application/json")
-        self.assertEqual(response_format["schema"]["type"], "object")
-        self.assertIn("user_answer", response_format["schema"]["properties"])
+        generation_config = captured["payload"]["generationConfig"]
+        self.assertEqual(generation_config["responseMimeType"], "application/json")
+        self.assertEqual(generation_config["responseJsonSchema"]["type"], "object")
+        self.assertIn("user_answer", generation_config["responseJsonSchema"]["properties"])
+
+    def test_structured_json_is_derived_when_draft_exists(self) -> None:
+        normalized = normalize_structured_output(
+            {
+                "user_answer": "Проект готов.",
+                "workflow_status": "draft_generation",
+                "known_facts": [],
+                "open_questions": [],
+                "warnings": [],
+                "data_statuses": [],
+                "document_draft": {
+                    "title": "Яичница",
+                    "document_type": "ТК",
+                    "project_status": "Проект, требует проверки",
+                    "sections": [{"title": "Технология", "content": "Приготовить и подать сразу."}],
+                },
+                "structured_json": None,
+                "next_step": "Проверить ответственным лицом.",
+            }
+        )
+        self.assertIsInstance(normalized["structured_json"], dict)
+        self.assertEqual(normalized["structured_json"]["integration_status"], "not_an_accounting_system_import_format")
 
 
 if __name__ == "__main__":

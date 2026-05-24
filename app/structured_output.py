@@ -142,7 +142,20 @@ def normalize_structured_output(value: dict[str, Any]) -> dict[str, Any]:
             normalized[list_field] = []
         elif not isinstance(normalized[list_field], list):
             normalized[list_field] = [normalized[list_field]]
+    if isinstance(normalized["document_draft"], dict) and not normalized["structured_json"]:
+        normalized["structured_json"] = structured_json_from_draft(normalized["document_draft"])
     return normalized
+
+
+def structured_json_from_draft(document_draft: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "schema": "demo_mvp_neutral_tech_card_v0.1",
+        "integration_status": "not_an_accounting_system_import_format",
+        "title": document_draft.get("title", ""),
+        "document_type": document_draft.get("document_type", ""),
+        "project_status": document_draft.get("project_status", "Проект, требует проверки"),
+        "sections": document_draft.get("sections", []),
+    }
 
 
 def _extract_json(text: str) -> str:
