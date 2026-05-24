@@ -37,6 +37,8 @@ Context Inspector должен показывать:
 
 ## Концептуальные секции
 
+Визуальное поведение Context Inspector уточнено в [MVP frontend visual contract](MVP_FRONTEND_VISUAL_CONTRACT_v0.1.md). Для MVP inspector является `admin`/debug UI и не показывается обычному `user`.
+
 ### Context manifest
 
 Показывает:

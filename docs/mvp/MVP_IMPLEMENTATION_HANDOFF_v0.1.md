@@ -25,7 +25,9 @@
 7. [Structured output contract](MVP_STRUCTURED_OUTPUT_CONTRACT_v0.1.md)
 8. [Prompt layer contract](MVP_PROMPT_LAYER_CONTRACT_v0.1.md)
 9. [Turn contract](MVP_TURN_CONTRACT_v0.1.md)
-10. [Context manifest](context/context_manifest.yml)
+10. [Frontend visual contract](MVP_FRONTEND_VISUAL_CONTRACT_v0.1.md)
+11. [Frontend states and errors](MVP_FRONTEND_STATES_AND_ERRORS_v0.1.md)
+12. [Context manifest](context/context_manifest.yml)
 
 Дополнительно полезно прочитать:
 
@@ -58,7 +60,15 @@
 - обработку structured output;
 - отображение `user_answer`;
 - отображение warnings, data statuses, document draft и structured JSON;
+- responsive chat UI для desktop и mobile;
+- result/document panel;
+- structured JSON panel;
+- copy document / copy JSON actions;
+- icon-first contextual hints;
+- Russian user-facing UI;
+- light theme default;
 - debug-view или Context Inspector для основных частей context window;
+- Context Inspector admin UI;
 - минимальный context trace такта;
 - роли `user` и `admin`;
 - bootstrap admin через environment/bootstrap contract;
@@ -81,6 +91,12 @@
 - Production observability вместо MVP debug/trace.
 - Сложную RBAC/ABAC или production IAM.
 - Реальные deployment config, Docker/Traefik/TLS настройки.
+- Сложную design system.
+- Theme customizer.
+- Multilingual UI.
+- PDF/Word/Excel export.
+- Production admin panel.
+- Full observability UI.
 
 ## 5. Инварианты реализации
 
@@ -134,8 +150,11 @@ Environment values и secrets должны быть внешними: не в к
 9. Вызвать LLM через provider adapter boundary и получить structured output.
 10. Показать `user_answer`.
 11. Показать служебные блоки для демо: warnings, data statuses, document draft, structured JSON.
-12. Показать debug-view основных частей context window.
-13. Прогнать два demo scenarios.
+12. Реализовать copy document / copy JSON.
+13. Показать icon-first contextual hints для важных блоков.
+14. Показать debug-view основных частей context window для `admin`.
+15. Проверить desktop и mobile layout.
+16. Прогнать два demo scenarios.
 
 ## 8. Критерий остановки
 

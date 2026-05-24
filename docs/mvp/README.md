@@ -37,6 +37,8 @@ Production architecture остается future track. Managed state, state mach
 - [Implementation handoff](MVP_IMPLEMENTATION_HANDOFF_v0.1.md) - порядок чтения и инварианты для будущей реализации прототипа.
 - [Demo scenarios](MVP_DEMO_SCENARIOS_v0.1.md) - первые сценарии проверки: "курица по-вьетнамски" и "яичница/омлет".
 - [Acceptance criteria](MVP_ACCEPTANCE_CRITERIA_v0.1.md) - критерии готовности документации и будущего демо-прототипа.
+- [Frontend visual contract](MVP_FRONTEND_VISUAL_CONTRACT_v0.1.md) - desktop/mobile layout, result panel, Context Inspector UI, icon-first подход, language/theme policy.
+- [Frontend states and errors](MVP_FRONTEND_STATES_AND_ERRORS_v0.1.md) - обязательные loading/error/empty/success states и user/admin visibility.
 - [Context window contract](MVP_CONTEXT_WINDOW_CONTRACT_v0.1.md) - из чего состоит контекстное окно каждого такта.
 - [Prompt layer contract](MVP_PROMPT_LAYER_CONTRACT_v0.1.md) - контракт отдельного markdown prompt/context layer.
 - [Turn contract](MVP_TURN_CONTRACT_v0.1.md) - контракт одного такта взаимодействия.
