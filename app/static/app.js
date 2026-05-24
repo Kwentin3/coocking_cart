@@ -4,6 +4,7 @@ const state = {
   users: [],
   sessionId: null,
   latestTurn: null,
+  editingSessionId: null,
 };
 
 const el = (id) => document.getElementById(id);
@@ -105,6 +106,7 @@ async function logout() {
   state.users = [];
   state.sessionId = null;
   state.latestTurn = null;
+  state.editingSessionId = null;
   showLogin([]);
 }
 
@@ -128,8 +130,10 @@ async function createSession(title = "Новая сессия") {
     return null;
   }
   state.sessionId = payload.session_id;
+  state.editingSessionId = null;
   await loadSessions();
   await openSession(payload.session_id);
+  showToast("Чат создан.");
   return payload.session_id;
 }
 
@@ -141,6 +145,7 @@ async function openSession(sessionId) {
   }
   state.sessionId = sessionId;
   state.latestTurn = payload.latest_turn;
+  state.editingSessionId = null;
   renderSessions();
   renderMessages(payload.messages || []);
   renderStructured(payload.latest_turn?.structured_output || null);
@@ -153,16 +158,95 @@ function renderSessions() {
   const list = el("sessionsList");
   list.innerHTML = "";
   for (const session of state.sessions) {
-    const item = document.createElement("button");
-    item.type = "button";
-    item.className = `session-item ${session.id === state.sessionId ? "active" : ""}`;
-    item.textContent = session.title;
-    item.title = session.owner_email ? `owner: ${session.owner_email}` : "";
-    item.addEventListener("click", () => openSession(session.id));
-    list.appendChild(item);
+    const row = document.createElement("div");
+    row.className = `session-row ${session.id === state.sessionId ? "active" : ""}`;
+    row.dataset.sessionId = String(session.id);
+    if (state.editingSessionId === session.id) {
+      row.innerHTML = `
+        <form class="session-edit-form">
+          <input class="session-title-input" value="${escapeHtml(session.title)}" maxlength="120" aria-label="Название чата" />
+          <button type="submit" class="icon-btn compact-icon" title="Сохранить название" aria-label="Сохранить название">✓</button>
+          <button type="button" class="icon-btn compact-icon" data-cancel-session="${session.id}" title="Отменить" aria-label="Отменить">×</button>
+        </form>
+      `;
+      row.querySelector(".session-edit-form").addEventListener("submit", (event) => saveSessionTitle(event, session.id));
+      row.querySelector("[data-cancel-session]").addEventListener("click", () => {
+        state.editingSessionId = null;
+        renderSessions();
+      });
+    } else {
+      const owner = session.owner_email ? `<small>${escapeHtml(session.owner_email)}</small>` : "";
+      row.innerHTML = `
+        <button type="button" class="session-item ${session.id === state.sessionId ? "active" : ""}" title="${escapeHtml(session.owner_email ? `owner: ${session.owner_email}` : session.title)}">
+          <span>${escapeHtml(session.title)}</span>
+          ${owner}
+        </button>
+        <div class="session-actions" aria-label="Управление чатом">
+          <button type="button" class="icon-btn compact-icon" data-edit-session="${session.id}" title="Переименовать чат" aria-label="Переименовать чат">✎</button>
+          <button type="button" class="icon-btn compact-icon danger-btn" data-delete-session="${session.id}" title="Удалить чат" aria-label="Удалить чат">×</button>
+        </div>
+      `;
+      row.querySelector(".session-item").addEventListener("click", () => openSession(session.id));
+      row.querySelector("[data-edit-session]").addEventListener("click", () => {
+        state.editingSessionId = session.id;
+        renderSessions();
+        list.querySelector(`[data-session-id="${session.id}"] .session-title-input`)?.focus();
+      });
+      row.querySelector("[data-delete-session]").addEventListener("click", () => deleteSession(session.id));
+    }
+    list.appendChild(row);
   }
   if (!state.sessions.length) {
     list.innerHTML = `<div class="empty-state">Нет сессий.</div>`;
+  }
+}
+
+async function saveSessionTitle(event, sessionId) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const title = form.querySelector(".session-title-input").value.trim();
+  const button = form.querySelector("button[type='submit']");
+  setButtonBusy(button, true);
+  const payload = await api(`/api/sessions/${sessionId}`, {method: "PATCH", body: JSON.stringify({title})});
+  setButtonBusy(button, false);
+  if (!payload.ok) {
+    showToast(payload.error || "Не удалось переименовать чат.");
+    return;
+  }
+  state.editingSessionId = null;
+  showToast("Чат переименован.");
+  await loadSessions();
+  if (state.sessionId === sessionId) {
+    await openSession(sessionId);
+  }
+}
+
+async function deleteSession(sessionId) {
+  const session = state.sessions.find((item) => item.id === sessionId);
+  if (!session || !window.confirm(`Удалить чат "${session.title}"? Сообщения и результаты этого чата будут удалены.`)) {
+    return;
+  }
+  const button = document.querySelector(`[data-delete-session="${sessionId}"]`);
+  setButtonBusy(button, true);
+  const payload = await api(`/api/sessions/${sessionId}`, {method: "DELETE"});
+  setButtonBusy(button, false);
+  if (!payload.ok) {
+    showToast(payload.error || "Не удалось удалить чат.");
+    return;
+  }
+  showToast("Чат удален.");
+  if (state.sessionId === sessionId) {
+    state.sessionId = null;
+    state.latestTurn = null;
+    renderMessages([]);
+    renderStructured(null);
+    if (state.user?.is_admin) {
+      el("inspectorPanel").innerHTML = "";
+    }
+  }
+  await loadSessions();
+  if (!state.sessionId && state.sessions.length) {
+    await openSession(state.sessions[0].id);
   }
 }
 
@@ -501,6 +585,7 @@ el("loginForm").addEventListener("submit", login);
 el("demoLoginBtn").addEventListener("click", demoLogin);
 el("logoutBtn").addEventListener("click", logout);
 el("newSessionBtn").addEventListener("click", () => createSession());
+el("newSessionRailBtn").addEventListener("click", () => createSession());
 el("messageForm").addEventListener("submit", sendMessage);
 document.querySelectorAll("[data-demo]").forEach((button) => {
   button.addEventListener("click", async () => {

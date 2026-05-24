@@ -36,6 +36,10 @@ def validate_role(role: str) -> str:
     return value
 
 
+def normalize_session_title(title: str) -> str:
+    return str(title or "Новая сессия").strip()[:120] or "Новая сессия"
+
+
 @dataclass(frozen=True)
 class User:
     id: int
@@ -304,6 +308,7 @@ class Storage:
 
     def create_chat_session(self, owner_user_id: int, title: str = "Новая сессия") -> int:
         now = utc_now()
+        title = normalize_session_title(title)
         with self.connect() as conn:
             cur = conn.execute(
                 "INSERT INTO chat_sessions(title, owner_user_id, created_at, updated_at) VALUES (?, ?, ?, ?)",
@@ -341,6 +346,39 @@ class Storage:
             if not row:
                 return False
             return user.role == "admin" or row["owner_user_id"] == user.id
+
+    def update_chat_session(self, session_id: int, user: User, title: str) -> dict[str, Any]:
+        title = normalize_session_title(title)
+        with self.connect() as conn:
+            row = conn.execute("SELECT owner_user_id FROM chat_sessions WHERE id = ?", (session_id,)).fetchone()
+            if not row:
+                raise ValueError("Сессия не найдена.")
+            if user.role != "admin" and row["owner_user_id"] != user.id:
+                raise PermissionError("Нет доступа к сессии.")
+            conn.execute(
+                "UPDATE chat_sessions SET title = ?, updated_at = ? WHERE id = ?",
+                (title, utc_now(), session_id),
+            )
+            session = conn.execute(
+                """
+                SELECT chat_sessions.*, users.email AS owner_email
+                FROM chat_sessions
+                JOIN users ON users.id = chat_sessions.owner_user_id
+                WHERE chat_sessions.id = ?
+                """,
+                (session_id,),
+            ).fetchone()
+        return dict(session)
+
+    def delete_chat_session(self, session_id: int, user: User) -> None:
+        with self.connect() as conn:
+            row = conn.execute("SELECT owner_user_id FROM chat_sessions WHERE id = ?", (session_id,)).fetchone()
+            if not row:
+                raise ValueError("Сессия не найдена.")
+            if user.role != "admin" and row["owner_user_id"] != user.id:
+                raise PermissionError("Нет доступа к сессии.")
+            # Sticky MVP guard: deleting a demo chat cascades messages and turn results, not production retention.
+            conn.execute("DELETE FROM chat_sessions WHERE id = ?", (session_id,))
 
     def add_message(self, session_id: int, role: str, content: str) -> int:
         with self.connect() as conn:

@@ -157,8 +157,7 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
             if not user:
                 return
             body = self._read_json()
-            title = str(body.get("title") or "Новая сессия").strip()[:120] or "Новая сессия"
-            session_id = self.state.storage.create_chat_session(user.id, title)
+            session_id = self.state.storage.create_chat_session(user.id, str(body.get("title") or "Новая сессия"))
             self._json({"ok": True, "session_id": session_id})
             return
         if parsed.path.startswith("/api/sessions/") and parsed.path.endswith("/messages"):
@@ -200,6 +199,24 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
                 return
             self._json({"ok": True, "user": user})
             return
+        if parsed.path.startswith("/api/sessions/"):
+            user = self._require_user()
+            if not user:
+                return
+            session_id = self._session_id_from_path(parsed.path)
+            if session_id is None:
+                return
+            body = self._read_json()
+            try:
+                session = self.state.storage.update_chat_session(session_id, user, str(body.get("title", "")))
+            except PermissionError as exc:
+                self._json({"ok": False, "error": str(exc)}, HTTPStatus.FORBIDDEN)
+                return
+            except ValueError as exc:
+                self._json({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                return
+            self._json({"ok": True, "session": session})
+            return
         self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND)
 
     def do_DELETE(self) -> None:
@@ -213,6 +230,23 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
                 return
             try:
                 self.state.storage.delete_user(user_id, current_admin_id=admin.id)
+            except ValueError as exc:
+                self._json({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                return
+            self._json({"ok": True})
+            return
+        if parsed.path.startswith("/api/sessions/"):
+            user = self._require_user()
+            if not user:
+                return
+            session_id = self._session_id_from_path(parsed.path)
+            if session_id is None:
+                return
+            try:
+                self.state.storage.delete_chat_session(session_id, user)
+            except PermissionError as exc:
+                self._json({"ok": False, "error": str(exc)}, HTTPStatus.FORBIDDEN)
+                return
             except ValueError as exc:
                 self._json({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
                 return
