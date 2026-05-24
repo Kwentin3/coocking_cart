@@ -11,8 +11,29 @@ from typing import Any, Iterator
 from .security import hash_password, token_hash, verify_password
 
 
+VALID_ROLES = {"user", "admin"}
+
+
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def normalize_email(email: str) -> str:
+    return str(email or "").strip().lower()
+
+
+def validate_email(email: str) -> str:
+    normalized = normalize_email(email)
+    if not normalized or "@" not in normalized or any(char.isspace() for char in normalized) or len(normalized) > 254:
+        raise ValueError("Некорректный email.")
+    return normalized
+
+
+def validate_role(role: str) -> str:
+    value = str(role or "").strip().lower()
+    if value not in VALID_ROLES:
+        raise ValueError("Роль должна быть user или admin.")
+    return value
 
 
 @dataclass(frozen=True)
@@ -96,6 +117,7 @@ class Storage:
     def bootstrap_admin(self, email: str, password: str = "", password_hash_value: str = "") -> User | None:
         if not email or (not password and not password_hash_value):
             return None
+        email = normalize_email(email)
         stored_hash = password_hash_value or hash_password(password)
         now = utc_now()
         with self.connect() as conn:
@@ -126,6 +148,7 @@ class Storage:
             return User(id=cur.lastrowid, email=email, role="user")
 
     def authenticate(self, email: str, password: str) -> User | None:
+        email = normalize_email(email)
         with self.connect() as conn:
             row = conn.execute("SELECT id, email, role, password_hash FROM users WHERE email = ?", (email,)).fetchone()
             if not row or not row["password_hash"]:
@@ -133,6 +156,122 @@ class Storage:
             if not verify_password(password, row["password_hash"]):
                 return None
             return User(id=row["id"], email=row["email"], role=row["role"])
+
+    def list_users(self, current_user_id: int | None = None) -> list[dict[str, Any]]:
+        with self.connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT id, email, role, password_hash, created_at
+                FROM users
+                ORDER BY id ASC
+                """
+            ).fetchall()
+        return [self._public_user(row, current_user_id=current_user_id) for row in rows]
+
+    def create_user(self, email: str, password: str, role: str = "user") -> dict[str, Any]:
+        email = validate_email(email)
+        role = validate_role(role)
+        if not str(password or "").strip():
+            raise ValueError("Пароль обязателен при создании пользователя.")
+        now = utc_now()
+        with self.connect() as conn:
+            try:
+                cur = conn.execute(
+                    "INSERT INTO users(email, password_hash, role, created_at) VALUES (?, ?, ?, ?)",
+                    (email, hash_password(password), role, now),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise ValueError("Пользователь с таким email уже существует.") from exc
+            row = conn.execute(
+                "SELECT id, email, role, password_hash, created_at FROM users WHERE id = ?",
+                (cur.lastrowid,),
+            ).fetchone()
+        return self._public_user(row)
+
+    def update_user(
+        self,
+        user_id: int,
+        *,
+        email: str | None = None,
+        role: str | None = None,
+        password: str | None = None,
+        current_admin_id: int | None = None,
+    ) -> dict[str, Any]:
+        with self.connect() as conn:
+            existing = conn.execute(
+                "SELECT id, email, role, password_hash, created_at FROM users WHERE id = ?",
+                (user_id,),
+            ).fetchone()
+            if not existing:
+                raise ValueError("Пользователь не найден.")
+
+            fields: list[str] = []
+            values: list[Any] = []
+
+            if email is not None:
+                fields.append("email = ?")
+                values.append(validate_email(email))
+
+            if role is not None:
+                next_role = validate_role(role)
+                if existing["role"] == "admin" and next_role != "admin":
+                    self._ensure_admin_can_be_removed(conn, user_id, current_admin_id)
+                fields.append("role = ?")
+                values.append(next_role)
+
+            if password is not None and str(password).strip():
+                fields.append("password_hash = ?")
+                values.append(hash_password(password))
+
+            if fields:
+                values.append(user_id)
+                try:
+                    conn.execute(f"UPDATE users SET {', '.join(fields)} WHERE id = ?", tuple(values))
+                except sqlite3.IntegrityError as exc:
+                    raise ValueError("Пользователь с таким email уже существует.") from exc
+
+            row = conn.execute(
+                "SELECT id, email, role, password_hash, created_at FROM users WHERE id = ?",
+                (user_id,),
+            ).fetchone()
+        return self._public_user(row, current_user_id=current_admin_id)
+
+    def delete_user(self, user_id: int, *, current_admin_id: int | None = None) -> None:
+        with self.connect() as conn:
+            existing = conn.execute(
+                "SELECT id, email, role, password_hash, created_at FROM users WHERE id = ?",
+                (user_id,),
+            ).fetchone()
+            if not existing:
+                raise ValueError("Пользователь не найден.")
+            if existing["role"] == "admin":
+                self._ensure_admin_can_be_removed(conn, user_id, current_admin_id)
+            # Sticky MVP guard: hard delete cascades demo auth/chat sessions; production retention is future track.
+            conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+
+    def _ensure_admin_can_be_removed(
+        self,
+        conn: sqlite3.Connection,
+        user_id: int,
+        current_admin_id: int | None,
+    ) -> None:
+        # Sticky MVP guard: keep at least one active admin and prevent deleting the current admin session owner.
+        if current_admin_id == user_id:
+            raise ValueError("Нельзя удалить или понизить текущего admin.")
+        row = conn.execute("SELECT COUNT(*) AS count FROM users WHERE role = 'admin'").fetchone()
+        if int(row["count"]) <= 1:
+            raise ValueError("Нельзя удалить или понизить последнего admin.")
+
+    @staticmethod
+    def _public_user(row: sqlite3.Row, current_user_id: int | None = None) -> dict[str, Any]:
+        return {
+            "id": row["id"],
+            "email": row["email"],
+            "role": row["role"],
+            "created_at": row["created_at"],
+            "has_password": bool(row["password_hash"]),
+            "is_current": current_user_id == row["id"],
+        }
 
     def create_auth_session(self, token: str, user_id: int, days: int = 7) -> None:
         expires = (datetime.now(timezone.utc) + timedelta(days=days)).isoformat(timespec="seconds")

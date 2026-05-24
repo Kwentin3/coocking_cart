@@ -57,6 +57,12 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
             user = self._current_user()
             self._json({"ok": True, "user": self._user_payload(user), "config_errors": self.state.config.public_errors()})
             return
+        if parsed.path == "/api/admin/users":
+            admin = self._require_admin()
+            if not admin:
+                return
+            self._json({"ok": True, "users": self.state.storage.list_users(current_user_id=admin.id)})
+            return
         if parsed.path == "/api/sessions":
             user = self._require_user()
             if not user:
@@ -129,6 +135,23 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
                 self.state.storage.delete_auth_session(token)
             self._json({"ok": True}, headers=[self._clear_cookie_header()])
             return
+        if parsed.path == "/api/admin/users":
+            admin = self._require_admin()
+            if not admin:
+                return
+            body = self._read_json()
+            try:
+                user = self.state.storage.create_user(
+                    email=str(body.get("email", "")),
+                    password=str(body.get("password", "")),
+                    role=str(body.get("role", "user")),
+                )
+            except ValueError as exc:
+                self._json({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                return
+            user["is_current"] = user["id"] == admin.id
+            self._json({"ok": True, "user": user}, HTTPStatus.CREATED)
+            return
         if parsed.path == "/api/sessions":
             user = self._require_user()
             if not user:
@@ -151,6 +174,49 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
                 self._json({"ok": False, "error": "Сообщение пустое."}, HTTPStatus.BAD_REQUEST)
                 return
             self._json(self.state.runtime.process_user_message(session_id, user, message))
+            return
+        self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND)
+
+    def do_PATCH(self) -> None:
+        parsed = urlparse(self.path)
+        if parsed.path.startswith("/api/admin/users/"):
+            admin = self._require_admin()
+            if not admin:
+                return
+            user_id = self._admin_user_id_from_path(parsed.path)
+            if user_id is None:
+                return
+            body = self._read_json()
+            try:
+                user = self.state.storage.update_user(
+                    user_id,
+                    email=str(body["email"]) if "email" in body else None,
+                    role=str(body["role"]) if "role" in body else None,
+                    password=str(body["password"]) if "password" in body else None,
+                    current_admin_id=admin.id,
+                )
+            except ValueError as exc:
+                self._json({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                return
+            self._json({"ok": True, "user": user})
+            return
+        self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND)
+
+    def do_DELETE(self) -> None:
+        parsed = urlparse(self.path)
+        if parsed.path.startswith("/api/admin/users/"):
+            admin = self._require_admin()
+            if not admin:
+                return
+            user_id = self._admin_user_id_from_path(parsed.path)
+            if user_id is None:
+                return
+            try:
+                self.state.storage.delete_user(user_id, current_admin_id=admin.id)
+            except ValueError as exc:
+                self._json({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                return
+            self._json({"ok": True})
             return
         self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND)
 
@@ -234,6 +300,16 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
         self._json({"ok": False, "error": "Требуется вход."}, HTTPStatus.UNAUTHORIZED)
         return None
 
+    def _require_admin(self) -> User | None:
+        user = self._require_user()
+        if not user:
+            return None
+        # Sticky MVP boundary: admin user CRUD is demo tooling, not client-declared RBAC.
+        if user.role != "admin":
+            self._json({"ok": False, "error": "Требуются права admin."}, HTTPStatus.FORBIDDEN)
+            return None
+        return user
+
     def _issue_session(self, user: User) -> None:
         if not self.state.config.auth_ready:
             self._json({"ok": False, "error": "Авторизация не настроена."}, HTTPStatus.SERVICE_UNAVAILABLE)
@@ -258,6 +334,14 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
             return int(value)
         except ValueError:
             self._json({"ok": False, "error": "Некорректный session id."}, HTTPStatus.BAD_REQUEST)
+            return None
+
+    def _admin_user_id_from_path(self, path: str) -> int | None:
+        value = path.removeprefix("/api/admin/users/").strip("/")
+        try:
+            return int(value)
+        except ValueError:
+            self._json({"ok": False, "error": "Некорректный user id."}, HTTPStatus.BAD_REQUEST)
             return None
 
     @staticmethod

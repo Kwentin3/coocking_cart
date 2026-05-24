@@ -1,6 +1,7 @@
 const state = {
   user: null,
   sessions: [],
+  users: [],
   sessionId: null,
   latestTurn: null,
 };
@@ -54,6 +55,10 @@ function showWorkspace() {
   el("logoutBtn").classList.remove("hidden");
   el("newSessionBtn").classList.remove("hidden");
   el("inspectorTab").classList.toggle("hidden", !state.user?.is_admin);
+  el("usersTab").classList.toggle("hidden", !state.user?.is_admin);
+  if (!state.user?.is_admin && (!el("usersPanel").classList.contains("hidden") || !el("inspectorPanel").classList.contains("hidden"))) {
+    setActiveTab("draft");
+  }
 }
 
 async function init() {
@@ -97,6 +102,7 @@ async function logout() {
   await api("/api/logout", {method: "POST", body: "{}"});
   state.user = null;
   state.sessions = [];
+  state.users = [];
   state.sessionId = null;
   state.latestTurn = null;
   showLogin([]);
@@ -275,6 +281,155 @@ function renderJson(output) {
   el("copyJsonBtn").addEventListener("click", () => copyText(json));
 }
 
+async function loadUsers() {
+  if (!state.user?.is_admin) return;
+  const payload = await api("/api/admin/users");
+  if (!payload.ok) {
+    el("usersPanel").innerHTML = `<div class="warning-list">${escapeHtml(payload.error || "Пользователи недоступны.")}</div>`;
+    return;
+  }
+  state.users = payload.users || [];
+  renderUsers();
+}
+
+function renderUsers() {
+  const panel = el("usersPanel");
+  if (!state.user?.is_admin) {
+    panel.innerHTML = "";
+    return;
+  }
+  const rows = state.users.map((user) => userRowHtml(user)).join("");
+  panel.innerHTML = `
+    <div class="admin-users">
+      <div class="hint-line">
+        <span class="hint-icon" title="MVP CRUD пользователей без production IAM/RBAC" aria-label="MVP CRUD пользователей">ⓘ</span>
+        <span>Только роли user/admin. Секреты и password hashes не показываются.</span>
+      </div>
+      <form id="createUserForm" class="user-create-form">
+        <label>Email
+          <input id="newUserEmail" type="email" autocomplete="off" placeholder="user@example.com" required />
+        </label>
+        <label>Роль
+          <select id="newUserRole">
+            <option value="user">user</option>
+            <option value="admin">admin</option>
+          </select>
+        </label>
+        <label>Пароль
+          <input id="newUserPassword" type="password" autocomplete="new-password" placeholder="Временный пароль" required />
+        </label>
+        <button type="submit">Создать</button>
+      </form>
+      <div class="users-list">${rows || `<div class="empty-state">Пользователей пока нет.</div>`}</div>
+    </div>
+  `;
+  el("createUserForm").addEventListener("submit", createUser);
+  panel.querySelectorAll("[data-save-user]").forEach((button) => {
+    button.addEventListener("click", () => saveUser(Number(button.dataset.saveUser)));
+  });
+  panel.querySelectorAll("[data-delete-user]").forEach((button) => {
+    button.addEventListener("click", () => deleteUser(Number(button.dataset.deleteUser)));
+  });
+}
+
+function userRowHtml(user) {
+  const current = user.is_current ? `<span class="badge">текущий</span>` : "";
+  const passwordState = user.has_password ? "пароль задан" : "без пароля";
+  const deleteDisabled = user.is_current ? "disabled title=\"Нельзя удалить текущего admin\"" : "";
+  return `
+    <div class="user-row" data-user-id="${user.id}">
+      <div class="user-meta">
+        <strong>#${user.id}</strong>
+        ${current}
+        <span class="muted">${escapeHtml(passwordState)}</span>
+      </div>
+      <label>Email
+        <input class="user-email" type="email" value="${escapeHtml(user.email)}" />
+      </label>
+      <label>Роль
+        <select class="user-role">
+          <option value="user" ${user.role === "user" ? "selected" : ""}>user</option>
+          <option value="admin" ${user.role === "admin" ? "selected" : ""}>admin</option>
+        </select>
+      </label>
+      <label>Новый пароль
+        <input class="user-password" type="password" autocomplete="new-password" placeholder="Не менять" />
+      </label>
+      <div class="user-actions">
+        <button type="button" data-save-user="${user.id}">Сохранить</button>
+        <button type="button" class="danger-btn" data-delete-user="${user.id}" ${deleteDisabled}>Удалить</button>
+      </div>
+    </div>
+  `;
+}
+
+async function createUser(event) {
+  event.preventDefault();
+  const button = event.submitter;
+  setButtonBusy(button, true);
+  const payload = await api("/api/admin/users", {
+    method: "POST",
+    body: JSON.stringify({
+      email: el("newUserEmail").value,
+      role: el("newUserRole").value,
+      password: el("newUserPassword").value,
+    }),
+  });
+  setButtonBusy(button, false);
+  if (!payload.ok) {
+    showToast(payload.error || "Не удалось создать пользователя.");
+    return;
+  }
+  showToast("Пользователь создан.");
+  await loadUsers();
+}
+
+async function saveUser(userId) {
+  const row = document.querySelector(`[data-user-id="${userId}"]`);
+  if (!row) return;
+  const button = row.querySelector("[data-save-user]");
+  const password = row.querySelector(".user-password").value;
+  const body = {
+    email: row.querySelector(".user-email").value,
+    role: row.querySelector(".user-role").value,
+  };
+  if (password.trim()) {
+    body.password = password;
+  }
+  setButtonBusy(button, true);
+  const payload = await api(`/api/admin/users/${userId}`, {method: "PATCH", body: JSON.stringify(body)});
+  setButtonBusy(button, false);
+  if (!payload.ok) {
+    showToast(payload.error || "Не удалось сохранить пользователя.");
+    return;
+  }
+  showToast("Пользователь сохранен.");
+  await loadUsers();
+}
+
+async function deleteUser(userId) {
+  const user = state.users.find((item) => item.id === userId);
+  if (!user || !window.confirm(`Удалить пользователя ${user.email}? Его demo-сессии будут удалены.`)) {
+    return;
+  }
+  const button = document.querySelector(`[data-delete-user="${userId}"]`);
+  setButtonBusy(button, true);
+  const payload = await api(`/api/admin/users/${userId}`, {method: "DELETE"});
+  setButtonBusy(button, false);
+  if (!payload.ok) {
+    showToast(payload.error || "Не удалось удалить пользователя.");
+    return;
+  }
+  showToast("Пользователь удален.");
+  await loadUsers();
+}
+
+function setButtonBusy(button, isBusy) {
+  if (!button) return;
+  button.disabled = isBusy;
+  button.dataset.busy = isBusy ? "true" : "false";
+}
+
 async function loadInspector() {
   if (!state.sessionId || !state.user?.is_admin) return;
   const payload = await api(`/api/sessions/${state.sessionId}/inspector`);
@@ -307,6 +462,7 @@ function setActiveTab(name) {
   el("warningsTab").classList.toggle("hidden", name !== "warnings");
   el("jsonTab").classList.toggle("hidden", name !== "json");
   el("inspectorPanel").classList.toggle("hidden", name !== "inspector");
+  el("usersPanel").classList.toggle("hidden", name !== "users");
 }
 
 function listBlock(title, items) {
@@ -355,6 +511,12 @@ document.querySelectorAll("[data-demo]").forEach((button) => {
     await sendMessage();
   });
 });
-document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => setActiveTab(tab.dataset.tab)));
+document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", async () => {
+  setActiveTab(tab.dataset.tab);
+  // Sticky MVP note: user management is admin demo tooling, not a production IAM console.
+  if (tab.dataset.tab === "users") {
+    await loadUsers();
+  }
+}));
 
 init();

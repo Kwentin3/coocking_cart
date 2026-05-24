@@ -27,6 +27,7 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -324,6 +325,68 @@ pre {
   display: flex;
   gap: 8px;
   margin: 0 0 12px;
+}
+
+.hint-line {
+  align-items: flex-start;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px;
+}
+
+.hint-icon {
+  color: var(--debug);
+  flex: 0 0 auto;
+  font-weight: 700;
+}
+
+.user-create-form,
+.user-row {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px;
+}
+
+.user-create-form {
+  background: var(--accent-2);
+}
+
+.user-row {
+  background: var(--surface);
+}
+
+.user-meta,
+.user-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+label {
+  color: var(--muted);
+  display: grid;
+  gap: 4px;
+}
+
+select {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.danger-btn {
+  border-color: #efc4c4;
+  color: var(--danger);
 }
 
 .inspector-layer {
