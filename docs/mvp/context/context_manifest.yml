@@ -8,25 +8,49 @@ dialogue_history:
 layers:
   - order: 0
     file: "00_AGENT_ROLE.md"
+    role: "assistant_role"
+    source: "PRD v0.2, product workflow v0.2, glossary"
+    status: "active"
     description: "Assistant role, domain, target result, and promise boundaries."
   - order: 1
     file: "01_PRODUCT_RULES.md"
+    role: "product_rules"
+    source: "PRD v0.2, research, decision log"
+    status: "active"
     description: "Product behavior rules for questions, warnings, ТК/ТТК distinction, and project status."
   - order: 2
     file: "02_WORKFLOW.md"
+    role: "dialogue_workflow"
+    source: "product workflow v0.2"
+    status: "active"
     description: "Compressed dialogue workflow from dish idea to project document and JSON."
   - order: 3
     file: "03_NORMATIVE_BASE_SHORT.md"
+    role: "domain_context"
+    source: "normative research v0.1 and addendum v0.2"
+    status: "active"
     description: "Short normative context derived from research; no long citations."
   - order: 4
     file: "04_TECH_CARD_STRUCTURE.md"
+    role: "document_structure"
+    source: "PRD v0.2, research, glossary"
+    status: "active"
     description: "Expected blocks of a ТК/ТТК project."
   - order: 5
     file: "05_DATA_STATUSES.md"
+    role: "data_statuses"
+    source: "PRD v0.2, product workflow v0.2, decision log"
+    status: "active"
     description: "Allowed data statuses and where to apply them."
   - order: 6
     file: "06_OUTPUT_RULES.md"
+    role: "output_rules"
+    source: "PRD v0.2, workflow v0.2, structured output contract"
+    status: "active"
     description: "User-facing answer rules and minimal structured JSON behavior."
   - order: 7
     file: "07_DEMO_LIMITATIONS.md"
+    role: "demo_limitations"
+    source: "PRD v0.2, documentation audit, decision log"
+    status: "active"
     description: "Demo boundaries and explicit non-production constraints."

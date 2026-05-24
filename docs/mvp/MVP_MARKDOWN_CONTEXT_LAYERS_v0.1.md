@@ -10,6 +10,8 @@ Markdown context layers - это короткие рабочие слои, из 
 
 Они не заменяют PRD, workflow, research или glossary. Каждый слой является сжатым производным материалом от common product baseline.
 
+Формальный контракт отдельного слоя описан в [MVP_PROMPT_LAYER_CONTRACT_v0.1.md](MVP_PROMPT_LAYER_CONTRACT_v0.1.md). Этот документ сохраняется как практическое описание текущих файлов в `docs/mvp/context/`.
+
 ## Общие правила слоев
 
 - Слой должен быть коротким и пригодным для вставки в LLM context.
