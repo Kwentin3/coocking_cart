@@ -19,16 +19,32 @@
 
 ## `.env.example`
 
-`.env.example` можно создать позже, когда начнется реализация приложения.
+Root [`.env.example`](../../.env.example) является безопасным шаблоном для разработчика, агента реализации и будущего deployment handoff.
 
-Он должен содержать только:
+Он содержит:
 
 - имена переменных;
 - placeholder-значения;
-- комментарии;
+- известные non-secret deployment values для `coocking-cart.speechbattle.com`;
 - отсутствие реальных secrets.
 
-В рамках текущего прохода `.env.example` не создается.
+Для сервера `coocking-cart.speechbattle.com` будущий real `.env` должен быть создан вручную или безопасным способом вне Git и размещен в согласованном deploy path после отдельного deployment task.
+
+В Git допустимо документировать:
+
+- public domain;
+- server IP;
+- SSH user;
+- expected `LLM_PROVIDER=gemini`;
+- placeholders для Traefik settings.
+
+В Git нельзя документировать:
+
+- Gemini API key;
+- real admin password или password hash;
+- `AUTH_SESSION_SECRET`;
+- private SSH key;
+- реальные tokens или provider secrets.
 
 ## Минимальные группы переменных
 
@@ -64,6 +80,8 @@
 - confirmation that Docker network `edge` can be used or an alternative network plan;
 - ports/TLS policy;
 - способ передачи secrets.
+- актуальный Gemini model id для `LLM_MODEL`;
+- Gemini API key, переданный вне Git.
 
 ## Что делает агент после получения данных
 
@@ -72,8 +90,9 @@
 - выполнить read-only server audit;
 - заполнить deployment context;
 - предложить безопасный deployment plan;
-- подготовить `.env.example` с placeholders;
+- создать или обновить `.env.example` с placeholders;
 - подготовить инструкции по реальному `.env` без коммита secrets.
+- разместить real `.env` только в согласованном deploy path и только после подтвержденного deployment task.
 
 ## Что не делать сейчас
 

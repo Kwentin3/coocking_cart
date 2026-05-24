@@ -35,6 +35,22 @@ Bootstrap admin нужен, чтобы открыть demo-настройки и
 
 В репозитории нельзя хранить реальные email, passwords, hashes или secrets.
 
+Root [`.env.example`](../../.env.example) содержит только placeholders для bootstrap admin:
+
+- `BOOTSTRAP_ADMIN_EMAIL=<BOOTSTRAP_ADMIN_EMAIL>`;
+- `BOOTSTRAP_ADMIN_PASSWORD=<BOOTSTRAP_ADMIN_PASSWORD>`;
+- `BOOTSTRAP_ADMIN_PASSWORD_HASH=`;
+- `AUTH_SESSION_SECRET=<AUTH_SESSION_SECRET>`.
+
+Реальный admin email, password/password hash и session secret задаются вне Git: в локальном `.env`, runtime environment или безопасном secrets/config layer.
+
+Правила готовности bootstrap:
+
+- если `BOOTSTRAP_ADMIN_PASSWORD` и `BOOTSTRAP_ADMIN_PASSWORD_HASH` оба пустые, bootstrap считается неготовым;
+- если оба значения заполнены, реализация должна выбрать заранее описанное безопасное правило или остановиться с ошибкой конфигурации;
+- предпочтительно использовать `BOOTSTRAP_ADMIN_PASSWORD_HASH`, если реализация это поддерживает;
+- plain password допустим только как bootstrap input из runtime env и не должен сохраняться в Git или документации.
+
 ## Initial roles
 
 При первом запуске должны существовать только:
@@ -83,6 +99,8 @@ Demo user опционален.
 - `LLM_TIMEOUT_SECONDS`.
 
 `LLM_API_KEY` должен приходить только из environment/secrets management и не попадать в репозиторий.
+
+Для текущего env-шаблона ожидается `LLM_PROVIDER=gemini`, а `LLM_MODEL` остается placeholder до проверки актуального Gemini Flash model id перед реализацией.
 
 ## Deployment context defaults
 
@@ -140,3 +158,4 @@ Demo user опционален.
 - [Environment contract](MVP_ENVIRONMENT_CONTRACT_v0.1.md)
 - [Implementation handoff](MVP_IMPLEMENTATION_HANDOFF_v0.1.md)
 - [Ops README](../ops/README.md)
+- [Safe env example](../../.env.example)
