@@ -22,7 +22,9 @@
 - [MVP context contracts](mvp/MVP_CONTEXT_WINDOW_CONTRACT_v0.1.md) - контракт context window и связанные prompt/turn contracts.
 - [MVP Context Inspector](mvp/MVP_CONTEXT_INSPECTOR_v0.1.md) - концепт debug-view для сборки контекстного окна.
 - [MVP LLM provider adapter](mvp/MVP_LLM_PROVIDER_ADAPTER_NOTE_v0.1.md) - минимальная граница интеграции с LLM provider.
+- [MVP roles/env/bootstrap](mvp/MVP_ROLES_AND_ACCESS_v0.1.md) - минимальные роли, environment contract и bootstrap data contract.
 - [Demo MVP context layers](mvp/context/) - markdown-слои статического контекста для будущего runtime context pack.
+- [Ops placeholders](ops/README.md) - шаблоны будущего deployment context и server audit.
 - [Production future track](production/README.md) - placeholder будущей production-архитектуры.
 - [Documentation audits](audits/) - аудит документационного пула и рекомендация по разделению MVP/production.
 - [Decision log](decisions/DECISION_LOG.md) - зафиксированные стартовые продуктовые решения.
@@ -33,6 +35,7 @@
 
 - Common product baseline: PRD, workflow, research, glossary и decision log.
 - Demo MVP: быстрый демонстрационный прототип с file-driven context, markdown context layers, SQLite для короткой истории диалога и минимальным structured output.
+- Ops placeholders: шаблоны для будущего инфраструктурного задания без реальных секретов, IP, доменов и SSH-данных.
 - Future production architecture: будущий контур managed state, state machine, semantic context, calculation, validation, audit, versioning и integrations.
 
 Production architecture сейчас является future track и не блокирует Demo MVP.

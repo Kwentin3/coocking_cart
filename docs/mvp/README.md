@@ -44,6 +44,9 @@ Production architecture остается future track. Managed state, state mach
 - [Context Inspector](MVP_CONTEXT_INSPECTOR_v0.1.md) - концепт debug-view для просмотра сборки context window.
 - [Context trace](MVP_CONTEXT_TRACE_v0.1.md) - минимальная трассировка такта для debug/demo.
 - [LLM provider adapter note](MVP_LLM_PROVIDER_ADAPTER_NOTE_v0.1.md) - граница интеграции с LLM provider.
+- [Roles and access](MVP_ROLES_AND_ACCESS_v0.1.md) - минимальные роли `user` и `admin`.
+- [Environment contract](MVP_ENVIRONMENT_CONTRACT_v0.1.md) - env-переменные и placeholders для будущей реализации.
+- [Bootstrap data contract](MVP_BOOTSTRAP_DATA_CONTRACT_v0.1.md) - стартовые данные первого запуска без реальных секретов.
 - [Markdown context layers](MVP_MARKDOWN_CONTEXT_LAYERS_v0.1.md) - назначение каждого markdown-слоя.
 - [Structured output contract](MVP_STRUCTURED_OUTPUT_CONTRACT_v0.1.md) - минимальный контракт ответа LLM для MVP.
 - [SQLite dialogue storage](MVP_SQLITE_DIALOGUE_STORAGE_v0.1.md) - зачем MVP хранит динамическую историю диалога в SQLite.

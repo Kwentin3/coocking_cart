@@ -24,7 +24,11 @@ Production architecture остается future track и не блокирует
 - audit/event log;
 - document versioning;
 - approval workflow;
-- integration adapters.
+- integration adapters;
+- production IAM/RBAC;
+- secrets management;
+- deployment/ops hardening;
+- environment/config management.
 
 В этом проходе production state machine, semantic context engine, расчетный движок, валидация, аудит, версионирование и интеграции не проектируются в деталях.
 
@@ -42,6 +46,10 @@ Production architecture остается future track и не блокирует
 - `PRODUCTION_CALCULATION_ENGINE_v0.1.md`;
 - `PRODUCTION_VALIDATION_LAYER_v0.1.md`;
 - `PRODUCTION_APPROVAL_WORKFLOW_v0.1.md`;
-- `PRODUCTION_INTEGRATION_ADAPTERS_v0.1.md`.
+- `PRODUCTION_INTEGRATION_ADAPTERS_v0.1.md`;
+- `PRODUCTION_IAM_AND_RBAC_v0.1.md`;
+- `PRODUCTION_SECRETS_MANAGEMENT_v0.1.md`;
+- `PRODUCTION_DEPLOYMENT_AND_OPS_HARDENING_v0.1.md`;
+- `PRODUCTION_ENVIRONMENT_CONFIG_MANAGEMENT_v0.1.md`.
 
 Не нужно создавать эти документы до отдельного production architecture pass.

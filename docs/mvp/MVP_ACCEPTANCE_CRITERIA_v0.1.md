@@ -25,6 +25,10 @@
 - context inspector concept;
 - context trace concept;
 - LLM provider adapter note;
+- roles/access contract;
+- environment contract;
+- bootstrap data contract;
+- ops placeholder docs;
 - structured output contract;
 - SQLite dialogue storage concept;
 - demo limitations;
@@ -54,6 +58,11 @@
 - можно увидеть structured output;
 - можно увидеть debug-представление собранного context window или его основных частей;
 - LLM provider вызов изолирован минимальным adapter boundary;
+- есть роли `user` и `admin`;
+- bootstrap admin можно создать без ручного вмешательства в код;
+- LLM provider/model/API key не хардкодятся;
+- context manifest path не хардкодится глубоко в доменной логике;
+- secrets не попадают в репозиторий;
 - работает сценарий "курица по-вьетнамски";
 - работает сценарий "яичница/омлет";
 - результат явно помечен как проект, требующий проверки;
@@ -94,4 +103,8 @@
 - turn contract;
 - правила, что markdown context layers являются источником статического контекста;
 - правила, что SQLite хранит динамическую историю и результаты тактов;
-- правила, что provider integration изолируется через adapter boundary.
+- правила, что provider integration изолируется через adapter boundary;
+- roles/access contract;
+- environment contract;
+- bootstrap data contract;
+- ops placeholder docs.

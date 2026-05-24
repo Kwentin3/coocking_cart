@@ -35,6 +35,11 @@
 - [Context Inspector](MVP_CONTEXT_INSPECTOR_v0.1.md)
 - [Context trace](MVP_CONTEXT_TRACE_v0.1.md)
 - [LLM provider adapter note](MVP_LLM_PROVIDER_ADAPTER_NOTE_v0.1.md)
+- [Roles and access](MVP_ROLES_AND_ACCESS_v0.1.md)
+- [Environment contract](MVP_ENVIRONMENT_CONTRACT_v0.1.md)
+- [Bootstrap data contract](MVP_BOOTSTRAP_DATA_CONTRACT_v0.1.md)
+- [Ops README](../ops/README.md)
+- [Deployment context template](../ops/DEPLOYMENT_CONTEXT_TEMPLATE_v0.1.md)
 - [Demo scenarios](MVP_DEMO_SCENARIOS_v0.1.md)
 - [Acceptance criteria](MVP_ACCEPTANCE_CRITERIA_v0.1.md)
 
@@ -52,6 +57,8 @@
 - отображение warnings, data statuses, document draft и structured JSON;
 - debug-view или Context Inspector для основных частей context window;
 - минимальный context trace такта;
+- роли `user` и `admin`;
+- bootstrap admin через environment/bootstrap contract;
 - два демо-сценария: "курица по-вьетнамски" и "яичница/омлет".
 
 ## 4. Что не реализовывать
@@ -69,6 +76,8 @@
 - Миграции и сложный storage design сверх простого SQLite для демо.
 - Provider factory и capability matrix.
 - Production observability вместо MVP debug/trace.
+- Сложную RBAC/ABAC или production IAM.
+- Реальные deployment config, Docker/Traefik/TLS настройки.
 
 ## 5. Инварианты реализации
 
@@ -87,20 +96,28 @@
 - `user_answer` является пользовательской частью structured output.
 - `structured_json` является только одним блоком structured output и не является форматом учетной системы.
 - Итоговый документ всегда является проектом, требующим проверки ответственным лицом предприятия.
+- Роли MVP: только `user` и `admin`.
+- Bootstrap admin создается через env/bootstrap contract.
+- Secrets не хардкодятся.
+- LLM provider/model/API key приходят через environment.
+- Context paths приходят через env или config boundary.
+- Deployment details не должны быть выдуманы агентом.
 
 ## 6. Минимальный порядок реализации
 
 1. Поднять пустой чатовый сценарий.
 2. Научить runtime читать `context_manifest.yml`.
 3. Научить runtime загружать markdown layers в указанном порядке.
-4. Добавить SQLite-хранение session/message/turn result на концептуально минимальном уровне.
-5. Собрать context window: markdown pack, короткая история, последнее сообщение пользователя, инструкция structured output.
-6. Сохранить или подготовить минимальный context trace.
-7. Вызвать LLM через provider adapter boundary и получить structured output.
-8. Показать `user_answer`.
-9. Показать служебные блоки для демо: warnings, data statuses, document draft, structured JSON.
-10. Показать debug-view основных частей context window.
-11. Прогнать два demo scenarios.
+4. Прочитать environment settings без хардкода secrets.
+5. Создать bootstrap admin и роли `user`/`admin` через bootstrap contract.
+6. Добавить SQLite-хранение session/message/turn result на концептуально минимальном уровне.
+7. Собрать context window: markdown pack, короткая история, последнее сообщение пользователя, инструкция structured output.
+8. Сохранить или подготовить минимальный context trace.
+9. Вызвать LLM через provider adapter boundary и получить structured output.
+10. Показать `user_answer`.
+11. Показать служебные блоки для демо: warnings, data statuses, document draft, structured JSON.
+12. Показать debug-view основных частей context window.
+13. Прогнать два demo scenarios.
 
 ## 7. Критерий остановки
 
