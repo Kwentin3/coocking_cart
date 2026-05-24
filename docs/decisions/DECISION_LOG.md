@@ -62,6 +62,11 @@
 | D-053 | 2026-05-24 | Context Inspector is admin/debug UI. | Prompt layers, context trace и assembled context относятся к диагностике и не должны показываться обычному user. | `user` видит результат своей сессии; `admin` видит Context Inspector без secrets/API keys. |
 | D-054 | 2026-05-24 | MVP target LLM provider family is Gemini, exact model via env. | Для первой реализации выбран практичный provider family, но точный model id может меняться. | `LLM_PROVIDER=gemini` ожидается для MVP; `LLM_MODEL=<GEMINI_FLASH_MODEL_ID>` задается через environment. |
 | D-055 | 2026-05-24 | LLM adapter boundary remains mandatory regardless of provider. | Даже при одном provider нельзя размазывать SDK/model-specific детали по доменной логике. | Runtime вызывает LLM через provider adapter; provider factory/capability matrix остаются future track. |
+| D-056 | 2026-05-24 | Перед реализацией Demo MVP нужен execution roadmap. | Документации стало достаточно много, и без порядка агент может начать не с той фазы или смешать MVP с production. | Добавлен `docs/mvp/MVP_IMPLEMENTATION_ROADMAP_v0.1.md`. |
+| D-057 | 2026-05-24 | Реализация должна идти фазами с gate-критериями. | Фазовый порядок снижает риск преждевременного UI, deployment, production state machine или hardcoded prompts. | Roadmap задает Phase 0-9, acceptance/gate для каждой фазы и запреты на фазах. |
+| D-058 | 2026-05-24 | Агент не должен переходить к следующей фазе без выполнения acceptance текущей фазы. | Иначе ошибки context loader, storage, adapter или structured output будут маскироваться последующим UI. | Handoff и acceptance criteria ссылаются на roadmap gates. |
+| D-059 | 2026-05-24 | Deployment остается отдельной фазой/задачей и не выполняется в рамках реализации без отдельного подтверждения. | На сервере уже есть Docker, Traefik и рабочие containers; любые изменения требуют отдельного deployment task. | Roadmap Phase 9 ограничен подготовкой, без server changes. |
+| D-060 | 2026-05-24 | Stack choice должен быть зафиксирован до или в Phase 1. | Стек влияет на структуру проекта, runtime, UI и deployment preparation. | Если стек не задан владельцем, агент предлагает минимальный стек и обосновывает выбор before coding. |
 
 ## Как обновлять журнал
 
