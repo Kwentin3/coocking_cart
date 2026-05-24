@@ -8,17 +8,21 @@ const state = {
 const el = (id) => document.getElementById(id);
 
 async function api(path, options = {}) {
-  const response = await fetch(path, {
-    credentials: "same-origin",
-    headers: {"Content-Type": "application/json", ...(options.headers || {})},
-    ...options,
-  });
-  const payload = await response.json().catch(() => ({ok: false, error: "Некорректный ответ сервера."}));
-  if (!response.ok && payload.ok !== false) {
-    payload.ok = false;
-    payload.error = "Ошибка запроса.";
+  try {
+    const response = await fetch(path, {
+      credentials: "same-origin",
+      headers: {"Content-Type": "application/json", ...(options.headers || {})},
+      ...options,
+    });
+    const payload = await response.json().catch(() => ({ok: false, error: "Некорректный ответ сервера."}));
+    if (!response.ok && payload.ok !== false) {
+      payload.ok = false;
+      payload.error = "Ошибка запроса.";
+    }
+    return payload;
+  } catch (_error) {
+    return {ok: false, error: "Сервер недоступен. Проверьте подключение и повторите действие."};
   }
-  return payload;
 }
 
 function showToast(text) {
@@ -143,7 +147,8 @@ function renderSessions() {
   const list = el("sessionsList");
   list.innerHTML = "";
   for (const session of state.sessions) {
-    const item = document.createElement("div");
+    const item = document.createElement("button");
+    item.type = "button";
     item.className = `session-item ${session.id === state.sessionId ? "active" : ""}`;
     item.textContent = session.title;
     item.title = session.owner_email ? `owner: ${session.owner_email}` : "";
@@ -319,8 +324,12 @@ function textFromDraft(draft) {
 }
 
 async function copyText(text) {
-  await navigator.clipboard.writeText(text);
-  showToast("Скопировано.");
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast("Скопировано.");
+  } catch (_error) {
+    showToast("Не удалось скопировать автоматически.");
+  }
 }
 
 function escapeHtml(value) {
