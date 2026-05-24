@@ -11,12 +11,12 @@
 - авторизация через bootstrap admin и demo user;
 - роли `user` и `admin`;
 - admin-only CRUD пользователей для демо-операций;
-- чатовые сессии;
+- CRUD чатовых demo sessions;
 - загрузка markdown context layers через `docs/mvp/context/context_manifest.yml`;
 - SQLite-хранение сессий, сообщений, turn result и document draft;
 - Gemini provider adapter через REST boundary;
 - schema-first Structured Output через Gemini generation config;
-- frontend с чатом, result panel, warnings/statuses, structured JSON, admin Context Inspector и user management panel;
+- frontend с чатом, sessions CRUD rail, result panel, warnings/statuses, structured JSON, admin Context Inspector и user management panel;
 - тесты для context loader, placeholder validation, bootstrap, LLM error path, Gemini payload, inspector access и admin user CRUD;
 - Dockerfile и compose-шаблон для будущего деплоя за существующим Traefik.
 
@@ -246,7 +246,7 @@ python -m compileall app tests
 
 Результат:
 
-- `unittest`: 10 tests, OK;
+- `unittest`: 11 tests, OK;
 - `compileall`: OK.
 
 Тестовое покрытие включает:
@@ -260,7 +260,25 @@ python -m compileall app tests
 - bootstrap admin creation/authentication;
 - admin user CRUD create/update/delete;
 - current/last admin guard;
+- chat session CRUD owner/admin access;
 - derived neutral `structured_json` when draft exists.
+
+## Chat session CRUD update
+
+Добавлен минимальный CRUD demo chats:
+
+- create: existing new chat buttons;
+- read/open: sessions rail;
+- update/rename: icon-first inline rename action;
+- delete: destructive icon action with confirmation;
+- access: `user` manages own sessions; `admin` can manage visible demo sessions for debugging;
+- storage behavior: deleting session cascades messages and turn results through SQLite FK.
+
+Локальный HTTP smoke:
+
+- demo user create/rename/list/delete session: OK;
+- deleted session no longer opens: OK;
+- icon-first controls are present in served HTML/JS/CSS.
 
 ## Admin user CRUD update
 

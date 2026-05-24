@@ -152,6 +152,34 @@ class CoreContractsTest(unittest.TestCase):
             remaining = storage.list_users(current_user_id=admin.id)
             self.assertEqual([user["role"] for user in remaining].count("admin"), 1)
 
+    def test_chat_session_crud_respects_owner_and_admin(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = test_config(Path(tmp) / "demo.sqlite", api_key="")
+            storage = Storage(config.sqlite_db_path)
+            admin = storage.bootstrap_admin(config.bootstrap_admin_email, config.bootstrap_admin_password)
+            owner = storage.ensure_demo_user()
+            storage.create_user("other-user@example.test", "password", "user")
+            other = storage.authenticate("other-user@example.test", "password")
+            assert admin is not None
+            assert other is not None
+
+            session_id = storage.create_chat_session(owner.id, "  Исходный чат  ")
+            updated = storage.update_chat_session(session_id, owner, "  Переименованный чат  ")
+            self.assertEqual(updated["title"], "Переименованный чат")
+
+            with self.assertRaises(PermissionError):
+                storage.update_chat_session(session_id, other, "Чужое название")
+
+            admin_updated = storage.update_chat_session(session_id, admin, "Admin rename")
+            self.assertEqual(admin_updated["title"], "Admin rename")
+
+            storage.add_message(session_id, "user", "test")
+            with self.assertRaises(PermissionError):
+                storage.delete_chat_session(session_id, other)
+            storage.delete_chat_session(session_id, admin)
+            self.assertFalse(storage.can_access_session(session_id, admin))
+            self.assertEqual(storage.list_messages(session_id), [])
+
     def test_placeholder_bootstrap_values_are_not_ready(self) -> None:
         config = test_config(Path("unused.sqlite"), api_key="<GEMINI_API_KEY>")
         config = AppConfig(
