@@ -101,6 +101,57 @@ class CoreContractsTest(unittest.TestCase):
             self.assertIsNotNone(authenticated)
             self.assertEqual(authenticated.role, "admin")
 
+    def test_admin_user_crud_storage_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = test_config(Path(tmp) / "demo.sqlite", api_key="")
+            storage = Storage(config.sqlite_db_path)
+            admin = storage.bootstrap_admin(config.bootstrap_admin_email, config.bootstrap_admin_password)
+            assert admin is not None
+
+            created = storage.create_user("New.User@Example.TEST", "temporary-password", "user")
+            self.assertEqual(created["email"], "new.user@example.test")
+            self.assertEqual(created["role"], "user")
+            self.assertTrue(created["has_password"])
+            self.assertNotIn("password_hash", created)
+
+            users = storage.list_users(current_user_id=admin.id)
+            self.assertTrue(any(user["is_current"] for user in users if user["id"] == admin.id))
+
+            updated = storage.update_user(
+                created["id"],
+                email="Changed.User@Example.TEST",
+                role="admin",
+                password="new-password",
+                current_admin_id=admin.id,
+            )
+            self.assertEqual(updated["email"], "changed.user@example.test")
+            self.assertEqual(updated["role"], "admin")
+            authenticated = storage.authenticate("changed.user@example.test", "new-password")
+            self.assertIsNotNone(authenticated)
+            self.assertEqual(authenticated.role, "admin")
+
+            storage.delete_user(updated["id"], current_admin_id=admin.id)
+            self.assertIsNone(storage.authenticate("changed.user@example.test", "new-password"))
+
+    def test_admin_user_crud_guards_current_and_last_admin(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = test_config(Path(tmp) / "demo.sqlite", api_key="")
+            storage = Storage(config.sqlite_db_path)
+            admin = storage.bootstrap_admin(config.bootstrap_admin_email, config.bootstrap_admin_password)
+            assert admin is not None
+
+            with self.assertRaises(ValueError):
+                storage.delete_user(admin.id, current_admin_id=admin.id)
+            with self.assertRaises(ValueError):
+                storage.update_user(admin.id, role="user", current_admin_id=admin.id)
+            with self.assertRaises(ValueError):
+                storage.delete_user(admin.id, current_admin_id=999)
+
+            second_admin = storage.create_user("second-admin@example.test", "password", "admin")
+            storage.delete_user(second_admin["id"], current_admin_id=admin.id)
+            remaining = storage.list_users(current_user_id=admin.id)
+            self.assertEqual([user["role"] for user in remaining].count("admin"), 1)
+
     def test_placeholder_bootstrap_values_are_not_ready(self) -> None:
         config = test_config(Path("unused.sqlite"), api_key="<GEMINI_API_KEY>")
         config = AppConfig(
