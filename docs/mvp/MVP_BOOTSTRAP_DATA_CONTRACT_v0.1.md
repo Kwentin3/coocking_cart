@@ -68,6 +68,8 @@ Demo user опционален.
 - `DEMO_MODE`;
 - `ENABLE_CONTEXT_INSPECTOR`;
 - `ENABLE_LLM_TRACE`;
+- `APP_BASE_URL`, если runtime должен знать публичный URL;
+- `PUBLIC_DOMAIN`, если runtime или deployment layer использует домен;
 - max dialogue messages for context, если будет нужно как future setting;
 - выбранный default scenario, если будет нужно как future setting.
 
@@ -82,6 +84,18 @@ Demo user опционален.
 
 `LLM_API_KEY` должен приходить только из environment/secrets management и не попадать в репозиторий.
 
+## Deployment context defaults
+
+Для текущего target deployment известны не-secret значения:
+
+- domain: `coocking-cart.speechbattle.com`;
+- server: `91.132.48.224`;
+- SSH user: `root`;
+- reverse proxy: existing Traefik;
+- container runtime: Docker.
+
+Эти данные помогают будущему deployment handoff, но не создают приложение, `.env`, compose или Traefik config.
+
 ## Что должно приходить из env
 
 - Bootstrap admin identity.
@@ -92,6 +106,8 @@ Demo user опционален.
 - Context manifest path.
 - Context layers dir.
 - Debug flags.
+- App base URL/domain, если требуется runtime.
+- Deployment host/user/network placeholders, если требуется deployment layer.
 
 ## Что не должно быть захардкожено
 
@@ -101,7 +117,8 @@ Demo user опционален.
 - Session secrets.
 - Provider model.
 - Context file paths в доменной логике.
-- Deployment host/domain/user.
+- Secrets, passwords, API keys и SSH keys.
+- Deployment network/entrypoint/certresolver values до review.
 
 ## Что нельзя коммитить
 
@@ -110,10 +127,12 @@ Demo user опционален.
 - Passwords.
 - Password hashes, если они относятся к реальному окружению.
 - SSH keys.
-- Server IP.
-- Public domain.
-- Deploy user.
-- Internal network names реального сервера.
+- API tokens.
+- Реальные `.env` значения.
+- Private deployment credentials.
+- Internal secrets реального сервера.
+
+Публичный domain, server IP и SSH user можно хранить только как явно переданный deployment context в `docs/ops/`; они не являются bootstrap secrets.
 
 ## Связанные документы
 

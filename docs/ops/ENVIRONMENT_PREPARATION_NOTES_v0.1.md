@@ -7,7 +7,7 @@
 
 Документ фиксирует, как относиться к environment settings до реального инфраструктурного задания.
 
-Реальная настройка будет отдельной задачей после передачи IP/domain/SSH/Traefik context владельцем проекта.
+Реальная настройка будет отдельной задачей. Domain, server IP и SSH user уже переданы как deployment context, но secrets, Traefik settings и final deploy strategy еще не утверждены.
 
 ## Где хранить `.env`
 
@@ -49,20 +49,19 @@
 - Passwords.
 - Session secrets.
 - SSH private keys.
-- Реальный server IP.
-- Реальный public domain.
-- Реальный deploy user.
-- Реальные Docker network names, если они раскрывают инфраструктуру.
+- Private deployment credentials.
+- Internal secrets.
+- Traefik/acme secrets.
+- Реальные Docker network names, если они раскрывают приватную инфраструктуру и не были явно зафиксированы как deployment context.
 
 ## Перед реальной настройкой нужно получить
 
-- public domain;
-- hosting/server address;
-- SSH user;
-- SSH auth method;
+- confirmation for public domain `coocking-cart.speechbattle.com`;
+- confirmation for server `91.132.48.224`;
+- confirmation for SSH user `root` and key-based access;
 - deploy path policy;
-- Traefik/reverse proxy context;
-- existing containers list или разрешение на read-only аудит;
+- Traefik entrypoint/certresolver policy;
+- confirmation that Docker network `edge` can be used or an alternative network plan;
 - ports/TLS policy;
 - способ передачи secrets.
 
