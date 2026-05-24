@@ -57,6 +57,8 @@ Demo MVP проверяет продуктовую ценность чатово
 - просматривать сессии для отладки demo;
 - видеть context trace и технические diagnostics в рамках MVP;
 - проверять, какие layers попали в context window;
+- видеть read-only admin dashboard по чатам, активности и token usage;
+- видеть read-only prompt/context workspace;
 - в будущем управлять prompt/context assets.
 
 Не должен:
@@ -81,6 +83,8 @@ Demo MVP проверяет продуктовую ценность чатово
 | Открывать Context Inspector | Нет | Да |
 | Смотреть context layers | Нет | Да |
 | Смотреть context trace | Нет | Да |
+| Смотреть admin dashboard | Нет | Да |
+| Смотреть prompt/context workspace | Нет | Да |
 | Смотреть чужие demo sessions для отладки | Нет | Да |
 | Управлять чужими demo sessions для отладки | Нет | Да |
 | Управлять demo-настройками | Нет | Да |
@@ -91,6 +95,8 @@ Demo MVP проверяет продуктовую ценность чатово
 Context Inspector является admin/debug-инструментом MVP.
 
 В первом прототипе пользователь `user` может видеть только результат своей сессии: user-facing ответ, warnings, statuses, draft и structured JSON. Техническая цепочка сборки context window должна быть доступна роли `admin`.
+
+После admin workspace refinement Context Inspector визуально разделяется на read-only dashboard и prompt/context экран. Это не дает `admin` права редактировать markdown layers через GUI.
 
 ## Связь с bootstrap admin
 

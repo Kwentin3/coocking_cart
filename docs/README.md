@@ -24,6 +24,8 @@
 - [MVP acceptance criteria](mvp/MVP_ACCEPTANCE_CRITERIA_v0.1.md) - критерии готовности документации и будущего прототипа.
 - [MVP frontend visual contract](mvp/MVP_FRONTEND_VISUAL_CONTRACT_v0.1.md) - UI/composition contract для чата, результата, Context Inspector, desktop/mobile и states.
 - [MVP frontend states and errors](mvp/MVP_FRONTEND_STATES_AND_ERRORS_v0.1.md) - loading/error/empty/success states для будущего UI.
+- [Admin context workspace PRD](prd/PRD_ADMIN_CONTEXT_WORKSPACE_v0.1.md) - продуктовый контракт read-only admin dashboard и prompt/context просмотра.
+- [Admin context workspace blueprint](mvp/MVP_ADMIN_CONTEXT_WORKSPACE_BLUEPRINT_v0.1.md) - implementation blueprint для служебной admin-зоны.
 - [MVP context contracts](mvp/MVP_CONTEXT_WINDOW_CONTRACT_v0.1.md) - контракт context window и связанные prompt/turn contracts.
 - [MVP Context Inspector](mvp/MVP_CONTEXT_INSPECTOR_v0.1.md) - концепт debug-view для сборки контекстного окна.
 - [MVP LLM provider adapter](mvp/MVP_LLM_PROVIDER_ADAPTER_NOTE_v0.1.md) - минимальная граница интеграции с LLM provider.

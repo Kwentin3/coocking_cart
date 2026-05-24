@@ -114,6 +114,17 @@ Context Inspector должен показывать:
 - Сравнение prompt versions.
 - Автоматическое исправление layers.
 - Автоматическое создание новых context layers.
+- CRUD prompt/context layers через GUI.
+- Runtime-редактирование markdown-файлов на сервере.
+
+## Admin workspace refinement
+
+После появления admin workspace Context Inspector остается источником данных, но визуально разделяется на два read-only экрана:
+
+- `Дашборд` - активность пользователей, чаты, turn results, document drafts и token usage;
+- `Промты` - manifest, markdown layers, static context pack, structured output schema и assembled context preview.
+
+Такой split сохраняет user-facing chat UI простым и не превращает admin в участника пользовательского диалога.
 
 ## Как может вырасти позже
 

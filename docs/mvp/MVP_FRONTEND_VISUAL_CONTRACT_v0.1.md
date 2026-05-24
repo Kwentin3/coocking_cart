@@ -291,6 +291,27 @@ Context Inspector является admin/debug UI.
 
 Панель не является production admin console и не должна вводить роли, permissions, организации или SSO.
 
+### Admin service workspace
+
+Для `admin` основной интерфейс отличается от user-facing чата.
+
+Admin workspace должен использовать левую служебную навигацию вместо пользовательского списка сессий. Минимальные экраны:
+
+- `Дашборд` - read-only обзор пользователей, чатов, сообщений, turn results, document drafts, последней активности и token usage;
+- `Промты` - read-only просмотр `context_manifest.yml`, markdown layers, static context pack, structured output schema и latest assembled context preview;
+- `Пользователи` - текущий MVP CRUD пользователей.
+
+Правила:
+
+- user-facing chat UI не меняется;
+- `admin` не обязан видеть чат как основной рабочий экран;
+- просмотр чатов в admin workspace read-only и нужен для диагностики demo sessions;
+- token usage в MVP является provider usage when available или estimate, но не billing-grade accounting;
+- prompt/context экран не редактирует markdown layers;
+- prompt CRUD, runtime layer editing и prompt auto-generation остаются out of scope.
+
+На desktop левая панель `admin` принадлежит служебной навигации. На mobile admin screens могут быть stacked sections или single-column navigation.
+
 ## Theme policy
 
 Для MVP используется одна базовая светлая тема.
@@ -377,4 +398,6 @@ Frontend не должен:
 - [MVP Context Inspector](MVP_CONTEXT_INSPECTOR_v0.1.md)
 - [MVP roles and access](MVP_ROLES_AND_ACCESS_v0.1.md)
 - [MVP admin user CRUD blueprint](MVP_ADMIN_USER_CRUD_BLUEPRINT_v0.1.md)
+- [PRD admin context workspace](../prd/PRD_ADMIN_CONTEXT_WORKSPACE_v0.1.md)
+- [MVP admin context workspace blueprint](MVP_ADMIN_CONTEXT_WORKSPACE_BLUEPRINT_v0.1.md)
 - [MVP implementation handoff](MVP_IMPLEMENTATION_HANDOFF_v0.1.md)

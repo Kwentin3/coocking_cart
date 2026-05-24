@@ -88,6 +88,9 @@
 - `user` не видит Context Inspector;
 - `admin` видит Context Inspector;
 - Context Inspector показывает context layers и structured output;
+- `admin` видит отдельный read-only workspace с дашбордом чатов и экраном prompt/context просмотра;
+- admin dashboard показывает последние чаты, активность и token usage как provider usage when available или MVP estimate;
+- prompt/context экран показывает manifest, layers, static context, schema и latest assembled context preview без возможности редактирования;
 - можно увидеть список использованных context layers;
 - можно увидеть structured output;
 - можно увидеть debug-представление собранного context window или его основных частей;

@@ -12,12 +12,13 @@
 - роли `user` и `admin`;
 - admin-only CRUD пользователей для демо-операций;
 - CRUD чатовых demo sessions;
+- read-only admin workspace с dashboard, просмотром чатов и prompt/context экраном;
 - загрузка markdown context layers через `docs/mvp/context/context_manifest.yml`;
 - SQLite-хранение сессий, сообщений, turn result и document draft;
 - Gemini provider adapter через REST boundary;
 - schema-first Structured Output через Gemini generation config;
-- frontend с чатом, sessions CRUD rail, result panel, warnings/statuses, structured JSON, admin Context Inspector и user management panel;
-- тесты для context loader, placeholder validation, bootstrap, LLM error path, Gemini payload, inspector access и admin user CRUD;
+- frontend с чатом для `user`, sessions CRUD rail, result panel, warnings/statuses, structured JSON, admin workspace, Context Inspector data и user management panel;
+- тесты для context loader, placeholder validation, bootstrap, LLM error path, Gemini payload, inspector access, admin dashboard/context payload и admin user CRUD;
 - Dockerfile и compose-шаблон для будущего деплоя за существующим Traefik.
 
 MVP не является production-ready системой. Любая ТК/ТТК в интерфейсе помечается как проект, требующий проверки ответственным лицом предприятия.
@@ -246,7 +247,7 @@ python -m compileall app tests
 
 Результат:
 
-- `unittest`: 11 tests, OK;
+- `unittest`: 13 tests, OK;
 - `compileall`: OK.
 
 Тестовое покрытие включает:
@@ -261,6 +262,8 @@ python -m compileall app tests
 - admin user CRUD create/update/delete;
 - current/last admin guard;
 - chat session CRUD owner/admin access;
+- admin dashboard aggregates;
+- admin context workspace payload;
 - derived neutral `structured_json` when draft exists.
 
 ## Chat session CRUD update
@@ -298,6 +301,30 @@ python -m compileall app tests
 - list/create/update/delete user: OK;
 - non-admin access to `/api/admin/users`: 403 OK;
 - secrets/password hashes в ответах не возвращались.
+
+## Admin context workspace update
+
+Добавлен read-only admin workspace:
+
+- PRD: `docs/prd/PRD_ADMIN_CONTEXT_WORKSPACE_v0.1.md`;
+- blueprint: `docs/mvp/MVP_ADMIN_CONTEXT_WORKSPACE_BLUEPRINT_v0.1.md`;
+- API: `GET /api/admin/dashboard`, `GET /api/admin/context`;
+- UI: левая панель `admin` стала служебной навигацией `Дашборд`, `Промты`, `Пользователи`;
+- dashboard: periods day/week/month/year/all-time, users/sessions/messages/turns/drafts и token usage;
+- chat preview: read-only просмотр выбранной demo session;
+- prompts screen: manifest, layers, static context, structured output schema, latest assembled context preview;
+- copy actions: layer text, static context, assembled context preview;
+- user-facing chat UI не изменялся.
+
+Token usage отображается как provider usage when available или MVP estimate. Это не billing-grade учет.
+
+Локальный HTTP smoke:
+
+- admin login: OK;
+- `/api/admin/dashboard`: OK, 5 periods;
+- `/api/admin/context`: OK, 8 layers;
+- non-admin access to `/api/admin/dashboard`: 403 OK;
+- served HTML/JS/CSS содержат admin workspace markers: OK.
 
 ## Deployment preparation
 
