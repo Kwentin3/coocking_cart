@@ -125,6 +125,8 @@
 - Для MVP ожидается `LLM_PROVIDER=gemini`, но exact model id берется из `LLM_MODEL`.
 - `LLM_API_KEY` должен быть заполнен вне Git; пустой или placeholder key должен давать понятную user-safe ошибку и admin/debug hint.
 - Реальный `.env` не коммитится; корневой `.env.example` используется только как безопасный шаблон.
+- Любое значение вида `<...>` в `.env.example` является placeholder и должно считаться `not configured`.
+- Реализация не должна принимать `<GEMINI_API_KEY>`, `<GEMINI_FLASH_MODEL_ID>`, `<BOOTSTRAP_ADMIN_EMAIL>`, `<BOOTSTRAP_ADMIN_PASSWORD>`, `<AUTH_SESSION_SECRET>` или Traefik placeholders как реальные значения.
 - Context paths приходят через env или config boundary.
 - Deployment details не должны быть выдуманы агентом.
 - Реализация должна следовать [implementation roadmap](MVP_IMPLEMENTATION_ROADMAP_v0.1.md) по фазам.
@@ -156,19 +158,20 @@ Environment values и secrets должны быть внешними: не в к
 6. Подтвердить актуальный `LLM_MODEL` по официальной документации Gemini/Google AI.
 7. Проверить, что `.env` не попадает в Git.
 8. Прочитать environment settings без хардкода secrets.
-9. Проверить, что приложение не стартует с пустым или placeholder `LLM_API_KEY` без понятной ошибки.
-10. Создать bootstrap admin и роли `user`/`admin` через bootstrap contract.
-11. Добавить SQLite-хранение session/message/turn result на концептуально минимальном уровне.
-12. Собрать context window: markdown pack, короткая история, последнее сообщение пользователя, инструкция structured output.
-13. Сохранить или подготовить минимальный context trace.
-14. Вызвать Gemini через provider adapter boundary и получить structured output.
-15. Показать `user_answer`.
-16. Показать служебные блоки для демо: warnings, data statuses, document draft, structured JSON.
-17. Реализовать copy document / copy JSON.
-18. Показать icon-first contextual hints для важных блоков.
-19. Показать debug-view основных частей context window для `admin`.
-20. Проверить desktop и mobile layout.
-21. Прогнать два demo scenarios.
+9. Проверить placeholder validation: required values с `<...>` не считаются настроенными.
+10. Проверить, что приложение не стартует с пустым или placeholder `LLM_API_KEY` без понятной ошибки.
+11. Создать bootstrap admin и роли `user`/`admin` через bootstrap contract.
+12. Добавить SQLite-хранение session/message/turn result на концептуально минимальном уровне.
+13. Собрать context window: markdown pack, короткая история, последнее сообщение пользователя, инструкция structured output.
+14. Сохранить или подготовить минимальный context trace.
+15. Вызвать Gemini через provider adapter boundary и получить structured output.
+16. Показать `user_answer`.
+17. Показать служебные блоки для демо: warnings, data statuses, document draft, structured JSON.
+18. Реализовать copy document / copy JSON.
+19. Показать icon-first contextual hints для важных блоков.
+20. Показать debug-view основных частей context window для `admin`.
+21. Проверить desktop и mobile layout.
+22. Прогнать два demo scenarios.
 
 ## 8. Критерий остановки
 

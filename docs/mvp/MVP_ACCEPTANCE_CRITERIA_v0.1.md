@@ -34,6 +34,7 @@
 - bootstrap data contract;
 - `.env.example`;
 - `.env.example` содержит non-secret deployment values и placeholders для secrets;
+- есть placeholder validation rule для всех `<...>` values;
 - `.gitignore` защищает реальные `.env` и SQLite runtime-файлы;
 - ops placeholder docs;
 - structured output contract;
@@ -91,6 +92,8 @@
 - `LLM_MODEL` берется из env/config и не хардкодится;
 - `LLM_API_KEY` берется из env/config и не хардкодится;
 - при отсутствующем или placeholder `LLM_API_KEY` показывается безопасная ошибка;
+- реализация не принимает `<...>` placeholders как реальные значения;
+- required env variables с placeholder считаются `not configured`;
 - есть роли `user` и `admin`;
 - bootstrap admin можно создать без ручного вмешательства в код;
 - LLM provider/model/API key не хардкодятся;

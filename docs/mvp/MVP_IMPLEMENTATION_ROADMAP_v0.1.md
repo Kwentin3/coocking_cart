@@ -94,6 +94,10 @@ Roadmap не заменяет PRD, implementation handoff, frontend visual contr
 - Создать структуру проекта.
 - Предусмотреть место для frontend, backend/runtime, context loader, SQLite, LLM adapter.
 - Подготовить local run skeleton.
+- Использовать root `.env.example` как безопасный шаблон.
+- Скопировать `.env.example` в локальный `.env` вне Git.
+- Заполнить реальные secrets вне Git.
+- Проверить placeholder validation: значения вида `<...>` считаются `not configured`.
 
 ### Acceptance / gate
 
@@ -102,6 +106,8 @@ Roadmap не заменяет PRD, implementation handoff, frontend visual contr
 - Нет доменных prompt rules в коде.
 - Есть понятное место для чтения `context_manifest.yml`.
 - Есть базовый способ конфигурации через env/placeholders.
+- Реальный `.env` не попадает в Git.
+- Required env variables с `<...>` не принимаются как реальные значения.
 - Нет production-усложнений.
 
 ### Нельзя
@@ -186,6 +192,7 @@ Roadmap не заменяет PRD, implementation handoff, frontend visual contr
   - optional `LLM_TIMEOUT_SECONDS`.
 - Учитывать target provider family для MVP: Gemini.
 - Брать точный model id из env, не хардкодить его.
+- Перед первым LLM call подтвердить актуальный Gemini model id по официальной документации Gemini/Google AI и установить его в локальный `.env`.
 - Adapter получает assembled context window и возвращает normalized structured output или normalized error.
 - Provider/model сохраняются в trace.
 
@@ -194,6 +201,9 @@ Roadmap не заменяет PRD, implementation handoff, frontend visual contr
 - Вызов LLM идет через adapter.
 - Доменная логика не зависит напрямую от Gemini SDK/API.
 - Provider/model/API key берутся из env.
+- `LLM_PROVIDER=gemini` берется из env/config.
+- `LLM_MODEL=<GEMINI_FLASH_MODEL_ID>` не используется как реальное значение.
+- `LLM_API_KEY=<GEMINI_API_KEY>` не используется как реальный ключ.
 - Ошибка provider отображается user-safe и admin-debug отдельно.
 - Provider factory не реализуется.
 
@@ -202,6 +212,7 @@ Roadmap не заменяет PRD, implementation handoff, frontend visual contr
 - Строить multi-provider factory.
 - Делать capability matrix.
 - Хардкодить model id.
+- Выполнять LLM call с placeholder model id или placeholder API key.
 - Вызывать LLM напрямую из frontend.
 - Пропускать provider adapter ради скорости.
 
@@ -356,7 +367,8 @@ Roadmap не заменяет PRD, implementation handoff, frontend visual contr
 ### Что сделать
 
 - Убедиться, что secrets не в Git.
-- Подготовить `.env.example` только с placeholders, если выбран этот подход.
+- Использовать уже созданный root `.env.example` как безопасный шаблон.
+- Создать real `.env` для сервера только в отдельном deployment task и вне Git.
 - Проверить, что app может работать за reverse proxy.
 - Проверить, что deployment context не захардкожен в доменной логике.
 - Свериться с ops/deployment docs.
@@ -365,6 +377,7 @@ Roadmap не заменяет PRD, implementation handoff, frontend visual contr
 
 - Нет реальных secrets в Git.
 - Нет реального `.env` с ключами.
+- `.env.example` содержит только non-secret values и placeholders.
 - Приложение готово к будущему контейнерному деплою на уровне конфигурационной дисциплины.
 - Traefik/Docker на сервере не менялись.
 - Deployment task остается отдельным.

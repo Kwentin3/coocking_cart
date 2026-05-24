@@ -46,7 +46,10 @@ Root [`.env.example`](../../.env.example) содержит только placehol
 
 Правила готовности bootstrap:
 
+- любое значение вида `<...>` считается placeholder и не является настроенным credential;
 - если `BOOTSTRAP_ADMIN_PASSWORD` и `BOOTSTRAP_ADMIN_PASSWORD_HASH` оба пустые, bootstrap считается неготовым;
+- если `BOOTSTRAP_ADMIN_EMAIL` содержит `<BOOTSTRAP_ADMIN_EMAIL>`, bootstrap считается неготовым;
+- если `AUTH_SESSION_SECRET` содержит `<AUTH_SESSION_SECRET>`, bootstrap считается неготовым;
 - если оба значения заполнены, реализация должна выбрать заранее описанное безопасное правило или остановиться с ошибкой конфигурации;
 - предпочтительно использовать `BOOTSTRAP_ADMIN_PASSWORD_HASH`, если реализация это поддерживает;
 - plain password допустим только как bootstrap input из runtime env и не должен сохраняться в Git или документации.
