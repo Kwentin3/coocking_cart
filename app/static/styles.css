@@ -12,6 +12,9 @@
   --warning-bg: #fff4df;
   --danger: #9f2626;
   --debug: #3356a5;
+  --chat-column: 760px;
+  --assistant-line: 70ch;
+  --user-line: 56ch;
 }
 
 * {
@@ -48,6 +51,7 @@ button:hover {
 
 button:focus-visible,
 input:focus-visible,
+select:focus-visible,
 textarea:focus-visible,
 summary:focus-visible {
   outline: 3px solid rgba(23, 106, 99, 0.28);
@@ -147,7 +151,7 @@ textarea {
 
 .workspace {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr) minmax(340px, 420px);
+  grid-template-columns: 232px minmax(0, 1fr) minmax(360px, 440px);
   height: calc(100vh - 56px);
 }
 
@@ -190,9 +194,17 @@ textarea {
 }
 
 .chat-panel {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  padding: 14px 18px;
+}
+
+.chat-column {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  padding: 12px;
+  min-height: 0;
+  width: min(100%, var(--chat-column));
 }
 
 .quick-actions {
@@ -207,7 +219,7 @@ textarea {
   border: 1px solid var(--line);
   border-radius: 8px;
   overflow: auto;
-  padding: 12px;
+  padding: 14px;
 }
 
 .empty-state {
@@ -216,8 +228,10 @@ textarea {
 
 .message {
   border-radius: 8px;
-  margin: 0 0 10px;
-  max-width: 86%;
+  line-height: 1.56;
+  margin: 0 0 12px;
+  max-width: min(86%, var(--assistant-line));
+  overflow-wrap: anywhere;
   padding: 10px 12px;
   white-space: pre-wrap;
 }
@@ -226,10 +240,13 @@ textarea {
   background: var(--accent);
   color: white;
   margin-left: auto;
+  max-width: min(78%, var(--user-line));
 }
 
 .message.assistant {
   background: var(--surface-2);
+  margin-right: auto;
+  max-width: min(100%, var(--assistant-line));
 }
 
 .message-form {
@@ -430,7 +447,12 @@ select {
   }
 
   .chat-panel {
+    padding: 12px;
     min-height: 520px;
+  }
+
+  .chat-column {
+    width: 100%;
   }
 
   .result-panel {
@@ -441,5 +463,9 @@ select {
 
   .message {
     max-width: 96%;
+  }
+
+  .message.user {
+    max-width: 90%;
   }
 }

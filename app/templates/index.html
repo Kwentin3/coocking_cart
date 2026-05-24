@@ -40,15 +40,17 @@
         </aside>
 
         <section class="chat-panel">
-          <div class="quick-actions">
-            <button data-demo="Хочу технологическую карту для курицы по-вьетнамски">Курица по-вьетнамски</button>
-            <button data-demo="Хочу технологическую карту яичницы или омлета">Яичница/омлет</button>
+          <div class="chat-column" aria-label="Диалог с ассистентом">
+            <div class="quick-actions">
+              <button data-demo="Хочу технологическую карту для курицы по-вьетнамски">Курица по-вьетнамски</button>
+              <button data-demo="Хочу технологическую карту яичницы или омлета">Яичница/омлет</button>
+            </div>
+            <div id="messages" class="messages empty-state">Создайте или выберите сессию.</div>
+            <form id="messageForm" class="message-form">
+              <textarea id="messageInput" rows="2" placeholder="Опишите блюдо или уточнение"></textarea>
+              <button id="sendBtn" type="submit" title="Отправить" aria-label="Отправить">➤</button>
+            </form>
           </div>
-          <div id="messages" class="messages empty-state">Создайте или выберите сессию.</div>
-          <form id="messageForm" class="message-form">
-            <textarea id="messageInput" rows="2" placeholder="Опишите блюдо или уточнение"></textarea>
-            <button id="sendBtn" type="submit" title="Отправить" aria-label="Отправить">➤</button>
-          </form>
         </section>
 
         <aside class="result-panel">
