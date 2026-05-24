@@ -4,7 +4,7 @@
 
 Проект `coocking_cart` описывает продукт AI-ассистента для подготовки проектов технологических и технико-технологических карт для предприятий общественного питания.
 
-На текущем этапе проект находится в фазе product discovery и первого черновика PRD. Код приложения, backend, frontend, инфраструктура и зависимости пока не создаются.
+На текущем этапе проект находится в фазе product discovery и подготовки Demo MVP-документации. Код приложения, backend, frontend, инфраструктура и зависимости пока не создаются.
 
 ## Навигация
 
@@ -15,10 +15,22 @@
 - [Research: справочные данные и экспорты](research/RESEARCH_REFERENCE_DATA_AND_EXPORTS_v0.1.md) - заметки по БЖУ, справочникам пищевой ценности и будущим интеграциям.
 - [Product workflow v0.2](product/PRODUCT_WORKFLOW_v0.2.md) - актуальный путь пользователя от идеи блюда до проекта документа.
 - [Product workflow v0.1](product/PRODUCT_WORKFLOW_v0.1.md) - сохраненная первая версия workflow.
+- [Demo MVP documentation pack](mvp/README.md) - минимальный пакет документации для демонстрационного прототипа.
+- [Demo MVP context layers](mvp/context/) - markdown-слои статического контекста для будущего runtime context pack.
+- [Production future track](production/README.md) - placeholder будущей production-архитектуры.
+- [Documentation audits](audits/) - аудит документационного пула и рекомендация по разделению MVP/production.
 - [Decision log](decisions/DECISION_LOG.md) - зафиксированные стартовые продуктовые решения.
 - [Glossary](glossary/GLOSSARY.md) - простые определения терминов.
 - [Templates](templates/) - шаблоны для будущих PRD и продуктовых решений.
 
+## Документационные контуры
+
+- Common product baseline: PRD, workflow, research, glossary и decision log.
+- Demo MVP: быстрый демонстрационный прототип с file-driven context, markdown context layers, SQLite для короткой истории диалога и минимальным structured output.
+- Future production architecture: будущий контур managed state, state machine, semantic context, calculation, validation, audit, versioning и integrations.
+
+Production architecture сейчас является future track и не блокирует Demo MVP.
+
 ## Текущий статус
 
-Документы в версии `v0.1` являются черновиками. Их можно использовать для обсуждения идеи продукта с владельцами кафе, технологами, поварами, инвесторами и потенциальными партнерами.
+PRD v0.2 и workflow v0.2 являются актуальным common baseline. Документы в `docs/mvp/` описывают Demo MVP как демонстрационный прототип, а не production-ready систему.
