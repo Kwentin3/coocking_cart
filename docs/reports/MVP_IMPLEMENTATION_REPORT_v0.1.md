@@ -318,7 +318,7 @@ Deployment выполнен 2026-05-24 на:
 
 - URL: `https://coocking-cart.speechbattle.com/`;
 - server: `91.132.48.224`;
-- deployed code commit: `aa4f5a6`;
+- deployed code commit: `347e5d9`;
 - container: `coocking-cart-app`;
 - Docker network: `edge`;
 - reverse proxy: existing Traefik;
@@ -327,7 +327,7 @@ Deployment выполнен 2026-05-24 на:
 
 Что было изменено на сервере:
 
-- создан release under `/opt/coocking-cart/releases/aa4f5a6`;
+- создан release under `/opt/coocking-cart/releases/347e5d9`;
 - обновлен symlink `/opt/coocking-cart/current`;
 - скопирован runtime `.env` в `/opt/coocking-cart/runtime/.env` без вывода содержимого;
 - создан/обновлен только контейнер `coocking-cart-app`;
@@ -344,7 +344,10 @@ Deployment выполнен 2026-05-24 на:
 - user session payload does not expose trace;
 - admin login: OK;
 - admin Context Inspector: OK, 8 layers, trace present;
-- admin trace did not expose API key/session secret/bootstrap credentials.
+- admin trace did not expose API key/session secret/bootstrap credentials;
+- remote admin user CRUD smoke: list/create/update/delete OK;
+- remote non-admin access to `/api/admin/users`: 403 OK;
+- remote user CRUD responses did not expose password hashes or secrets.
 
 Remote egg scenario required a third confirmation turn before draft generation. This is acceptable for MVP dialogue behavior and was not fixed through hardcoded scenario logic.
 
