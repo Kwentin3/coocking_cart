@@ -24,7 +24,10 @@
 - [MVP LLM provider adapter](mvp/MVP_LLM_PROVIDER_ADAPTER_NOTE_v0.1.md) - минимальная граница интеграции с LLM provider.
 - [MVP roles/env/bootstrap](mvp/MVP_ROLES_AND_ACCESS_v0.1.md) - минимальные роли, environment contract и bootstrap data contract.
 - [Demo MVP context layers](mvp/context/) - markdown-слои статического контекста для будущего runtime context pack.
-- [Ops placeholders](ops/README.md) - шаблоны будущего deployment context и server audit.
+- [Ops docs](ops/README.md) - deployment context, server audit и шаблоны будущего deployment task.
+- [Deployment context: coocking-cart.speechbattle.com](ops/DEPLOYMENT_CONTEXT_coocking-cart.speechbattle.com_v0.1.md) - target domain/server для будущего Demo MVP.
+- [Deployment preparation handoff](ops/DEPLOYMENT_PREPARATION_HANDOFF_v0.1.md) - порядок подготовки будущего deployment task.
+- [Server audit report: 91.132.48.224](ops/SERVER_AUDIT_REPORT_91.132.48.224_v0.1.md) - результат read-only аудита сервера.
 - [Production future track](production/README.md) - placeholder будущей production-архитектуры.
 - [Documentation audits](audits/) - аудит документационного пула и рекомендация по разделению MVP/production.
 - [Decision log](decisions/DECISION_LOG.md) - зафиксированные стартовые продуктовые решения.

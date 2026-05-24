@@ -9,16 +9,27 @@
 
 Нельзя менять конфигурацию, останавливать контейнеры, удалять volumes или менять Traefik без отдельного задания и подтверждения.
 
+## Known target context
+
+- Target domain: `coocking-cart.speechbattle.com`.
+- Target server: `91.132.48.224`.
+- SSH user: `root`.
+- SSH access: key-based.
+- Docker already present.
+- Traefik already present.
+- Existing containers already running.
+
+Для этого сервера любые изменения Traefik, Docker networks, containers, firewall, DNS или TLS допускаются только отдельным заданием после review.
+
 ## Что выяснить у владельца проекта
 
 - Кто владелец сервера.
-- Какой public domain будет использоваться.
-- Как подключаться к серверу.
-- Какой SSH user разрешен.
+- Подтвердить public domain `coocking-cart.speechbattle.com`.
+- Подтвердить SSH access для `root@91.132.48.224`.
 - Где можно размещать приложение.
 - Какие сервисы нельзя трогать.
-- Есть ли существующий reverse proxy.
-- Используется ли Traefik.
+- Какой Traefik entrypoint/certresolver использовать.
+- Можно ли использовать Docker network `edge`.
 - Какие ограничения по портам и TLS.
 
 ## Read-only проверки на сервере
@@ -37,6 +48,8 @@
 - существующие deploy paths;
 - права на предполагаемую директорию деплоя;
 - где безопасно хранить logs/backups.
+- что Traefik containers подключены к ожидаемой network.
+- что выбранный app deploy path не конфликтует с существующими проектами.
 
 ## Что нельзя делать на первом проходе
 
@@ -48,6 +61,8 @@
 - Создавать production config.
 - Записывать secrets в репозиторий.
 - Использовать `docker compose down` или аналогичные разрушительные команды.
+- Читать или копировать secret files без отдельного разрешения.
+- Коммитить результаты, содержащие secrets.
 
 ## Результат аудита
 

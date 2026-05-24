@@ -40,6 +40,9 @@
 - [Bootstrap data contract](MVP_BOOTSTRAP_DATA_CONTRACT_v0.1.md)
 - [Ops README](../ops/README.md)
 - [Deployment context template](../ops/DEPLOYMENT_CONTEXT_TEMPLATE_v0.1.md)
+- [Deployment context: coocking-cart.speechbattle.com](../ops/DEPLOYMENT_CONTEXT_coocking-cart.speechbattle.com_v0.1.md)
+- [Deployment preparation handoff](../ops/DEPLOYMENT_PREPARATION_HANDOFF_v0.1.md)
+- [Server audit report](../ops/SERVER_AUDIT_REPORT_91.132.48.224_v0.1.md)
 - [Demo scenarios](MVP_DEMO_SCENARIOS_v0.1.md)
 - [Acceptance criteria](MVP_ACCEPTANCE_CRITERIA_v0.1.md)
 
@@ -103,7 +106,22 @@
 - Context paths приходят через env или config boundary.
 - Deployment details не должны быть выдуманы агентом.
 
-## 6. Минимальный порядок реализации
+## 6. Deployment context
+
+Известный target deployment для будущего Demo MVP:
+
+- domain: `coocking-cart.speechbattle.com`;
+- server: `91.132.48.224`;
+- SSH: `root`, key-based access;
+- Docker already present;
+- Traefik already present;
+- existing containers already running.
+
+Реализация приложения не должна менять сервер без отдельного deployment task. Прототип должен быть готов к запуску за reverse proxy Traefik, но compose, labels, TLS, DNS и server changes не входят в реализационный handoff.
+
+Environment values и secrets должны быть внешними: не в коде, не в markdown context layers и не в Git.
+
+## 7. Минимальный порядок реализации
 
 1. Поднять пустой чатовый сценарий.
 2. Научить runtime читать `context_manifest.yml`.
@@ -119,7 +137,7 @@
 12. Показать debug-view основных частей context window.
 13. Прогнать два demo scenarios.
 
-## 7. Критерий остановки
+## 8. Критерий остановки
 
 Реализация MVP считается достаточной для демонстрации, когда оба demo scenarios проходят end-to-end, а результат явно показывает проектный статус документа, предупреждения, статусы данных и structured JSON.
 

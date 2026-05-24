@@ -5,29 +5,38 @@
 
 ## Назначение
 
-`docs/ops/` содержит шаблоны и checklist для будущего инфраструктурного задания.
+`docs/ops/` содержит deployment context, шаблоны и checklist для будущего инфраструктурного задания.
 
-Реальные серверные данные будут добавлены позже отдельным заданием после передачи владельцем проекта:
+Часть non-secret deployment context уже передана владельцем проекта:
 
-- public domain;
-- hosting/server address;
-- SSH context;
-- Traefik context;
+- domain `coocking-cart.speechbattle.com`;
+- server `91.132.48.224`;
+- SSH user `root`;
+- key-based SSH access;
+- existing Docker and Traefik.
+
+Оставшиеся инфраструктурные данные должны уточняться отдельным заданием:
+
 - existing containers;
+- Traefik entrypoint/certresolver;
+- safe deployment path;
 - deployment constraints.
 
 ## Важные правила
 
 - `docs/out/` не является источником ops-документации.
 - Секреты не хранятся в репозитории.
-- Реальные IP, domains, SSH users, paths и network names не придумываются.
+- IP, domains, SSH users, paths и network names не придумываются: фиксируются только явно переданные или подтвержденные аудитом значения.
 - Первое инфраструктурное действие должно быть read-only аудитом существующего сервера.
 - Нельзя останавливать существующие контейнеры без отдельного подтверждения.
 
 ## Документы
 
 - [Deployment context template](DEPLOYMENT_CONTEXT_TEMPLATE_v0.1.md) - какие данные нужно будет собрать перед деплоем.
+- [Deployment context: coocking-cart.speechbattle.com](DEPLOYMENT_CONTEXT_coocking-cart.speechbattle.com_v0.1.md) - известный target context для Demo MVP.
+- [Deployment preparation handoff](DEPLOYMENT_PREPARATION_HANDOFF_v0.1.md) - что делать перед будущим deployment task.
 - [Server audit checklist](SERVER_AUDIT_CHECKLIST_v0.1.md) - что проверить на сервере до любых изменений.
+- [Server audit report: 91.132.48.224](SERVER_AUDIT_REPORT_91.132.48.224_v0.1.md) - результат read-only аудита.
 - [Environment preparation notes](ENVIRONMENT_PREPARATION_NOTES_v0.1.md) - как относиться к `.env`, placeholders и секретам.
 
 ## Не-goals
