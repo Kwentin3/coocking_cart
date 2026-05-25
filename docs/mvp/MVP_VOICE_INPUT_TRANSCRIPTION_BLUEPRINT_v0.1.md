@@ -63,6 +63,7 @@ Auth: logged-in user.
 Request:
 
 - `Content-Type: audio/wav`
+- `Content-Type: audio/mp4` for `.m4a` test uploads
 - `X-Audio-Duration-Ms: <integer>`
 - raw audio bytes in request body
 
@@ -71,7 +72,8 @@ Limits:
 - duration must be `1..180000` ms;
 - body must be non-empty;
 - body must not exceed configured `STT_MAX_AUDIO_BYTES`;
-- accepted MIME type for browser path: `audio/wav`.
+- accepted MIME type for browser path: `audio/wav`;
+- accepted MIME type for direct `.m4a` tests: `audio/mp4` (`audio/m4a` and `audio/x-m4a` normalize to `audio/mp4`).
 
 Response success:
 
@@ -122,7 +124,7 @@ Reasoning from official Gemini docs:
 - Inline audio is acceptable for requests up to 20 MB total.
 - Files API is recommended when total request size exceeds 20 MB.
 - Real-time transcription is not needed for this feature.
-- Supported audio MIME types include `audio/wav`.
+- The browser recording path sends `audio/wav`; `.m4a` test files are sent as `audio/mp4`.
 
 Reference:
 

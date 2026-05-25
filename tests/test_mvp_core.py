@@ -12,7 +12,7 @@ from app.context_loader import ContextLoader
 from app.llm import GeminiAdapter
 from app.runtime import DemoRuntime
 from app.storage import Storage
-from app.stt import GeminiSttAdapter, SUPPORTED_STT_MIME_TYPES
+from app.stt import GeminiSttAdapter, SUPPORTED_STT_MIME_TYPES, normalize_mime_type
 from app.structured_output import STRUCTURED_OUTPUT_SCHEMA, normalize_structured_output
 
 
@@ -337,6 +337,11 @@ class CoreContractsTest(unittest.TestCase):
         self.assertEqual(parts[1]["inlineData"]["mimeType"], "audio/wav")
         self.assertTrue(parts[1]["inlineData"]["data"])
         self.assertEqual(captured["timeout"], 5)
+
+    def test_stt_mime_normalization_accepts_m4a_aliases(self) -> None:
+        self.assertEqual(normalize_mime_type("audio/m4a"), "audio/mp4")
+        self.assertEqual(normalize_mime_type("audio/x-m4a; codecs=mp4a.40.2"), "audio/mp4")
+        self.assertIn("audio/mp4", SUPPORTED_STT_MIME_TYPES)
 
     def test_runtime_transcribe_audio_validates_limits_before_provider_call(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

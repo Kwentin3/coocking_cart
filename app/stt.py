@@ -23,6 +23,7 @@ TRANSCRIPTION_PROMPT = """\
 
 SUPPORTED_STT_MIME_TYPES = {
     "audio/wav",
+    "audio/mp4",
     "audio/mp3",
     "audio/mpeg",
     "audio/aiff",
@@ -167,7 +168,10 @@ def make_stt_adapter(config: AppConfig) -> SttAdapter:
 
 
 def normalize_mime_type(value: str) -> str:
-    return (value or "").split(";", 1)[0].strip().lower()
+    mime_type = (value or "").split(";", 1)[0].strip().lower()
+    if mime_type in {"audio/m4a", "audio/x-m4a"}:
+        return "audio/mp4"
+    return mime_type
 
 
 def extract_text(body: dict[str, Any]) -> str:
