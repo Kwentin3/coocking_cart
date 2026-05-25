@@ -44,6 +44,7 @@ Production architecture остается future track. Managed state, state mach
 - [Frontend states and errors](MVP_FRONTEND_STATES_AND_ERRORS_v0.1.md) - обязательные loading/error/empty/success states и user/admin visibility.
 - [Admin context workspace PRD](../prd/PRD_ADMIN_CONTEXT_WORKSPACE_v0.1.md) - продуктовый контракт служебной admin-зоны, dashboard и read-only prompt/context просмотра.
 - [Admin context workspace blueprint](MVP_ADMIN_CONTEXT_WORKSPACE_BLUEPRINT_v0.1.md) - implementation slices, API boundaries и non-goals для admin workspace.
+- [Voice input transcription blueprint](MVP_VOICE_INPUT_TRANSCRIPTION_BLUEPRINT_v0.1.md) - маленькая feature-рамка для on/off голосового ввода через STT без voice chat.
 - [Context window contract](MVP_CONTEXT_WINDOW_CONTRACT_v0.1.md) - из чего состоит контекстное окно каждого такта.
 - [Prompt layer contract](MVP_PROMPT_LAYER_CONTRACT_v0.1.md) - контракт отдельного markdown prompt/context layer.
 - [Turn contract](MVP_TURN_CONTRACT_v0.1.md) - контракт одного такта взаимодействия.

@@ -5,6 +5,7 @@ from typing import Any
 from .config import AppConfig
 from .context_loader import ContextLoader, ContextPack
 from .llm import GeminiAdapter
+from .stt import SUPPORTED_STT_MIME_TYPES, make_stt_adapter, normalize_mime_type
 from .storage import Storage, User, estimate_tokens, utc_now
 from .structured_output import STRUCTURED_OUTPUT_SCHEMA, TURN_TASK_INSTRUCTION, empty_structured_output, parse_structured_output
 
@@ -15,6 +16,7 @@ class DemoRuntime:
         self.storage = storage
         self.context_loader = ContextLoader(config.context_manifest_path, config.context_layers_dir)
         self.llm_adapter = GeminiAdapter(config)
+        self.stt_adapter = make_stt_adapter(config)
 
     def load_context_pack(self) -> ContextPack:
         return self.context_loader.load()
@@ -127,6 +129,38 @@ class DemoRuntime:
             "message": {"id": assistant_message_id, "role": "assistant", "content": structured["user_answer"]},
             "structured_output": structured,
             "trace": self._trace_for_user(trace, user),
+        }
+
+    def transcribe_audio(self, user: User, audio_bytes: bytes, mime_type: str, duration_ms: int) -> dict[str, Any]:
+        if not self.config.stt_enabled:
+            return {"ok": False, "error": "Голосовой ввод выключен.", "status": 503}
+        if duration_ms <= 0:
+            return {"ok": False, "error": "Длительность аудио не указана.", "status": 400}
+        if duration_ms > self.config.stt_max_audio_seconds * 1000:
+            return {"ok": False, "error": "Запись слишком длинная.", "status": 413}
+        if not audio_bytes:
+            return {"ok": False, "error": "Аудио пустое.", "status": 400}
+        if len(audio_bytes) > self.config.stt_max_audio_bytes:
+            return {"ok": False, "error": "Аудиофайл слишком большой.", "status": 413}
+        normalized_mime = normalize_mime_type(mime_type)
+        if normalized_mime not in SUPPORTED_STT_MIME_TYPES:
+            return {"ok": False, "error": "Формат аудио не поддерживается.", "status": 415}
+
+        result = self.stt_adapter.transcribe(audio_bytes, normalized_mime, duration_ms=duration_ms)
+        if not result.ok:
+            return {
+                "ok": False,
+                "error": result.error or "Не удалось распознать аудио.",
+                "status": 502,
+                "provider": result.provider,
+                "model": result.model,
+                "admin_hint": result.admin_hint if user.role == "admin" else None,
+            }
+        return {
+            "ok": True,
+            "text": result.text,
+            "provider": result.provider,
+            "model": result.model,
         }
 
     def context_inspector_payload(self, session_id: int, user: User) -> dict[str, Any]:

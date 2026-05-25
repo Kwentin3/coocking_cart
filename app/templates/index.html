@@ -50,8 +50,15 @@
             </div>
             <div id="messages" class="messages empty-state">Создайте или выберите сессию.</div>
             <form id="messageForm" class="message-form">
-              <textarea id="messageInput" rows="2" placeholder="Опишите блюдо или уточнение"></textarea>
-              <button id="sendBtn" type="submit" title="Отправить" aria-label="Отправить">➤</button>
+              <div class="message-input-stack">
+                <textarea id="messageInput" rows="2" placeholder="Опишите блюдо или уточнение"></textarea>
+                <div id="voiceStatus" class="voice-status hidden" role="status" aria-live="polite"></div>
+              </div>
+              <div class="message-actions">
+                <button id="voiceBtn" class="icon-btn voice-btn" type="button" title="Голосовой ввод" aria-label="Начать голосовой ввод">◉</button>
+                <button id="voiceCancelBtn" class="icon-btn compact-icon voice-cancel-btn hidden" type="button" title="Отменить запись" aria-label="Отменить запись">×</button>
+                <button id="sendBtn" class="icon-btn send-btn" type="submit" title="Отправить" aria-label="Отправить">➤</button>
+              </div>
             </form>
           </div>
           <section id="adminWorkspace" class="admin-workspace hidden" aria-label="Служебный экран admin"></section>

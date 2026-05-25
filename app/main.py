@@ -51,11 +51,16 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
             self._serve_static(parsed.path)
             return
         if parsed.path == "/api/config":
-            self._json({"ok": True, "config_errors": self.state.config.public_errors()})
+            self._json({"ok": True, "config_errors": self.state.config.public_errors(), "voice_input": self._voice_input_config()})
             return
         if parsed.path == "/api/me":
             user = self._current_user()
-            self._json({"ok": True, "user": self._user_payload(user), "config_errors": self.state.config.public_errors()})
+            self._json({
+                "ok": True,
+                "user": self._user_payload(user),
+                "config_errors": self.state.config.public_errors(),
+                "voice_input": self._voice_input_config(),
+            })
             return
         if parsed.path == "/api/admin/users":
             admin = self._require_admin()
@@ -120,7 +125,7 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
             self._serve_static(parsed.path, body=False)
             return
         if parsed.path == "/api/config":
-            self._json({"ok": True, "config_errors": self.state.config.public_errors()}, body=False)
+            self._json({"ok": True, "config_errors": self.state.config.public_errors(), "voice_input": self._voice_input_config()}, body=False)
             return
         self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND, body=False)
 
@@ -146,6 +151,23 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
             if token:
                 self.state.storage.delete_auth_session(token)
             self._json({"ok": True}, headers=[self._clear_cookie_header()])
+            return
+        if parsed.path == "/api/transcribe":
+            user = self._require_user()
+            if not user:
+                return
+            audio = self._read_audio_upload()
+            if not audio["ok"]:
+                self._json({"ok": False, "error": audio["error"]}, audio["status"])
+                return
+            payload = self.state.runtime.transcribe_audio(
+                user,
+                audio["audio_bytes"],
+                audio["mime_type"],
+                audio["duration_ms"],
+            )
+            status = HTTPStatus(payload.pop("status", 200))
+            self._json(payload, status)
             return
         if parsed.path == "/api/admin/users":
             admin = self._require_admin()
@@ -305,6 +327,33 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
         except json.JSONDecodeError:
             return {}
 
+    def _read_audio_upload(self) -> dict[str, Any]:
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            length = 0
+        if length <= 0:
+            return {"ok": False, "error": "Аудио пустое.", "status": HTTPStatus.BAD_REQUEST}
+        if length > self.state.config.stt_max_audio_bytes:
+            return {"ok": False, "error": "Аудиофайл слишком большой.", "status": HTTPStatus.REQUEST_ENTITY_TOO_LARGE}
+        try:
+            duration_ms = int(self.headers.get("X-Audio-Duration-Ms") or 0)
+        except ValueError:
+            duration_ms = 0
+        if duration_ms <= 0:
+            return {"ok": False, "error": "Длительность аудио не указана.", "status": HTTPStatus.BAD_REQUEST}
+        if duration_ms > self.state.config.stt_max_audio_seconds * 1000:
+            return {"ok": False, "error": "Запись слишком длинная.", "status": HTTPStatus.REQUEST_ENTITY_TOO_LARGE}
+        mime_type = self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
+        if not mime_type:
+            return {"ok": False, "error": "Тип аудио не указан.", "status": HTTPStatus.UNSUPPORTED_MEDIA_TYPE}
+        return {
+            "ok": True,
+            "audio_bytes": self.rfile.read(length),
+            "mime_type": mime_type,
+            "duration_ms": duration_ms,
+        }
+
     def _json(
         self,
         payload: dict[str, Any],
@@ -400,6 +449,14 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
     @staticmethod
     def _clear_cookie_header() -> tuple[str, str]:
         return ("Set-Cookie", f"{COOKIE_NAME}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0")
+
+    def _voice_input_config(self) -> dict[str, Any]:
+        return {
+            "enabled": self.state.config.stt_enabled,
+            "max_audio_seconds": self.state.config.stt_max_audio_seconds,
+            "countdown_seconds": self.state.config.stt_countdown_seconds,
+            "max_audio_bytes": self.state.config.stt_max_audio_bytes,
+        }
 
 
 def run(host: str, port: int) -> None:

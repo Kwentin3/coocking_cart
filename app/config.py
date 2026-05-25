@@ -60,6 +60,15 @@ class AppConfig:
     llm_api_key: str
     llm_base_url: str
     llm_timeout_seconds: int
+    stt_enabled: bool
+    stt_provider: str
+    stt_model: str
+    stt_api_key: str
+    stt_base_url: str
+    stt_timeout_seconds: int
+    stt_max_audio_seconds: int
+    stt_countdown_seconds: int
+    stt_max_audio_bytes: int
     enable_context_inspector: bool
     enable_llm_trace: bool
     bootstrap_admin_email: str
@@ -78,6 +87,15 @@ class AppConfig:
             self.llm_provider == "gemini"
             and not _is_blank_or_placeholder(self.llm_model)
             and not _is_blank_or_placeholder(self.llm_api_key)
+        )
+
+    @property
+    def stt_ready(self) -> bool:
+        return (
+            self.stt_enabled
+            and self.stt_provider == "gemini"
+            and not _is_blank_or_placeholder(self.stt_model)
+            and not _is_blank_or_placeholder(self.stt_api_key)
         )
 
     @property
@@ -106,6 +124,13 @@ class AppConfig:
             errors.append("Не настроена модель LLM.")
         if _is_blank_or_placeholder(self.llm_api_key):
             errors.append("Не настроен API key LLM.")
+        if self.stt_enabled:
+            if self.stt_provider != "gemini":
+                errors.append("Для голосового ввода ожидается STT_PROVIDER=gemini.")
+            if _is_blank_or_placeholder(self.stt_model):
+                errors.append("Не настроена модель STT.")
+            if _is_blank_or_placeholder(self.stt_api_key):
+                errors.append("Не настроен API key STT.")
         return errors
 
     def admin_diagnostics(self) -> list[str]:
@@ -127,6 +152,12 @@ class AppConfig:
             diagnostics.append("LLM_MODEL is missing, blank, or placeholder.")
         if _is_blank_or_placeholder(self.llm_api_key):
             diagnostics.append("LLM_API_KEY is missing, blank, or placeholder.")
+        if self.stt_enabled and self.stt_provider != "gemini":
+            diagnostics.append("STT_PROVIDER must be gemini for Demo MVP.")
+        if self.stt_enabled and _is_blank_or_placeholder(self.stt_model):
+            diagnostics.append("STT_MODEL is missing, blank, or placeholder.")
+        if self.stt_enabled and _is_blank_or_placeholder(self.stt_api_key):
+            diagnostics.append("STT_API_KEY is missing, blank, or placeholder.")
         return diagnostics
 
 
@@ -148,6 +179,8 @@ def load_config() -> AppConfig:
         return path
 
     llm_api_key = get("LLM_API_KEY") or get("GEMINI_API_KEY")
+    stt_api_key = get("STT_API_KEY") or llm_api_key
+    stt_model = get("STT_MODEL") or get("LLM_MODEL", "")
 
     return AppConfig(
         app_env=get("APP_ENV", "demo"),
@@ -163,6 +196,15 @@ def load_config() -> AppConfig:
         llm_api_key=llm_api_key,
         llm_base_url=get("LLM_BASE_URL", ""),
         llm_timeout_seconds=_int_value(get("LLM_TIMEOUT_SECONDS"), 60),
+        stt_enabled=_bool_value(get("STT_ENABLED"), True),
+        stt_provider=(get("STT_PROVIDER") or get("LLM_PROVIDER", "gemini")).strip().lower(),
+        stt_model=stt_model,
+        stt_api_key=stt_api_key,
+        stt_base_url=get("STT_BASE_URL") or get("LLM_BASE_URL", ""),
+        stt_timeout_seconds=_int_value(get("STT_TIMEOUT_SECONDS"), 90),
+        stt_max_audio_seconds=_int_value(get("STT_MAX_AUDIO_SECONDS"), 180),
+        stt_countdown_seconds=_int_value(get("STT_COUNTDOWN_SECONDS"), 15),
+        stt_max_audio_bytes=_int_value(get("STT_MAX_AUDIO_BYTES"), 12_000_000),
         enable_context_inspector=_bool_value(get("ENABLE_CONTEXT_INSPECTOR"), True),
         enable_llm_trace=_bool_value(get("ENABLE_LLM_TRACE"), True),
         bootstrap_admin_email=get("BOOTSTRAP_ADMIN_EMAIL", ""),

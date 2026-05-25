@@ -31,6 +31,7 @@
 - [MVP LLM provider adapter](mvp/MVP_LLM_PROVIDER_ADAPTER_NOTE_v0.1.md) - минимальная граница интеграции с LLM provider.
 - [MVP roles/env/bootstrap](mvp/MVP_ROLES_AND_ACCESS_v0.1.md) - минимальные роли, environment contract и bootstrap data contract.
 - [MVP admin user CRUD blueprint](mvp/MVP_ADMIN_USER_CRUD_BLUEPRINT_v0.1.md) - admin-only CRUD пользователей без production IAM/RBAC.
+- [MVP voice input transcription blueprint](mvp/MVP_VOICE_INPUT_TRANSCRIPTION_BLUEPRINT_v0.1.md) - голосовой ввод как STT в редактируемый chat input без voice chat.
 - [Safe env example](../.env.example) - безопасный шаблон переменного окружения; реальные `.env` не коммитятся.
 - [Demo MVP context layers](mvp/context/) - markdown-слои статического контекста для будущего runtime context pack.
 - [Ops docs](ops/README.md) - deployment context, server audit и шаблоны будущего deployment task.

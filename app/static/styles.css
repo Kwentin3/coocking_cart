@@ -508,17 +508,49 @@ textarea {
 }
 
 .message-form {
+  align-items: end;
   display: grid;
   gap: 8px;
-  grid-template-columns: minmax(0, 1fr) 46px;
+  grid-template-columns: minmax(0, 1fr) auto;
   padding-top: 10px;
 }
 
-.message-form button {
+.message-input-stack {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.message-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.send-btn,
+.voice-btn.recording {
   background: var(--accent);
   border-color: var(--accent);
   color: white;
   font-size: 18px;
+}
+
+.voice-btn.recording {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.voice-status {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  padding: 6px 8px;
+}
+
+.voice-cancel-btn {
+  border-color: #efc4c4;
+  color: var(--danger);
 }
 
 .result-panel {

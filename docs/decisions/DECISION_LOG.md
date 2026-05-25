@@ -84,6 +84,7 @@
 | D-075 | 2026-05-24 | Admin получает отдельный read-only workspace вместо пользовательского чатового потока. | Admin-сценарий состоит из наблюдения активности, просмотра чатов, prompt/context pack и users tooling; сам чат как primary UI админу не нужен. | Левая панель `admin` становится служебной навигацией; user-facing UI не меняется. |
 | D-076 | 2026-05-24 | Prompt/context GUI в Demo MVP является read-only. | GUI-редактирование markdown layers на сервере может создать drift между Git, docs и runtime. | Разрешены просмотр, раскрытие и copy actions; prompt CRUD, runtime layer editing и prompt auto-generation остаются out of scope. |
 | D-077 | 2026-05-24 | Admin dashboard показывает token usage как provider usage when available или MVP estimate. | В текущем MVP исторические turns могут не иметь billing-grade usage metadata; требовать точный биллинг преждевременно. | UI и docs явно помечают token count как estimate/not billing-grade, если provider usage отсутствует. |
+| D-078 | 2026-05-25 | Голосовая функция Demo MVP является только STT-вводом, не voice chat. | Для технологических карт критично, чтобы пользователь проверял распознанные ингредиенты, числа, брутто/нетто, температуры и сроки перед отправкой. | `/api/transcribe` возвращает текст в chat input; auto-send, voice replies и realtime STT остаются out of scope. |
 
 ## Как обновлять журнал
 

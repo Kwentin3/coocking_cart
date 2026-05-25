@@ -12,10 +12,11 @@ from app.context_loader import ContextLoader
 from app.llm import GeminiAdapter
 from app.runtime import DemoRuntime
 from app.storage import Storage
+from app.stt import GeminiSttAdapter, SUPPORTED_STT_MIME_TYPES
 from app.structured_output import STRUCTURED_OUTPUT_SCHEMA, normalize_structured_output
 
 
-def test_config(db_path: Path, *, api_key: str = "") -> AppConfig:
+def make_test_config(db_path: Path, *, api_key: str = "") -> AppConfig:
     return AppConfig(
         app_env="test",
         app_name="coocking-cart",
@@ -30,6 +31,15 @@ def test_config(db_path: Path, *, api_key: str = "") -> AppConfig:
         llm_api_key=api_key,
         llm_base_url="",
         llm_timeout_seconds=5,
+        stt_enabled=True,
+        stt_provider="gemini",
+        stt_model="gemini-3.1-pro-preview",
+        stt_api_key=api_key,
+        stt_base_url="",
+        stt_timeout_seconds=5,
+        stt_max_audio_seconds=180,
+        stt_countdown_seconds=15,
+        stt_max_audio_bytes=12_000_000,
         enable_context_inspector=True,
         enable_llm_trace=True,
         bootstrap_admin_email="admin@example.test",
@@ -62,7 +72,7 @@ class CoreContractsTest(unittest.TestCase):
 
     def test_runtime_missing_llm_key_returns_safe_structured_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            config = test_config(Path(tmp) / "demo.sqlite", api_key="")
+            config = make_test_config(Path(tmp) / "demo.sqlite", api_key="")
             storage = Storage(config.sqlite_db_path)
             user = storage.ensure_demo_user()
             session_id = storage.create_chat_session(user.id, "smoke")
@@ -74,7 +84,7 @@ class CoreContractsTest(unittest.TestCase):
 
     def test_admin_can_read_inspector_and_user_cannot(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            config = test_config(Path(tmp) / "demo.sqlite", api_key="")
+            config = make_test_config(Path(tmp) / "demo.sqlite", api_key="")
             storage = Storage(config.sqlite_db_path)
             admin = storage.bootstrap_admin(config.bootstrap_admin_email, config.bootstrap_admin_password)
             user = storage.ensure_demo_user()
@@ -92,7 +102,7 @@ class CoreContractsTest(unittest.TestCase):
 
     def test_admin_context_workspace_payload_is_read_only_and_admin_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            config = test_config(Path(tmp) / "demo.sqlite", api_key="")
+            config = make_test_config(Path(tmp) / "demo.sqlite", api_key="")
             storage = Storage(config.sqlite_db_path)
             admin = storage.bootstrap_admin(config.bootstrap_admin_email, config.bootstrap_admin_password)
             user = storage.ensure_demo_user()
@@ -115,7 +125,7 @@ class CoreContractsTest(unittest.TestCase):
 
     def test_admin_dashboard_aggregates_chat_activity(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            config = test_config(Path(tmp) / "demo.sqlite", api_key="")
+            config = make_test_config(Path(tmp) / "demo.sqlite", api_key="")
             storage = Storage(config.sqlite_db_path)
             user = storage.ensure_demo_user()
             session_id = storage.create_chat_session(user.id, "dashboard smoke")
@@ -153,7 +163,7 @@ class CoreContractsTest(unittest.TestCase):
 
     def test_bootstrap_admin_is_created_from_env_contract(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            config = test_config(Path(tmp) / "demo.sqlite", api_key="")
+            config = make_test_config(Path(tmp) / "demo.sqlite", api_key="")
             storage = Storage(config.sqlite_db_path)
             admin = storage.bootstrap_admin(config.bootstrap_admin_email, config.bootstrap_admin_password)
             self.assertIsNotNone(admin)
@@ -164,7 +174,7 @@ class CoreContractsTest(unittest.TestCase):
 
     def test_admin_user_crud_storage_contract(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            config = test_config(Path(tmp) / "demo.sqlite", api_key="")
+            config = make_test_config(Path(tmp) / "demo.sqlite", api_key="")
             storage = Storage(config.sqlite_db_path)
             admin = storage.bootstrap_admin(config.bootstrap_admin_email, config.bootstrap_admin_password)
             assert admin is not None
@@ -196,7 +206,7 @@ class CoreContractsTest(unittest.TestCase):
 
     def test_admin_user_crud_guards_current_and_last_admin(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            config = test_config(Path(tmp) / "demo.sqlite", api_key="")
+            config = make_test_config(Path(tmp) / "demo.sqlite", api_key="")
             storage = Storage(config.sqlite_db_path)
             admin = storage.bootstrap_admin(config.bootstrap_admin_email, config.bootstrap_admin_password)
             assert admin is not None
@@ -215,7 +225,7 @@ class CoreContractsTest(unittest.TestCase):
 
     def test_chat_session_crud_respects_owner_and_admin(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            config = test_config(Path(tmp) / "demo.sqlite", api_key="")
+            config = make_test_config(Path(tmp) / "demo.sqlite", api_key="")
             storage = Storage(config.sqlite_db_path)
             admin = storage.bootstrap_admin(config.bootstrap_admin_email, config.bootstrap_admin_password)
             owner = storage.ensure_demo_user()
@@ -242,7 +252,7 @@ class CoreContractsTest(unittest.TestCase):
             self.assertEqual(storage.list_messages(session_id), [])
 
     def test_placeholder_bootstrap_values_are_not_ready(self) -> None:
-        config = test_config(Path("unused.sqlite"), api_key="<GEMINI_API_KEY>")
+        config = make_test_config(Path("unused.sqlite"), api_key="<GEMINI_API_KEY>")
         config = AppConfig(
             **{
                 **config.__dict__,
@@ -279,7 +289,7 @@ class CoreContractsTest(unittest.TestCase):
         try:
             urllib.request.urlopen = fake_urlopen  # type: ignore[assignment]
             with tempfile.TemporaryDirectory() as tmp:
-                config = test_config(Path(tmp) / "demo.sqlite", api_key="fake-key")
+                config = make_test_config(Path(tmp) / "demo.sqlite", api_key="fake-key")
                 GeminiAdapter(config).call("assembled context", STRUCTURED_OUTPUT_SCHEMA)
         finally:
             urllib.request.urlopen = original_urlopen  # type: ignore[assignment]
@@ -288,6 +298,64 @@ class CoreContractsTest(unittest.TestCase):
         self.assertEqual(generation_config["responseMimeType"], "application/json")
         self.assertEqual(generation_config["responseJsonSchema"]["type"], "object")
         self.assertIn("user_answer", generation_config["responseJsonSchema"]["properties"])
+
+    def test_gemini_stt_adapter_sends_inline_audio_payload(self) -> None:
+        captured: dict[str, Any] = {}
+
+        class FakeResponse:
+            def __enter__(self) -> "FakeResponse":
+                return self
+
+            def __exit__(self, *_args: Any) -> None:
+                return None
+
+            def read(self) -> bytes:
+                body = {"candidates": [{"content": {"parts": [{"text": "200 грамм курицы"}]}}]}
+                return json.dumps(body).encode("utf-8")
+
+        original_urlopen = urllib.request.urlopen
+
+        def fake_urlopen(request: urllib.request.Request, timeout: int = 0) -> FakeResponse:
+            captured["payload"] = json.loads(request.data.decode("utf-8"))  # type: ignore[union-attr]
+            captured["headers"] = dict(request.header_items())
+            captured["timeout"] = timeout
+            return FakeResponse()
+
+        try:
+            urllib.request.urlopen = fake_urlopen  # type: ignore[assignment]
+            with tempfile.TemporaryDirectory() as tmp:
+                config = make_test_config(Path(tmp) / "demo.sqlite", api_key="fake-key")
+                result = GeminiSttAdapter(config).transcribe(b"RIFFfakewav", "audio/wav", duration_ms=1000)
+        finally:
+            urllib.request.urlopen = original_urlopen  # type: ignore[assignment]
+
+        self.assertTrue(result.ok)
+        self.assertEqual(result.text, "200 грамм курицы")
+        self.assertIn("audio/wav", SUPPORTED_STT_MIME_TYPES)
+        parts = captured["payload"]["contents"][0]["parts"]
+        self.assertIn("Транскрибируй русскую речь", parts[0]["text"])
+        self.assertEqual(parts[1]["inlineData"]["mimeType"], "audio/wav")
+        self.assertTrue(parts[1]["inlineData"]["data"])
+        self.assertEqual(captured["timeout"], 5)
+
+    def test_runtime_transcribe_audio_validates_limits_before_provider_call(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = make_test_config(Path(tmp) / "demo.sqlite", api_key="fake-key")
+            config = AppConfig(**{**config.__dict__, "stt_max_audio_bytes": 4})
+            storage = Storage(config.sqlite_db_path)
+            user = storage.ensure_demo_user()
+            runtime = DemoRuntime(config, storage)
+
+            oversized = runtime.transcribe_audio(user, b"12345", "audio/wav", duration_ms=1000)
+            unsupported = runtime.transcribe_audio(user, b"123", "audio/webm", duration_ms=1000)
+            too_long = runtime.transcribe_audio(user, b"123", "audio/wav", duration_ms=181000)
+
+        self.assertFalse(oversized["ok"])
+        self.assertEqual(oversized["status"], 413)
+        self.assertFalse(unsupported["ok"])
+        self.assertEqual(unsupported["status"], 415)
+        self.assertFalse(too_long["ok"])
+        self.assertEqual(too_long["status"], 413)
 
     def test_structured_json_is_derived_when_draft_exists(self) -> None:
         normalized = normalize_structured_output(

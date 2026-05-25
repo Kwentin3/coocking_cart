@@ -9,6 +9,24 @@ const state = {
   sessionId: null,
   latestTurn: null,
   editingSessionId: null,
+  sending: false,
+  voice: {
+    supported: false,
+    recording: false,
+    transcribing: false,
+    startedAt: 0,
+    timerId: null,
+    audioContext: null,
+    source: null,
+    processor: null,
+    gain: null,
+    stream: null,
+    chunks: [],
+    totalSamples: 0,
+    inputSampleRate: 0,
+    maxSeconds: 180,
+    countdownSeconds: 15,
+  },
 };
 
 const el = (id) => document.getElementById(id);
@@ -74,6 +92,7 @@ function showWorkspace() {
 
 async function init() {
   const me = await api("/api/me");
+  applyVoiceConfig(me.voice_input || null);
   if (me.user) {
     state.user = me.user;
     showWorkspace();
@@ -84,6 +103,19 @@ async function init() {
     }
   } else {
     showLogin(me.config_errors || []);
+  }
+}
+
+function applyVoiceConfig(config) {
+  if (!config) return;
+  state.voice.maxSeconds = Number(config.max_audio_seconds || state.voice.maxSeconds);
+  state.voice.countdownSeconds = Number(config.countdown_seconds || state.voice.countdownSeconds);
+  if (config.enabled === false) {
+    state.voice.supported = false;
+    updateVoiceStatus("");
+    el("voiceBtn").title = "Голосовой ввод выключен";
+    el("voiceBtn").setAttribute("aria-label", "Голосовой ввод выключен");
+    refreshVoiceControls();
   }
 }
 
@@ -292,6 +324,10 @@ function renderMessages(messages) {
 
 async function sendMessage(event) {
   event?.preventDefault();
+  if (state.voice.recording || state.voice.transcribing) {
+    showToast("Дождитесь завершения голосового ввода.");
+    return;
+  }
   const text = el("messageInput").value.trim();
   if (!text) return;
   if (!state.sessionId) {
@@ -313,8 +349,10 @@ async function sendMessage(event) {
 }
 
 function setLoading(isLoading) {
+  state.sending = isLoading;
   el("sendBtn").disabled = isLoading;
   el("sendBtn").textContent = isLoading ? "…" : "➤";
+  refreshVoiceControls();
 }
 
 function renderStructured(output) {
@@ -783,6 +821,269 @@ function setButtonBusy(button, isBusy) {
   button.dataset.busy = isBusy ? "true" : "false";
 }
 
+function initVoiceInput() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  state.voice.supported = !!(navigator.mediaDevices?.getUserMedia && AudioContextClass);
+  refreshVoiceControls();
+  updateVoiceStatus("");
+  if (!state.voice.supported) {
+    el("voiceBtn").title = "Голосовой ввод недоступен в этом браузере";
+    el("voiceBtn").setAttribute("aria-label", "Голосовой ввод недоступен");
+  }
+}
+
+async function toggleVoiceRecording() {
+  if (state.voice.transcribing) return;
+  if (state.voice.recording) {
+    await stopVoiceRecording({transcribe: true});
+    return;
+  }
+  await startVoiceRecording();
+}
+
+async function startVoiceRecording() {
+  if (!state.voice.supported) {
+    showToast("Браузер не поддерживает запись аудио.");
+    return;
+  }
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+    const audioContext = new AudioContextClass();
+    const source = audioContext.createMediaStreamSource(stream);
+    const processor = audioContext.createScriptProcessor(4096, 1, 1);
+    const gain = audioContext.createGain();
+    gain.gain.value = 0;
+    state.voice.chunks = [];
+    state.voice.totalSamples = 0;
+    state.voice.inputSampleRate = audioContext.sampleRate;
+    processor.onaudioprocess = (event) => {
+      if (!state.voice.recording) return;
+      const input = event.inputBuffer.getChannelData(0);
+      state.voice.chunks.push(new Float32Array(input));
+      state.voice.totalSamples += input.length;
+    };
+    source.connect(processor);
+    processor.connect(gain);
+    gain.connect(audioContext.destination);
+    state.voice.audioContext = audioContext;
+    state.voice.source = source;
+    state.voice.processor = processor;
+    state.voice.gain = gain;
+    state.voice.stream = stream;
+    state.voice.startedAt = Date.now();
+    state.voice.recording = true;
+    state.voice.timerId = setInterval(updateVoiceRecordingUi, 250);
+    updateVoiceRecordingUi();
+    refreshVoiceControls();
+  } catch (_error) {
+    cleanupVoiceRecorder();
+    showToast("Не удалось получить доступ к микрофону.");
+    updateVoiceStatus("Микрофон недоступен.");
+  }
+}
+
+async function cancelVoiceRecording() {
+  if (!state.voice.recording) return;
+  await stopVoiceRecording({transcribe: false});
+  updateVoiceStatus("");
+  showToast("Запись отменена.");
+}
+
+async function stopVoiceRecording({transcribe}) {
+  if (!state.voice.recording) return;
+  const durationMs = Date.now() - state.voice.startedAt;
+  state.voice.recording = false;
+  clearInterval(state.voice.timerId);
+  state.voice.timerId = null;
+  cleanupVoiceRecorder();
+  refreshVoiceControls();
+  if (!transcribe) {
+    state.voice.chunks = [];
+    state.voice.totalSamples = 0;
+    return;
+  }
+  if (!state.voice.totalSamples) {
+    updateVoiceStatus("Запись пустая.");
+    showToast("Запись пустая.");
+    return;
+  }
+  const wavBlob = encodeVoiceToWav();
+  state.voice.chunks = [];
+  state.voice.totalSamples = 0;
+  await transcribeVoiceBlob(wavBlob, durationMs);
+}
+
+function cleanupVoiceRecorder() {
+  if (state.voice.processor) {
+    state.voice.processor.disconnect();
+    state.voice.processor.onaudioprocess = null;
+  }
+  state.voice.source?.disconnect();
+  state.voice.gain?.disconnect();
+  state.voice.stream?.getTracks().forEach((track) => track.stop());
+  state.voice.audioContext?.close?.();
+  state.voice.audioContext = null;
+  state.voice.source = null;
+  state.voice.processor = null;
+  state.voice.gain = null;
+  state.voice.stream = null;
+}
+
+function updateVoiceRecordingUi() {
+  if (!state.voice.recording) return;
+  const elapsedSeconds = Math.floor((Date.now() - state.voice.startedAt) / 1000);
+  const remaining = Math.max(0, state.voice.maxSeconds - elapsedSeconds);
+  if (remaining <= 0) {
+    stopVoiceRecording({transcribe: true});
+    return;
+  }
+  const elapsedLabel = formatDuration(elapsedSeconds);
+  const maxLabel = formatDuration(state.voice.maxSeconds);
+  if (remaining <= state.voice.countdownSeconds) {
+    updateVoiceStatus(`Запись ${elapsedLabel} / ${maxLabel}. Автостоп через ${remaining} сек.`);
+  } else {
+    updateVoiceStatus(`Запись ${elapsedLabel} / ${maxLabel}`);
+  }
+}
+
+function encodeVoiceToWav() {
+  const merged = mergeAudioChunks(state.voice.chunks, state.voice.totalSamples);
+  const samples = downsampleBuffer(merged, state.voice.inputSampleRate, 16000);
+  const wav = encodeWav(samples, 16000);
+  return new Blob([wav], {type: "audio/wav"});
+}
+
+function mergeAudioChunks(chunks, totalSamples) {
+  const result = new Float32Array(totalSamples);
+  let offset = 0;
+  for (const chunk of chunks) {
+    result.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return result;
+}
+
+function downsampleBuffer(buffer, inputRate, outputRate) {
+  if (!inputRate || inputRate === outputRate) return buffer;
+  if (inputRate < outputRate) return buffer;
+  const ratio = inputRate / outputRate;
+  const newLength = Math.floor(buffer.length / ratio);
+  const result = new Float32Array(newLength);
+  let offsetBuffer = 0;
+  for (let offsetResult = 0; offsetResult < newLength; offsetResult += 1) {
+    const nextOffsetBuffer = Math.round((offsetResult + 1) * ratio);
+    let accum = 0;
+    let count = 0;
+    for (let i = offsetBuffer; i < nextOffsetBuffer && i < buffer.length; i += 1) {
+      accum += buffer[i];
+      count += 1;
+    }
+    result[offsetResult] = count ? accum / count : 0;
+    offsetBuffer = nextOffsetBuffer;
+  }
+  return result;
+}
+
+function encodeWav(samples, sampleRate) {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  writeAscii(view, 0, "RIFF");
+  view.setUint32(4, 36 + samples.length * 2, true);
+  writeAscii(view, 8, "WAVE");
+  writeAscii(view, 12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeAscii(view, 36, "data");
+  view.setUint32(40, samples.length * 2, true);
+  let offset = 44;
+  for (let i = 0; i < samples.length; i += 1) {
+    const sample = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+    offset += 2;
+  }
+  return buffer;
+}
+
+function writeAscii(view, offset, text) {
+  for (let i = 0; i < text.length; i += 1) {
+    view.setUint8(offset + i, text.charCodeAt(i));
+  }
+}
+
+async function transcribeVoiceBlob(blob, durationMs) {
+  state.voice.transcribing = true;
+  refreshVoiceControls();
+  updateVoiceStatus("Распознаю аудио...");
+  try {
+    const response = await fetch("/api/transcribe", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "audio/wav",
+        "X-Audio-Duration-Ms": String(Math.max(1, Math.round(durationMs))),
+      },
+      body: blob,
+    });
+    const payload = await response.json().catch(() => ({ok: false, error: "Некорректный ответ сервера."}));
+    if (!response.ok || !payload.ok) {
+      updateVoiceStatus(payload.error || "Не удалось распознать аудио.");
+      showToast(payload.error || "Не удалось распознать аудио.");
+      return;
+    }
+    insertTranscript(payload.text || "");
+    updateVoiceStatus("Распознано. Проверьте текст перед отправкой.");
+    showToast("Текст распознан.");
+  } catch (_error) {
+    updateVoiceStatus("Сервер недоступен. Повторите распознавание.");
+    showToast("Сервер недоступен.");
+  } finally {
+    state.voice.transcribing = false;
+    refreshVoiceControls();
+  }
+}
+
+function insertTranscript(text) {
+  const input = el("messageInput");
+  const transcript = text.trim();
+  if (!transcript) return;
+  const current = input.value.trim();
+  input.value = current ? `${current}\n${transcript}` : transcript;
+  input.focus();
+}
+
+function updateVoiceStatus(text) {
+  const node = el("voiceStatus");
+  node.textContent = text;
+  node.classList.toggle("hidden", !text);
+}
+
+function refreshVoiceControls() {
+  const voiceBtn = el("voiceBtn");
+  const cancelBtn = el("voiceCancelBtn");
+  const sendBtn = el("sendBtn");
+  const busy = state.voice.recording || state.voice.transcribing;
+  voiceBtn.disabled = !state.voice.supported || state.voice.transcribing;
+  voiceBtn.classList.toggle("recording", state.voice.recording);
+  voiceBtn.textContent = state.voice.recording ? "■" : "◉";
+  voiceBtn.title = state.voice.recording ? "Остановить и распознать" : "Голосовой ввод";
+  voiceBtn.setAttribute("aria-label", state.voice.recording ? "Остановить запись и распознать" : "Начать голосовой ввод");
+  cancelBtn.classList.toggle("hidden", !state.voice.recording);
+  cancelBtn.disabled = !state.voice.recording;
+  sendBtn.disabled = state.sending || busy;
+}
+
+function formatDuration(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
 async function loadInspector() {
   if (!state.sessionId || !state.user?.is_admin) return;
   const payload = await api(`/api/sessions/${state.sessionId}/inspector`);
@@ -872,6 +1173,8 @@ el("logoutBtn").addEventListener("click", logout);
 el("newSessionBtn").addEventListener("click", () => createSession());
 el("newSessionRailBtn").addEventListener("click", () => createSession());
 el("messageForm").addEventListener("submit", sendMessage);
+el("voiceBtn").addEventListener("click", toggleVoiceRecording);
+el("voiceCancelBtn").addEventListener("click", cancelVoiceRecording);
 document.querySelectorAll("[data-demo]").forEach((button) => {
   button.addEventListener("click", async () => {
     if (!state.sessionId) {
@@ -889,4 +1192,5 @@ document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click",
   }
 }));
 
+initVoiceInput();
 init();
