@@ -42,6 +42,7 @@ Production architecture остается future track. Managed state, state mach
 - [Acceptance criteria](MVP_ACCEPTANCE_CRITERIA_v0.1.md) - критерии готовности документации и будущего демо-прототипа.
 - [Frontend visual contract](MVP_FRONTEND_VISUAL_CONTRACT_v0.1.md) - desktop/mobile layout, composition layer, result panel, Context Inspector UI, icon-first подход, language/theme policy.
 - [Frontend states and errors](MVP_FRONTEND_STATES_AND_ERRORS_v0.1.md) - обязательные loading/error/empty/success states и user/admin visibility.
+- [Responsive chat layout blueprint](MVP_RESPONSIVE_CHAT_LAYOUT_BLUEPRINT_v0.1.md) - адаптивная модель chat/sessions/artifacts surfaces с layout math contract.
 - [Admin context workspace PRD](../prd/PRD_ADMIN_CONTEXT_WORKSPACE_v0.1.md) - продуктовый контракт служебной admin-зоны, dashboard и read-only prompt/context просмотра.
 - [Admin context workspace blueprint](MVP_ADMIN_CONTEXT_WORKSPACE_BLUEPRINT_v0.1.md) - implementation slices, API boundaries и non-goals для admin workspace.
 - [Voice input transcription blueprint](MVP_VOICE_INPUT_TRANSCRIPTION_BLUEPRINT_v0.1.md) - маленькая feature-рамка для on/off голосового ввода через STT без voice chat.

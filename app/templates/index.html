@@ -9,14 +9,28 @@
   <body>
     <div id="app" class="app-shell">
       <header class="topbar">
-        <div>
-          <strong>Coocking Cart</strong>
-          <span class="muted">Demo MVP</span>
+        <div class="topbar-left">
+          <button id="sessionsDrawerBtn" class="icon-btn topbar-menu-btn hidden" type="button" title="Открыть чаты" aria-label="Открыть чаты" aria-expanded="false">☰</button>
+          <div class="brand-lockup">
+            <strong>Coocking Cart</strong>
+            <span class="muted">Demo MVP</span>
+          </div>
+          <div id="currentChatTitle" class="current-chat-title hidden">Чат</div>
         </div>
         <div class="topbar-actions">
-          <span id="roleBadge" class="badge">guest</span>
-          <button id="newSessionBtn" class="icon-btn" title="Новая сессия" aria-label="Новая сессия">＋</button>
-          <button id="logoutBtn" class="icon-btn" title="Выйти" aria-label="Выйти">↪</button>
+          <button id="artifactTopBtn" class="icon-btn artifact-top-btn hidden" type="button" title="Открыть результат" aria-label="Открыть результат" aria-expanded="false">
+            ▤
+            <span id="artifactTopBadge" class="artifact-dot hidden" aria-hidden="true"></span>
+          </button>
+          <button id="avatarBtn" class="avatar-btn hidden" type="button" title="Системное меню" aria-label="Системное меню" aria-haspopup="true" aria-expanded="false">?</button>
+          <div id="systemMenu" class="system-menu hidden" role="menu" aria-label="Системное меню">
+            <div class="system-menu-role">
+              <span class="muted">Роль</span>
+              <span id="roleBadge" class="badge">guest</span>
+            </div>
+            <button id="newSessionBtn" class="system-menu-item" type="button" role="menuitem">Новый чат</button>
+            <button id="logoutBtn" class="system-menu-item" type="button" role="menuitem">Выйти</button>
+          </div>
         </div>
       </header>
 
@@ -34,7 +48,9 @@
       </main>
 
       <main id="workspace" class="workspace hidden">
-        <aside class="sessions-panel">
+        <button id="sessionsScrim" class="surface-scrim sessions-scrim hidden" type="button" aria-label="Закрыть список чатов"></button>
+
+        <aside id="sessionsPanel" class="sessions-panel" aria-label="Чаты">
           <div class="panel-title-row">
             <div id="railTitle" class="panel-title">Сессии</div>
             <button id="newSessionRailBtn" class="icon-btn compact-icon" title="Новый чат" aria-label="Новый чат">＋</button>
@@ -49,6 +65,7 @@
               <button data-demo="Хочу технологическую карту яичницы или омлета">Яичница/омлет</button>
             </div>
             <div id="messages" class="messages empty-state">Создайте или выберите сессию.</div>
+            <button id="artifactSummary" class="artifact-summary hidden" type="button" aria-label="Открыть результат текущего чата"></button>
             <form id="messageForm" class="message-form">
               <div class="message-input-stack">
                 <textarea id="messageInput" rows="2" placeholder="Опишите блюдо или уточнение"></textarea>
@@ -64,7 +81,16 @@
           <section id="adminWorkspace" class="admin-workspace hidden" aria-label="Служебный экран admin"></section>
         </section>
 
-        <aside id="resultPanel" class="result-panel">
+        <button id="artifactScrim" class="surface-scrim artifact-scrim hidden" type="button" aria-label="Закрыть результат"></button>
+
+        <aside id="resultPanel" class="result-panel" aria-label="Результат текущего чата">
+          <div class="artifact-panel-header">
+            <div>
+              <strong>Результат</strong>
+              <span id="artifactPanelSubtitle" class="muted">Текущий чат</span>
+            </div>
+            <button id="artifactCloseBtn" class="icon-btn compact-icon" type="button" title="Закрыть результат" aria-label="Закрыть результат">×</button>
+          </div>
           <nav class="tabs" aria-label="Результат">
             <button class="tab active" data-tab="draft">Проект</button>
             <button class="tab" data-tab="warnings">Риски</button>

@@ -10,6 +10,11 @@ const state = {
   latestTurn: null,
   editingSessionId: null,
   sending: false,
+  ui: {
+    sessionsDrawerOpen: false,
+    artifactsOpen: false,
+    systemMenuOpen: false,
+  },
   voice: {
     supported: false,
     recording: false,
@@ -56,12 +61,130 @@ function showToast(text) {
   setTimeout(() => toast.classList.add("hidden"), 2200);
 }
 
+function activeSession() {
+  return state.sessions.find((session) => session.id === state.sessionId) || null;
+}
+
+function avatarLabel() {
+  const source = state.user?.email || state.user?.role || "?";
+  return String(source).trim().slice(0, 1).toUpperCase() || "?";
+}
+
+function artifactStatus(output) {
+  const warningCount = output?.warnings?.length || 0;
+  const questionCount = output?.open_questions?.length || 0;
+  if (output?.document_draft) {
+    return {
+      title: "Проект готов",
+      detail: warningCount ? `${warningCount} риск(ов) · JSON доступен` : "Рисков нет · JSON доступен",
+    };
+  }
+  if (questionCount) {
+    return {
+      title: "Нужно уточнить",
+      detail: `${questionCount} вопрос(ов) · черновик пока не готов`,
+    };
+  }
+  return {
+    title: "Есть результат",
+    detail: "Открыть проект, риски и JSON",
+  };
+}
+
+function renderTopbar() {
+  const authenticated = !!state.user;
+  const admin = !!state.user?.is_admin;
+  const session = activeSession();
+  const title = admin ? "Админка" : session?.title || (state.sessionId ? `Чат #${state.sessionId}` : "Новый чат");
+  const hasArtifacts = authenticated && !admin && !!state.latestTurn?.structured_output;
+
+  el("currentChatTitle").textContent = title;
+  el("currentChatTitle").classList.toggle("hidden", !authenticated);
+  el("sessionsDrawerBtn").classList.toggle("hidden", !authenticated);
+  el("sessionsDrawerBtn").setAttribute("aria-expanded", String(state.ui.sessionsDrawerOpen));
+  el("artifactTopBtn").classList.toggle("hidden", !hasArtifacts);
+  el("artifactTopBtn").setAttribute("aria-expanded", String(state.ui.artifactsOpen));
+  el("artifactTopBadge").classList.toggle("hidden", !hasArtifacts);
+  el("avatarBtn").classList.toggle("hidden", !authenticated);
+  el("avatarBtn").textContent = authenticated ? avatarLabel() : "?";
+  el("avatarBtn").setAttribute("aria-expanded", String(state.ui.systemMenuOpen));
+  el("artifactPanelSubtitle").textContent = title;
+}
+
+function renderSurfaceState() {
+  el("sessionsPanel").classList.toggle("open", state.ui.sessionsDrawerOpen);
+  el("sessionsScrim").classList.toggle("hidden", !state.ui.sessionsDrawerOpen);
+  el("resultPanel").classList.toggle("open", state.ui.artifactsOpen);
+  el("artifactScrim").classList.toggle("hidden", !state.ui.artifactsOpen);
+  el("systemMenu").classList.toggle("hidden", !state.ui.systemMenuOpen);
+  renderTopbar();
+}
+
+// Sticky UI boundary: drawers and sheets only change presentation; session and artifact data stay in existing state.
+function setSessionsDrawer(open) {
+  state.ui.sessionsDrawerOpen = !!open;
+  if (open) {
+    state.ui.artifactsOpen = false;
+    state.ui.systemMenuOpen = false;
+  }
+  renderSurfaceState();
+}
+
+function setArtifactsOpen(open) {
+  state.ui.artifactsOpen = !!open;
+  if (open) {
+    state.ui.sessionsDrawerOpen = false;
+    state.ui.systemMenuOpen = false;
+  }
+  renderSurfaceState();
+}
+
+function setSystemMenu(open) {
+  state.ui.systemMenuOpen = !!open;
+  if (open) {
+    state.ui.sessionsDrawerOpen = false;
+    state.ui.artifactsOpen = false;
+  }
+  renderSurfaceState();
+}
+
+function closeOverlays() {
+  state.ui.sessionsDrawerOpen = false;
+  state.ui.artifactsOpen = false;
+  state.ui.systemMenuOpen = false;
+  renderSurfaceState();
+}
+
+function renderArtifactSummary(output) {
+  const summary = el("artifactSummary");
+  const hasOutput = !!output && !state.user?.is_admin;
+  if (!hasOutput) {
+    summary.innerHTML = "";
+    summary.classList.add("hidden");
+    state.ui.artifactsOpen = false;
+    return;
+  }
+  const status = artifactStatus(output);
+  summary.innerHTML = `
+    <span>
+      <strong>${escapeHtml(status.title)}</strong>
+      <small>${escapeHtml(status.detail)}</small>
+    </span>
+    <span aria-hidden="true">▤</span>
+  `;
+  summary.title = `${status.title}. ${status.detail}`;
+  summary.classList.remove("hidden");
+  el("artifactTopBtn").title = summary.title;
+  el("artifactTopBtn").setAttribute("aria-label", `Открыть результат: ${status.title}`);
+}
+
 function showLogin(configErrors = []) {
   el("loginView").classList.remove("hidden");
   el("workspace").classList.add("hidden");
   el("roleBadge").textContent = "guest";
   el("logoutBtn").classList.add("hidden");
   el("newSessionBtn").classList.add("hidden");
+  closeOverlays();
   const box = el("configErrors");
   if (configErrors.length) {
     box.innerHTML = configErrors.map((item) => `<div>⚠ ${escapeHtml(item)}</div>`).join("");
@@ -81,6 +204,9 @@ function showWorkspace() {
   el("chatColumn").classList.toggle("hidden", !!state.user?.is_admin);
   el("adminWorkspace").classList.toggle("hidden", !state.user?.is_admin);
   el("resultPanel").classList?.toggle?.("hidden", !!state.user?.is_admin);
+  if (state.user?.is_admin) {
+    state.ui.artifactsOpen = false;
+  }
   el("inspectorTab").classList.toggle("hidden", !state.user?.is_admin);
   el("usersTab").classList.toggle("hidden", !state.user?.is_admin);
   el("railTitle").textContent = state.user?.is_admin ? "Админка" : "Сессии";
@@ -88,6 +214,7 @@ function showWorkspace() {
   if (!state.user?.is_admin && (!el("usersPanel").classList.contains("hidden") || !el("inspectorPanel").classList.contains("hidden"))) {
     setActiveTab("draft");
   }
+  renderSurfaceState();
 }
 
 async function init() {
@@ -174,6 +301,8 @@ async function loadSessions() {
   renderSessions();
   if (!state.sessionId && state.sessions.length) {
     await openSession(state.sessions[0].id);
+  } else {
+    renderSurfaceState();
   }
 }
 
@@ -203,6 +332,10 @@ async function openSession(sessionId) {
   renderSessions();
   renderMessages(payload.messages || []);
   renderStructured(payload.latest_turn?.structured_output || null);
+  state.ui.sessionsDrawerOpen = false;
+  state.ui.systemMenuOpen = false;
+  state.ui.artifactsOpen = false;
+  renderSurfaceState();
   if (state.user?.is_admin) {
     await loadInspector();
   }
@@ -253,6 +386,7 @@ function renderSessions() {
   if (!state.sessions.length) {
     list.innerHTML = `<div class="empty-state">Нет сессий.</div>`;
   }
+  renderTopbar();
 }
 
 async function saveSessionTitle(event, sessionId) {
@@ -294,6 +428,7 @@ async function deleteSession(sessionId) {
     state.latestTurn = null;
     renderMessages([]);
     renderStructured(null);
+    state.ui.artifactsOpen = false;
     if (state.user?.is_admin) {
       el("inspectorPanel").innerHTML = "";
     }
@@ -359,6 +494,8 @@ function renderStructured(output) {
   renderDraft(output);
   renderWarnings(output);
   renderJson(output);
+  renderArtifactSummary(output);
+  renderSurfaceState();
 }
 
 function renderDraft(output) {
@@ -1170,11 +1307,30 @@ function escapeHtml(value) {
 el("loginForm").addEventListener("submit", login);
 el("demoLoginBtn").addEventListener("click", demoLogin);
 el("logoutBtn").addEventListener("click", logout);
-el("newSessionBtn").addEventListener("click", () => createSession());
+el("newSessionBtn").addEventListener("click", async () => {
+  setSystemMenu(false);
+  await createSession();
+});
 el("newSessionRailBtn").addEventListener("click", () => createSession());
+el("sessionsDrawerBtn").addEventListener("click", () => setSessionsDrawer(!state.ui.sessionsDrawerOpen));
+el("sessionsScrim").addEventListener("click", () => setSessionsDrawer(false));
+el("artifactTopBtn").addEventListener("click", () => setArtifactsOpen(!state.ui.artifactsOpen));
+el("artifactSummary").addEventListener("click", () => setArtifactsOpen(true));
+el("artifactCloseBtn").addEventListener("click", () => setArtifactsOpen(false));
+el("artifactScrim").addEventListener("click", () => setArtifactsOpen(false));
+el("avatarBtn").addEventListener("click", () => setSystemMenu(!state.ui.systemMenuOpen));
 el("messageForm").addEventListener("submit", sendMessage);
 el("voiceBtn").addEventListener("click", toggleVoiceRecording);
 el("voiceCancelBtn").addEventListener("click", cancelVoiceRecording);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeOverlays();
+  }
+});
+document.addEventListener("click", (event) => {
+  if (!state.ui.systemMenuOpen || event.target.closest(".topbar-actions")) return;
+  setSystemMenu(false);
+});
 document.querySelectorAll("[data-demo]").forEach((button) => {
   button.addEventListener("click", async () => {
     if (!state.sessionId) {
