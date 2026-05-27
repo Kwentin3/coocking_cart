@@ -525,6 +525,20 @@ class CoreContractsTest(unittest.TestCase):
         main_source = (REPO_ROOT / "app" / "main.py").read_text(encoding="utf-8")
         self.assertNotIn("/v1alpha/auth_tokens", main_source)
 
+    def test_voice_ui_keeps_batch_and_live_visual_contracts(self) -> None:
+        js_source = (REPO_ROOT / "app" / "static" / "app.js").read_text(encoding="utf-8")
+        css_source = (REPO_ROOT / "app" / "static" / "styles.css").read_text(encoding="utf-8")
+
+        self.assertIn("Sticky Voice UI contract", js_source)
+        self.assertIn("currentVoiceUiMode", js_source)
+        self.assertIn('classList.toggle("voice-live"', js_source)
+        self.assertIn('classList.toggle("voice-batch"', js_source)
+        self.assertIn("voiceBtn.dataset.voiceMode", js_source)
+        self.assertIn(".voice-btn.voice-live.streaming .voice-pulse", css_source)
+        self.assertIn(".voice-btn.voice-batch.recording", css_source)
+        self.assertNotIn("server_proxy", js_source)
+        self.assertNotIn("SOCKS5", js_source)
+
     def test_live_voice_server_proxy_token_route_hides_gemini_token(self) -> None:
         class FakeRuntime:
             def create_live_voice_token(self, _user: Any) -> dict[str, Any]:

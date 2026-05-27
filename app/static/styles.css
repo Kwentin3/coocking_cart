@@ -674,17 +674,140 @@ textarea {
   gap: 6px;
 }
 
-.send-btn,
-.voice-btn.recording {
+.send-btn {
   background: var(--accent);
   border-color: var(--accent);
   color: white;
   font-size: 18px;
 }
 
-.voice-btn.recording {
+.voice-btn {
+  isolation: isolate;
+  overflow: visible;
+  position: relative;
+}
+
+.voice-pulse,
+.voice-icon,
+.voice-icon::before,
+.voice-icon::after {
+  pointer-events: none;
+}
+
+.voice-pulse {
+  border: 2px solid rgba(23, 106, 99, 0.32);
+  border-radius: 999px;
+  display: none;
+  inset: 3px;
+  position: absolute;
+  z-index: 0;
+}
+
+.voice-icon {
+  display: inline-block;
+  height: 20px;
+  position: relative;
+  width: 20px;
+  z-index: 1;
+}
+
+.voice-btn.voice-batch .voice-icon::before {
+  background: var(--danger);
+  border-radius: 999px;
+  content: "";
+  inset: 5px;
+  position: absolute;
+}
+
+.voice-btn.voice-batch.recording {
   background: var(--danger);
   border-color: var(--danger);
+  color: white;
+}
+
+.voice-btn.voice-batch.recording .voice-icon::before {
+  background: currentColor;
+  border-radius: 2px;
+  inset: 4px;
+}
+
+.voice-btn.voice-live {
+  background: var(--accent-2);
+  border-color: #b4dcd5;
+  color: var(--accent);
+}
+
+.voice-btn.voice-live.recording,
+.voice-btn.voice-live.connecting {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.voice-btn.voice-live .voice-icon::before {
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  content: "";
+  height: 13px;
+  left: 5px;
+  position: absolute;
+  top: 1px;
+  width: 10px;
+}
+
+.voice-btn.voice-live .voice-icon::after {
+  border: 2px solid currentColor;
+  border-radius: 0 0 9px 9px;
+  border-top: 0;
+  content: "";
+  height: 7px;
+  left: 4px;
+  position: absolute;
+  top: 11px;
+  width: 12px;
+}
+
+.voice-btn.voice-live.streaming .voice-pulse {
+  animation: voice-live-pulse 1200ms ease-out infinite;
+  display: block;
+}
+
+.voice-btn.connecting .voice-icon,
+.voice-btn.transcribing .voice-icon {
+  animation: voice-icon-breath 900ms ease-in-out infinite;
+}
+
+.voice-btn:disabled .voice-pulse {
+  display: none;
+}
+
+@keyframes voice-live-pulse {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.78);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.55);
+  }
+}
+
+@keyframes voice-icon-breath {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-btn.voice-live.streaming .voice-pulse,
+  .voice-btn.connecting .voice-icon,
+  .voice-btn.transcribing .voice-icon {
+    animation: none;
+  }
 }
 
 .voice-status {

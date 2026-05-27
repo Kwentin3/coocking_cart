@@ -20,6 +20,9 @@ const state = {
     streamingEnabled: false,
     streamingTransport: "direct_client",
     batchEnabled: true,
+    enabled: true,
+    // Sticky Voice UI contract: batch fallback uses record/stop controls;
+    // live streaming uses an animated mic. Transport names stay out of UI copy.
     mode: "batch",
     connecting: false,
     recording: false,
@@ -253,11 +256,9 @@ function applyVoiceConfig(config) {
   state.voice.streamingTransport = config.streaming_transport || state.voice.streamingTransport;
   state.voice.batchEnabled = config.batch_enabled !== false && config.enabled !== false;
   state.voice.liveInputSampleRate = Number(config.streaming_sample_rate || state.voice.liveInputSampleRate);
-  if (config.enabled === false && !state.voice.streamingEnabled) {
-    state.voice.supported = false;
+  state.voice.enabled = state.voice.batchEnabled || state.voice.streamingEnabled;
+  if (!state.voice.enabled) {
     updateVoiceStatus("");
-    el("voiceBtn").title = "Голосовой ввод выключен";
-    el("voiceBtn").setAttribute("aria-label", "Голосовой ввод выключен");
     refreshVoiceControls();
   }
 }
@@ -999,6 +1000,11 @@ async function startVoiceRecording() {
     showToast("Браузер не поддерживает запись аудио.");
     return;
   }
+  if (!state.voice.enabled) {
+    updateVoiceStatus("Голосовой ввод выключен.");
+    refreshVoiceControls();
+    return;
+  }
   if (state.voice.streamingEnabled && window.WebSocket) {
     try {
       await startLiveVoiceRecording();
@@ -1117,11 +1123,7 @@ async function startLiveVoiceRecording() {
     throw new Error(tokenPayload.error || "Не удалось получить временный Live API token.");
   }
   state.voice.streamingTransport = tokenPayload.transport || state.voice.streamingTransport;
-  updateVoiceStatus(
-    state.voice.streamingTransport === "server_proxy"
-      ? "Подключаю потоковое распознавание через серверный транспорт..."
-      : "Подключаю потоковое распознавание..."
-  );
+  updateVoiceStatus("Подключаю потоковое распознавание...");
   if (!tokenPayload.websocket_url) {
     throw new Error("Сервер не вернул Live Voice WebSocket URL.");
   }
@@ -1520,16 +1522,66 @@ function updateVoiceStatus(text) {
   node.classList.toggle("hidden", !text);
 }
 
+function voicePrefersLiveMode() {
+  return state.voice.streamingEnabled && !!window.WebSocket;
+}
+
+function currentVoiceUiMode() {
+  const busy = state.voice.connecting || state.voice.recording || state.voice.transcribing;
+  if (busy && state.voice.mode === "live") return "live";
+  if (busy && state.voice.mode === "batch") return "batch";
+  return voicePrefersLiveMode() ? "live" : "batch";
+}
+
+function ensureVoiceButtonChrome(voiceBtn) {
+  if (voiceBtn.querySelector(".voice-icon")) return;
+  voiceBtn.textContent = "";
+  const pulse = document.createElement("span");
+  pulse.className = "voice-pulse";
+  pulse.setAttribute("aria-hidden", "true");
+  const icon = document.createElement("span");
+  icon.className = "voice-icon";
+  icon.setAttribute("aria-hidden", "true");
+  voiceBtn.append(pulse, icon);
+}
+
 function refreshVoiceControls() {
   const voiceBtn = el("voiceBtn");
   const cancelBtn = el("voiceCancelBtn");
   const sendBtn = el("sendBtn");
   const busy = state.voice.connecting || state.voice.recording || state.voice.transcribing;
-  voiceBtn.disabled = !state.voice.supported || state.voice.connecting || state.voice.transcribing;
+  const voiceEnabled = state.voice.enabled && (state.voice.batchEnabled || state.voice.streamingEnabled);
+  const uiMode = currentVoiceUiMode();
+  ensureVoiceButtonChrome(voiceBtn);
+  voiceBtn.disabled = !state.voice.supported || !voiceEnabled || state.voice.connecting || state.voice.transcribing;
+  voiceBtn.classList.toggle("voice-live", uiMode === "live");
+  voiceBtn.classList.toggle("voice-batch", uiMode === "batch");
   voiceBtn.classList.toggle("recording", state.voice.recording);
-  voiceBtn.textContent = state.voice.recording ? "■" : (state.voice.connecting || state.voice.transcribing ? "…" : "◉");
-  voiceBtn.title = state.voice.recording ? "Остановить и распознать" : "Голосовой ввод";
-  voiceBtn.setAttribute("aria-label", state.voice.recording ? "Остановить запись и распознать" : "Начать голосовой ввод");
+  voiceBtn.classList.toggle("connecting", state.voice.connecting);
+  voiceBtn.classList.toggle("transcribing", state.voice.transcribing);
+  voiceBtn.classList.toggle("streaming", uiMode === "live" && (state.voice.connecting || state.voice.recording));
+  voiceBtn.dataset.voiceMode = uiMode;
+  voiceBtn.setAttribute("aria-busy", state.voice.connecting || state.voice.transcribing ? "true" : "false");
+  voiceBtn.setAttribute("aria-pressed", state.voice.recording || state.voice.connecting ? "true" : "false");
+  if (!voiceEnabled) {
+    voiceBtn.title = "Голосовой ввод выключен";
+    voiceBtn.setAttribute("aria-label", "Голосовой ввод выключен");
+  } else if (!state.voice.supported) {
+    voiceBtn.title = "Голосовой ввод недоступен в этом браузере";
+    voiceBtn.setAttribute("aria-label", "Голосовой ввод недоступен");
+  } else if (state.voice.connecting) {
+    voiceBtn.title = uiMode === "live" ? "Подключается потоковый голосовой ввод" : "Готовится запись";
+    voiceBtn.setAttribute("aria-label", voiceBtn.title);
+  } else if (state.voice.transcribing) {
+    voiceBtn.title = uiMode === "live" ? "Завершается потоковый транскрипт" : "Распознаётся запись";
+    voiceBtn.setAttribute("aria-label", voiceBtn.title);
+  } else if (state.voice.recording) {
+    voiceBtn.title = uiMode === "live" ? "Остановить потоковый ввод" : "Остановить запись и распознать";
+    voiceBtn.setAttribute("aria-label", voiceBtn.title);
+  } else {
+    voiceBtn.title = uiMode === "live" ? "Начать потоковый голосовой ввод" : "Начать обычную запись";
+    voiceBtn.setAttribute("aria-label", voiceBtn.title);
+  }
   cancelBtn.classList.toggle("hidden", !(state.voice.recording || state.voice.connecting));
   cancelBtn.disabled = !(state.voice.recording || state.voice.connecting);
   sendBtn.disabled = state.sending || busy;

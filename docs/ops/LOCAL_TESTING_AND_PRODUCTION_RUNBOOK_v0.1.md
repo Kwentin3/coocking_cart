@@ -56,6 +56,7 @@ Live Voice transport:
 - set `LIVE_VOICE_RESPONSE_MODALITY=AUDIO`; the browser still uses only Live input transcription for textarea dictation;
 - set real `LIVE_VOICE_SOCKS5_HOST`, `LIVE_VOICE_SOCKS5_PORT`, `LIVE_VOICE_SOCKS5_USERNAME`, `LIVE_VOICE_SOCKS5_PASSWORD` only in the server runtime env, never in Git or docs;
 - in `server_proxy` mode `/api/live-voice/token` returns backend WSS `/api/live-voice/ws/<session>` to the browser; the backend connects to Gemini Live WSS through SOCKS5.
+- GUI contract: batch fallback shows record/stop controls; Live streaming shows an animated mic. Do not expose `server_proxy` or SOCKS5 labels in user-facing GUI copy.
 
 Перед серверным deploy:
 

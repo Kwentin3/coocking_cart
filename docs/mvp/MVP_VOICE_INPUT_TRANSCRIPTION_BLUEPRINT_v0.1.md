@@ -34,6 +34,7 @@
 ## UX contract
 
 - Voice button is on/off, not hold-to-talk.
+- This is the batch/fallback visual mode: idle is record, active is stop; it must stay visually distinct from the streaming Live mic UI.
 - First click starts recording.
 - Second click stops recording and sends audio to transcription.
 - Cancel stops recording and discards audio without provider call.
