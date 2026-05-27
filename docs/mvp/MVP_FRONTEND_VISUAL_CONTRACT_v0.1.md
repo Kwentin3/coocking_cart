@@ -137,6 +137,8 @@ Artifact panel отвечает за артефакты:
 
 Send-message contract: после submit пользовательское сообщение сразу появляется в chat history как pending user bubble, textarea очищается, а ниже появляется assistant typing/loading bubble только с анимированными точками. Видимый текст вроде "формирую ответ" не используется; доступность обеспечивается aria-label. После ответа backend локальные pending nodes заменяются server truth.
 
+Markdown-rendering contract: main chat renders Markdown only for assistant/LLM messages. User messages stay plain text. Typing/loading bubbles stay animation-only and do not pass through the Markdown renderer. Raw HTML is disabled, image syntax renders as plain text only, and links are limited to safe URL schemes with `rel="noopener noreferrer"`.
+
 Чат показывает `user_answer`. Остальные поля structured output отображаются в отдельных блоках результата или debug/admin area.
 
 ## Chat/session management

@@ -471,6 +471,69 @@ function renderMessages(messages) {
   box.scrollTop = box.scrollHeight;
 }
 
+const chatMarkdownRenderer = createChatMarkdownRenderer();
+
+function createChatMarkdownRenderer() {
+  if (!window.markdownit) {
+    return null;
+  }
+  const md = window.markdownit({
+    breaks: true,
+    html: false,
+    linkify: false,
+    typographer: false,
+  });
+  md.validateLink = isSafeMarkdownUrl;
+  md.renderer.rules.image = (tokens, idx) => {
+    const token = tokens[idx];
+    return md.utils.escapeHtml(token.content || token.attrGet("alt") || "");
+  };
+  const defaultLinkOpen = md.renderer.rules.link_open || ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
+  md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
+    const token = tokens[idx];
+    token.attrSet("target", "_blank");
+    token.attrSet("rel", "noopener noreferrer");
+    return defaultLinkOpen(tokens, idx, options, env, self);
+  };
+  return md;
+}
+
+function renderAssistantMarkdown(node, content) {
+  // Sticky chat Markdown contract: render only LLM output, keep user input and
+  // typing bubbles as plain DOM/text paths.
+  node.classList.add("markdown-body");
+  if (!chatMarkdownRenderer) {
+    node.textContent = content;
+    return;
+  }
+  try {
+    node.innerHTML = chatMarkdownRenderer.render(String(content || ""));
+  } catch (_error) {
+    node.textContent = content;
+  }
+}
+
+function isSafeMarkdownUrl(rawUrl) {
+  const value = String(rawUrl || "").trim();
+  if (!value) {
+    return false;
+  }
+  const compact = value.replace(/[\u0000-\u001f\u007f\s]+/g, "").toLowerCase();
+  if (compact.startsWith("javascript:") || compact.startsWith("vbscript:") || compact.startsWith("data:") || compact.startsWith("file:")) {
+    return false;
+  }
+  try {
+    const hasScheme = /^[a-z][a-z0-9+.-]*:/i.test(value);
+    const parsed = new URL(value, window.location.origin);
+    if (!hasScheme && parsed.origin === window.location.origin) {
+      return true;
+    }
+    return ["http:", "https:", "mailto:"].includes(parsed.protocol);
+  } catch (_error) {
+    return false;
+  }
+}
+
 function appendMessageBubble(role, content = "", options = {}) {
   const box = el("messages");
   const wasEmptyState = box.classList.contains("empty-state");
@@ -489,6 +552,8 @@ function appendMessageBubble(role, content = "", options = {}) {
     dots.setAttribute("aria-hidden", "true");
     dots.innerHTML = "<span></span><span></span><span></span>";
     node.appendChild(dots);
+  } else if (role === "assistant") {
+    renderAssistantMarkdown(node, content);
   } else {
     node.textContent = content;
   }

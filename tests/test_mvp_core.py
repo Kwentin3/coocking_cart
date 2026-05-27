@@ -590,6 +590,28 @@ class CoreContractsTest(unittest.TestCase):
         self.assertNotIn("Формирую ответ", js_source)
         self.assertNotIn("Формирую ответ", css_source)
 
+    def test_chat_renders_markdown_only_for_assistant_output(self) -> None:
+        index_source = (REPO_ROOT / "app" / "templates" / "index.html").read_text(encoding="utf-8")
+        js_source = (REPO_ROOT / "app" / "static" / "app.js").read_text(encoding="utf-8")
+        css_source = (REPO_ROOT / "app" / "static" / "styles.css").read_text(encoding="utf-8")
+
+        self.assertLess(index_source.index("/static/vendor/markdown-it.min.js"), index_source.index("/static/app.js"))
+        self.assertTrue((REPO_ROOT / "app" / "static" / "vendor" / "markdown-it.min.js").exists())
+        self.assertTrue((REPO_ROOT / "app" / "static" / "vendor" / "markdown-it.LICENSE.txt").exists())
+        self.assertIn("createChatMarkdownRenderer", js_source)
+        self.assertIn("window.markdownit", js_source)
+        self.assertIn("html: false", js_source)
+        self.assertIn("linkify: false", js_source)
+        self.assertIn("md.renderer.rules.image", js_source)
+        self.assertIn("md.utils.escapeHtml", js_source)
+        self.assertIn("md.validateLink = isSafeMarkdownUrl", js_source)
+        self.assertIn('compact.startsWith("javascript:")', js_source)
+        self.assertIn('token.attrSet("rel", "noopener noreferrer")', js_source)
+        self.assertRegex(js_source, r'else if \(role === "assistant"\) \{\s+renderAssistantMarkdown\(node, content\);\s+\} else \{\s+node\.textContent = content;')
+        self.assertIn(".message.markdown-body", css_source)
+        self.assertIn(".markdown-body pre", css_source)
+        self.assertIn(".markdown-body table", css_source)
+
     def test_live_voice_server_proxy_token_route_hides_gemini_token(self) -> None:
         class FakeRuntime:
             def create_live_voice_token(self, _user: Any) -> dict[str, Any]:
