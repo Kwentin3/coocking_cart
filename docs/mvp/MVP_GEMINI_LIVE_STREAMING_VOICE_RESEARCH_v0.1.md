@@ -76,6 +76,7 @@ Browser mic -> our WebSocket endpoint -> backend Gemini Live session -> backend 
 - Проще контролировать auth, лимиты, аудит, provider errors.
 - Легче встроить в текущие backend runtime boundaries.
 - Можно централизованно нормализовать live-события.
+- Можно применить server-side SOCKS5 transport для Gemini Live WSS, если прямое подключение из текущей локации не принимается provider.
 
 Минусы:
 
@@ -106,12 +107,13 @@ Browser -> our app API only for final transcript/message persistence
 - Часть realtime-событий обходит backend, значит отдельно решаем audit/debug.
 - Frontend становится владельцем live-session lifecycle.
 - Нужно аккуратно ограничивать token: `uses`, TTL, model/config constraints.
+- Браузерный JavaScript не может назначить SOCKS5 proxy для `WebSocket`/`fetch` и не должен получать SOCKS5 credentials. Если нужен SOCKS5, direct browser-to-Gemini режим заменяется backend WebSocket proxy.
 
 Подходит для UX-focused spike и демо, если нас устраивает, что backend видит только итоговый transcript или отдельные клиентские telemetry events.
 
 ## Консервативная рекомендация для spike
 
-Начать с варианта B как изолированного spike рядом с текущим `/api/transcribe`, без удаления batch-STT.
+Начать с варианта B как изолированного spike рядом с текущим `/api/transcribe`, без удаления batch-STT. Если provider rejects по локации клиента или сервера, переключить `LIVE_VOICE_TRANSPORT=server_proxy` и держать SOCKS5 только в backend env.
 
 Причина: текущая боль именно latency и user-friendliness. Прямой browser-to-Gemini поток через ephemeral token максимально проверяет, снимает ли Live API эту боль. Если spike покажет проблемы с качеством транскрипта, lifecycle или compliance, можно перейти к варианту A или выделить dedicated STT provider.
 
@@ -258,7 +260,8 @@ Raw WebSocket shape:
 - Backend endpoint: `POST /api/live-voice/token`.
 - Provider boundary: `app/live_voice.py`, `LiveVoiceAdapter`, `GeminiLiveVoiceAdapter`, `make_live_voice_adapter`.
 - Runtime routing: `DemoRuntime.create_live_voice_token`.
-- Frontend path: browser получает ephemeral token, открывает WSS напрямую в Gemini Live API, отправляет `setup`, затем `realtimeInput.audio` чанками PCM16.
+- Direct frontend path: browser получает ephemeral token, открывает WSS напрямую в Gemini Live API, отправляет `setup`, затем `realtimeInput.audio` чанками PCM16.
+- Server proxy path: browser получает backend WSS URL `/api/live-voice/ws/<session>`, отправляет тот же `setup`/`realtimeInput.audio`, а backend relays WebSocket frames в Gemini Live. SOCKS5 применяется только на backend стороне при наличии `LIVE_VOICE_SOCKS5_HOST`.
 - Fallback: если streaming недоступен, UI использует текущий batch-STT `/api/transcribe`.
 - Chat invariant: transcript вставляется в editable textarea и не отправляется автоматически.
 
@@ -266,7 +269,7 @@ Raw WebSocket shape:
 
 - Voice chat с аудио-ответом ассистента.
 - Tool calls из Live API.
-- Server-side proxy для compliance/audit.
+- Расширенный audit/backpressure для server-side proxy.
 - Session resumption для долгих разговоров.
 - WebRTC/LiveKit/Pipecat интеграции.
 - Persistent transcript audit trail.

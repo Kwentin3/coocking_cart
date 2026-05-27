@@ -18,6 +18,7 @@ const state = {
   voice: {
     supported: false,
     streamingEnabled: false,
+    streamingTransport: "direct_client",
     batchEnabled: true,
     mode: "batch",
     connecting: false,
@@ -249,6 +250,7 @@ function applyVoiceConfig(config) {
   state.voice.maxSeconds = Number(config.max_audio_seconds || state.voice.maxSeconds);
   state.voice.countdownSeconds = Number(config.countdown_seconds || state.voice.countdownSeconds);
   state.voice.streamingEnabled = !!config.streaming_enabled;
+  state.voice.streamingTransport = config.streaming_transport || state.voice.streamingTransport;
   state.voice.batchEnabled = config.batch_enabled !== false && config.enabled !== false;
   state.voice.liveInputSampleRate = Number(config.streaming_sample_rate || state.voice.liveInputSampleRate);
   if (config.enabled === false && !state.voice.streamingEnabled) {
@@ -1113,6 +1115,15 @@ async function startLiveVoiceRecording() {
   const tokenPayload = await api("/api/live-voice/token", {method: "POST", body: "{}"});
   if (!tokenPayload.ok) {
     throw new Error(tokenPayload.error || "Не удалось получить временный Live API token.");
+  }
+  state.voice.streamingTransport = tokenPayload.transport || state.voice.streamingTransport;
+  updateVoiceStatus(
+    state.voice.streamingTransport === "server_proxy"
+      ? "Подключаю потоковое распознавание через серверный транспорт..."
+      : "Подключаю потоковое распознавание..."
+  );
+  if (!tokenPayload.websocket_url) {
+    throw new Error("Сервер не вернул Live Voice WebSocket URL.");
   }
   const websocket = new WebSocket(tokenPayload.websocket_url);
   state.voice.websocket = websocket;

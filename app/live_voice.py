@@ -15,8 +15,9 @@ FACTORY_REQUIRED = "LIVE_VOICE_PROVIDER_CALLS_MUST_USE_make_live_voice_adapter"
 FORBIDDEN = "DO_NOT_CALL_GEMINI_LIVE_TOKEN_ENDPOINT_FROM_ROUTES_OR_UI"
 
 # Sticky integration boundary: routes/runtime request Live API tokens only
-# through make_live_voice_adapter. The browser receives ephemeral tokens, never
-# the Gemini API key, and sends realtime audio directly to Gemini over WSS.
+# through make_live_voice_adapter. The browser never receives the Gemini API key;
+# in direct_client mode it receives an ephemeral token, and in server_proxy mode
+# it receives only our backend WebSocket URL.
 
 LIVE_VOICE_TRANSCRIPTION_INSTRUCTION = """\
 Транскрибируй русскую речь пользователя для черновика сообщения в чат.

@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import io
 import json
+import socket
 import tempfile
+import threading
 import unittest
 import urllib.request
+from http.client import HTTPConnection
+from http.server import ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +16,9 @@ from typing import Any
 # be treated as Docker/Linux parity. Production Docker/Linux runs on the hosting
 # server; local tests verify code contracts, while runtime parity is checked by
 # a server-side build/artifact or an explicit artifact simulation.
+# Sticky Live Voice transport note: browser JS cannot receive SOCKS5 secrets or
+# force WebSocket/fetch through app-level SOCKS5. SOCKS5 is a backend-only
+# server_proxy concern, and direct_client remains the no-proxy browser path.
 from app.config import AppConfig, REPO_ROOT, is_blank_or_placeholder
 from app.context_loader import ContextLoader
 from app.live_voice import (
@@ -20,8 +28,16 @@ from app.live_voice import (
     live_voice_setup,
     make_live_voice_adapter,
 )
+from app.live_voice_proxy import (
+    build_websocket_frame,
+    connect_gemini_live_websocket,
+    read_websocket_frame,
+    websocket_accept_value,
+)
 from app.llm import GeminiAdapter
+from app.main import COOKIE_NAME, DemoMvpHandler
 from app.runtime import DemoRuntime
+from app.security import session_token, sign_cookie
 from app.storage import Storage
 from app.stt import GeminiSttAdapter, SUPPORTED_STT_MIME_TYPES, normalize_mime_type
 from app.structured_output import STRUCTURED_OUTPUT_SCHEMA, normalize_structured_output
@@ -61,6 +77,11 @@ def make_test_config(db_path: Path, *, api_key: str = "") -> AppConfig:
         live_voice_new_session_seconds=60,
         live_voice_input_sample_rate=16000,
         live_voice_response_modality="TEXT",
+        live_voice_transport="direct_client",
+        live_voice_socks5_host="",
+        live_voice_socks5_port=1080,
+        live_voice_socks5_username="",
+        live_voice_socks5_password="",
         enable_context_inspector=True,
         enable_llm_trace=True,
         bootstrap_admin_email="admin@example.test",
@@ -383,6 +404,116 @@ class CoreContractsTest(unittest.TestCase):
         self.assertFalse(too_long["ok"])
         self.assertEqual(too_long["status"], 413)
 
+    def test_live_voice_proxy_websocket_framing_preserves_payload(self) -> None:
+        masked = build_websocket_frame(
+            b'{"setup":{}}',
+            opcode=0x1,
+            mask=True,
+            mask_key=b"\x01\x02\x03\x04",
+        )
+        browser_frame = read_websocket_frame(io.BytesIO(masked), expect_masked=True)
+
+        self.assertEqual(browser_frame.payload, b'{"setup":{}}')
+        self.assertEqual(browser_frame.opcode, 0x1)
+        self.assertTrue(browser_frame.masked)
+
+        unmasked = build_websocket_frame(browser_frame.payload, opcode=browser_frame.opcode, mask=False)
+        upstream_frame = read_websocket_frame(io.BytesIO(unmasked), expect_masked=False)
+
+        self.assertEqual(upstream_frame.payload, b'{"setup":{}}')
+        self.assertFalse(upstream_frame.masked)
+        self.assertEqual(websocket_accept_value("dGhlIHNhbXBsZSBub25jZQ=="), "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=")
+
+    def test_live_voice_proxy_uses_socks5_auth_for_upstream_websocket(self) -> None:
+        def recv_exact(sock: socket.socket, size: int) -> bytes:
+            chunks = bytearray()
+            while len(chunks) < size:
+                chunk = sock.recv(size - len(chunks))
+                if not chunk:
+                    raise AssertionError("socket closed")
+                chunks.extend(chunk)
+            return bytes(chunks)
+
+        requested: dict[str, Any] = {}
+        errors: list[BaseException] = []
+        server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server_sock.bind(("127.0.0.1", 0))
+        server_sock.listen(1)
+        proxy_host, proxy_port = server_sock.getsockname()
+
+        def fake_socks5_proxy() -> None:
+            client: socket.socket | None = None
+            try:
+                server_sock.settimeout(5)
+                client, _addr = server_sock.accept()
+                client.settimeout(5)
+                greeting = recv_exact(client, 4)
+                self.assertEqual(greeting, b"\x05\x02\x00\x02")
+                client.sendall(b"\x05\x02")
+                auth_version = recv_exact(client, 1)
+                username = recv_exact(client, recv_exact(client, 1)[0])
+                password = recv_exact(client, recv_exact(client, 1)[0])
+                self.assertEqual(auth_version, b"\x01")
+                self.assertEqual(username, b"proxy-user")
+                self.assertEqual(password, b"proxy-pass")
+                client.sendall(b"\x01\x00")
+
+                header = recv_exact(client, 4)
+                self.assertEqual(header[:3], b"\x05\x01\x00")
+                self.assertEqual(header[3], 0x03)
+                host = recv_exact(client, recv_exact(client, 1)[0]).decode("ascii")
+                port = int.from_bytes(recv_exact(client, 2), "big")
+                requested["host"] = host
+                requested["port"] = port
+                client.sendall(b"\x05\x00\x00\x01\x00\x00\x00\x00\x00\x00")
+
+                request = bytearray()
+                while b"\r\n\r\n" not in request:
+                    request.extend(recv_exact(client, 1))
+                request_text = bytes(request).decode("iso-8859-1")
+                self.assertIn("GET /ws/live?access_token=test HTTP/1.1", request_text)
+                key_line = next(line for line in request_text.split("\r\n") if line.lower().startswith("sec-websocket-key:"))
+                accept = websocket_accept_value(key_line.split(":", 1)[1].strip())
+                client.sendall(
+                    (
+                        "HTTP/1.1 101 Switching Protocols\r\n"
+                        "Upgrade: websocket\r\n"
+                        "Connection: Upgrade\r\n"
+                        f"Sec-WebSocket-Accept: {accept}\r\n"
+                        "\r\n"
+                    ).encode("ascii")
+                )
+            except BaseException as exc:
+                errors.append(exc)
+            finally:
+                if client is not None:
+                    client.close()
+
+        thread = threading.Thread(target=fake_socks5_proxy, daemon=True)
+        thread.start()
+        try:
+            config = make_test_config(Path("unused.sqlite"), api_key="fake-key")
+            config = AppConfig(
+                **{
+                    **config.__dict__,
+                    "live_voice_transport": "server_proxy",
+                    "live_voice_socks5_host": proxy_host,
+                    "live_voice_socks5_port": proxy_port,
+                    "live_voice_socks5_username": "proxy-user",
+                    "live_voice_socks5_password": "proxy-pass",
+                }
+            )
+            upstream = connect_gemini_live_websocket("ws://gemini.example/ws/live?access_token=test", config)
+            upstream.sock.close()
+            thread.join(timeout=3)
+        finally:
+            server_sock.close()
+
+        if errors:
+            raise errors[0]
+        self.assertEqual(requested, {"host": "gemini.example", "port": 80})
+
     def test_live_voice_factory_and_anti_drift_anchors(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             config = make_test_config(Path(tmp) / "demo.sqlite", api_key="fake-key")
@@ -391,6 +522,93 @@ class CoreContractsTest(unittest.TestCase):
         self.assertIsInstance(adapter, GeminiLiveVoiceAdapter)
         self.assertIn("make_live_voice_adapter", FACTORY_REQUIRED)
         self.assertIn("DO_NOT_CALL_GEMINI_LIVE_TOKEN_ENDPOINT", FORBIDDEN)
+        main_source = (REPO_ROOT / "app" / "main.py").read_text(encoding="utf-8")
+        self.assertNotIn("/v1alpha/auth_tokens", main_source)
+
+    def test_live_voice_server_proxy_token_route_hides_gemini_token(self) -> None:
+        class FakeRuntime:
+            def create_live_voice_token(self, _user: Any) -> dict[str, Any]:
+                return {
+                    "ok": True,
+                    "provider": "gemini",
+                    "model": "gemini-3.1-flash-live-preview",
+                    "token": "auth_tokens/test-token",
+                    "websocket_url": "wss://generativelanguage.googleapis.com/ws/test?access_token=secret",
+                    "setup": {"model": "models/gemini-3.1-flash-live-preview"},
+                    "input_sample_rate": 16000,
+                    "max_audio_seconds": 180,
+                }
+
+        class FakeState:
+            def __init__(self, config: AppConfig, storage: Storage):
+                self.config = config
+                self.storage = storage
+                self.runtime = FakeRuntime()
+                self.live_voice_sessions: dict[str, dict[str, Any]] = {}
+                self.live_voice_sessions_lock = threading.Lock()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            config = make_test_config(Path(tmp) / "demo.sqlite", api_key="fake-key")
+            config = AppConfig(
+                **{
+                    **config.__dict__,
+                    "live_voice_transport": "server_proxy",
+                    "live_voice_socks5_host": "127.0.0.10",
+                    "live_voice_socks5_username": "proxy-user",
+                    "live_voice_socks5_password": "proxy-pass",
+                }
+            )
+            storage = Storage(config.sqlite_db_path)
+            user = storage.ensure_demo_user()
+            raw_token = session_token()
+            storage.create_auth_session(raw_token, user.id)
+            cookie = sign_cookie(raw_token, config.auth_session_secret).value
+            state = FakeState(config, storage)
+            original_state = getattr(DemoMvpHandler, "state", None)
+            DemoMvpHandler.state = state
+            server = ThreadingHTTPServer(("127.0.0.1", 0), DemoMvpHandler)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                host, port = server.server_address
+                headers = {
+                    "Cookie": f"{COOKIE_NAME}={cookie}",
+                    "Content-Type": "application/json",
+                }
+                connection = HTTPConnection(host, port, timeout=3)
+                connection.request("POST", "/api/live-voice/token", body="{}", headers=headers)
+                response = connection.getresponse()
+                payload = json.loads(response.read().decode("utf-8"))
+                connection.close()
+
+                self.assertEqual(response.status, 200)
+                self.assertTrue(payload["ok"])
+                self.assertEqual(payload["transport"], "server_proxy")
+                self.assertNotIn("token", payload)
+                self.assertTrue(payload["websocket_url"].startswith(f"ws://{host}:{port}/api/live-voice/ws/"))
+                self.assertEqual(len(state.live_voice_sessions), 1)
+                session = next(iter(state.live_voice_sessions.values()))
+                self.assertEqual(session["user_id"], user.id)
+                self.assertIn("access_token=secret", session["websocket_url"])
+
+                session_id = payload["websocket_url"].rsplit("/", 1)[-1]
+                connection = HTTPConnection(host, port, timeout=3)
+                connection.request("GET", f"/api/live-voice/ws/{session_id}", headers={"Cookie": f"{COOKIE_NAME}={cookie}"})
+                invalid_upgrade = connection.getresponse()
+                invalid_payload = json.loads(invalid_upgrade.read().decode("utf-8"))
+                connection.close()
+
+                self.assertEqual(invalid_upgrade.status, 400)
+                self.assertFalse(invalid_payload["ok"])
+                self.assertEqual(len(state.live_voice_sessions), 1)
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=3)
+                if original_state is not None:
+                    DemoMvpHandler.state = original_state
+                else:
+                    delattr(DemoMvpHandler, "state")
 
     def test_gemini_live_voice_adapter_creates_constrained_ephemeral_token(self) -> None:
         captured: dict[str, Any] = {}

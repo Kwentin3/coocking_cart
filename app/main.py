@@ -3,6 +3,9 @@ from __future__ import annotations
 import argparse
 import json
 import mimetypes
+import secrets
+import threading
+import time
 from http import HTTPStatus
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -11,6 +14,12 @@ from typing import Any
 from urllib.parse import urlparse
 
 from .config import REPO_ROOT, AppConfig, load_config
+from .live_voice_proxy import (
+    connect_gemini_live_websocket,
+    is_websocket_upgrade,
+    relay_websocket,
+    websocket_accept_value,
+)
 from .runtime import DemoRuntime
 from .security import session_token, sign_cookie, unsign_cookie
 from .storage import Storage, User
@@ -34,16 +43,22 @@ class AppState:
         if config.demo_mode:
             self.storage.ensure_demo_user()
         self.runtime = DemoRuntime(config, self.storage)
+        self.live_voice_sessions: dict[str, dict[str, Any]] = {}
+        self.live_voice_sessions_lock = threading.Lock()
 
 
 class DemoMvpHandler(BaseHTTPRequestHandler):
     state: AppState
+    protocol_version = "HTTP/1.1"
 
     def log_message(self, format: str, *args: Any) -> None:
         return
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
+        if parsed.path.startswith("/api/live-voice/ws/"):
+            self._handle_live_voice_websocket(parsed.path)
+            return
         if parsed.path == "/":
             self._send_file(INDEX_PATH, "text/html; charset=utf-8")
             return
@@ -175,6 +190,8 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
                 return
             payload = self.state.runtime.create_live_voice_token(user)
             status = HTTPStatus(payload.pop("status", 200))
+            if status == HTTPStatus.OK and payload.get("ok"):
+                payload, status = self._prepare_live_voice_token_response(user, payload)
             self._json(payload, status)
             return
         if parsed.path == "/api/admin/users":
@@ -380,6 +397,124 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
         if body:
             self.wfile.write(data)
 
+    def _prepare_live_voice_token_response(
+        self,
+        user: User,
+        payload: dict[str, Any],
+    ) -> tuple[dict[str, Any], HTTPStatus]:
+        transport = self.state.config.live_voice_transport
+        if transport == "direct_client":
+            payload["transport"] = "direct_client"
+            return payload, HTTPStatus.OK
+        if transport != "server_proxy":
+            return {
+                "ok": False,
+                "error": "LIVE_VOICE_TRANSPORT должен быть direct_client или server_proxy.",
+            }, HTTPStatus.SERVICE_UNAVAILABLE
+        upstream_url = str(payload.get("websocket_url") or "")
+        if not upstream_url:
+            return {
+                "ok": False,
+                "error": "Не удалось подготовить серверный Live Voice transport.",
+            }, HTTPStatus.BAD_GATEWAY
+
+        self._purge_expired_live_voice_sessions()
+        session_id = secrets.token_urlsafe(24)
+        expires_at = time.time() + max(30, self.state.config.live_voice_new_session_seconds)
+        with self.state.live_voice_sessions_lock:
+            self.state.live_voice_sessions[session_id] = {
+                "user_id": user.id,
+                "websocket_url": upstream_url,
+                "expires_at": expires_at,
+            }
+
+        payload.pop("token", None)
+        payload["transport"] = "server_proxy"
+        payload["websocket_url"] = self._live_voice_proxy_url(session_id)
+        return payload, HTTPStatus.OK
+
+    def _handle_live_voice_websocket(self, path: str) -> None:
+        if self.state.config.live_voice_transport != "server_proxy":
+            self._json({"ok": False, "error": "Live Voice server proxy выключен."}, HTTPStatus.NOT_FOUND)
+            return
+        user = self._require_user()
+        if not user:
+            return
+        if not is_websocket_upgrade(self.headers):
+            self._json({"ok": False, "error": "Ожидался WebSocket Upgrade."}, HTTPStatus.BAD_REQUEST)
+            return
+        session_id = path.removeprefix("/api/live-voice/ws/").strip("/")
+        session = self._take_live_voice_session(session_id, user)
+        if session is None:
+            return
+        try:
+            upstream = connect_gemini_live_websocket(str(session["websocket_url"]), self.state.config)
+        except Exception as exc:
+            payload: dict[str, Any] = {
+                "ok": False,
+                "error": "Не удалось открыть серверный Live Voice transport.",
+            }
+            if user.role == "admin":
+                payload["admin_hint"] = f"{type(exc).__name__}: {exc}"
+            self._json(payload, HTTPStatus.BAD_GATEWAY)
+            return
+
+        self._accept_websocket()
+        relay_websocket(
+            browser_reader=self.rfile,
+            browser_writer=self.wfile,
+            browser_socket=self.connection,
+            upstream=upstream,
+        )
+
+    def _take_live_voice_session(self, session_id: str, user: User) -> dict[str, Any] | None:
+        self._purge_expired_live_voice_sessions()
+        with self.state.live_voice_sessions_lock:
+            session = self.state.live_voice_sessions.pop(session_id, None)
+        if not session:
+            self._json({"ok": False, "error": "Live Voice session не найдена или истекла."}, HTTPStatus.NOT_FOUND)
+            return None
+        if int(session.get("user_id", 0)) != user.id:
+            self._json({"ok": False, "error": "Нет доступа к Live Voice session."}, HTTPStatus.FORBIDDEN)
+            return None
+        if float(session.get("expires_at", 0)) < time.time():
+            self._json({"ok": False, "error": "Live Voice session истекла."}, HTTPStatus.GONE)
+            return None
+        return session
+
+    def _purge_expired_live_voice_sessions(self) -> None:
+        now = time.time()
+        with self.state.live_voice_sessions_lock:
+            expired = [
+                session_id
+                for session_id, session in self.state.live_voice_sessions.items()
+                if float(session.get("expires_at", 0)) < now
+            ]
+            for session_id in expired:
+                self.state.live_voice_sessions.pop(session_id, None)
+
+    def _accept_websocket(self) -> None:
+        key = str(self.headers.get("Sec-WebSocket-Key", "")).strip()
+        self.send_response(HTTPStatus.SWITCHING_PROTOCOLS)
+        self.send_header("Upgrade", "websocket")
+        self.send_header("Connection", "Upgrade")
+        self.send_header("Sec-WebSocket-Accept", websocket_accept_value(key))
+        self.end_headers()
+        self.close_connection = True
+
+    def _live_voice_proxy_url(self, session_id: str) -> str:
+        forwarded_proto = str(self.headers.get("X-Forwarded-Proto", "")).split(",", 1)[0].strip().lower()
+        forwarded_host = str(self.headers.get("X-Forwarded-Host", "")).split(",", 1)[0].strip()
+        app_base = urlparse(self.state.config.app_base_url)
+        if forwarded_proto:
+            scheme = "wss" if forwarded_proto == "https" else "ws"
+        elif app_base.scheme == "https":
+            scheme = "wss"
+        else:
+            scheme = "ws"
+        host = forwarded_host or self.headers.get("Host") or app_base.netloc
+        return f"{scheme}://{host}/api/live-voice/ws/{session_id}"
+
     def _current_token(self) -> str | None:
         if not self.state.config.auth_ready:
             return None
@@ -464,6 +599,7 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
             "streaming_enabled": self.state.config.live_voice_ready,
             "streaming_model": self.state.config.live_voice_model if self.state.config.live_voice_ready else "",
             "streaming_sample_rate": self.state.config.live_voice_input_sample_rate,
+            "streaming_transport": self.state.config.live_voice_transport,
             "batch_enabled": self.state.config.stt_enabled,
             "max_audio_seconds": self.state.config.stt_max_audio_seconds,
             "countdown_seconds": self.state.config.stt_countdown_seconds,

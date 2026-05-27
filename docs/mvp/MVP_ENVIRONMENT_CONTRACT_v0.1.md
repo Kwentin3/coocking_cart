@@ -141,8 +141,13 @@ STT является отдельной provider capability. UI и route не д
 | `LIVE_VOICE_NEW_SESSION_SECONDS` | Optional | `<LIVE_VOICE_NEW_SESSION_SECONDS>` | Окно, в течение которого по token можно открыть новую Live session. |
 | `LIVE_VOICE_INPUT_SAMPLE_RATE` | Optional | `16000` | Sample rate PCM16 mono, который браузер стримит в Live API. |
 | `LIVE_VOICE_RESPONSE_MODALITY` | Optional | `TEXT` | Response modality Live session. Для диктовки в textarea используется `TEXT`, аудио-ответ ассистента не нужен. |
+| `LIVE_VOICE_TRANSPORT` | Optional | `direct_client` или `server_proxy` | Transport mode. `direct_client` выдаёт браузеру Gemini ephemeral token и прямой WSS URL; `server_proxy` выдаёт браузеру только backend WSS URL. |
+| `LIVE_VOICE_SOCKS5_HOST` | Optional/secret-adjacent | `<SOCKS5_HOST_OR_IP>` | SOCKS5 host/IP для server-side Live Voice transport. Поддерживаются aliases `LIVE_VOICE_SOCKS5_IP` и `LIVE_VOICE_SOCKS5_SERVER`. |
+| `LIVE_VOICE_SOCKS5_PORT` | Optional | `1080` | SOCKS5 port. |
+| `LIVE_VOICE_SOCKS5_USERNAME` | Optional/secret | `<SOCKS5_USERNAME>` | SOCKS5 username. Не передаётся в frontend и не коммитится. |
+| `LIVE_VOICE_SOCKS5_PASSWORD` | Optional/secret | `<SOCKS5_PASSWORD>` | SOCKS5 password. Не передаётся в frontend и не коммитится. |
 
-Live Voice является отдельной provider capability от batch-STT. Route `/api/live-voice/token` выдает только short-lived ephemeral token и Live setup через `LiveVoiceAdapter`/`make_live_voice_adapter`; браузер подключается к Gemini Live API напрямую по WSS и стримит PCM16 audio chunks. API key не передается в frontend.
+Live Voice является отдельной provider capability от batch-STT. Route `/api/live-voice/token` всегда проходит через `LiveVoiceAdapter`/`make_live_voice_adapter`. В `direct_client` режиме браузер получает short-lived ephemeral token и подключается к Gemini Live API напрямую по WSS. В `server_proxy` режиме браузер получает только backend WebSocket URL `/api/live-voice/ws/<session>`, а backend открывает Gemini Live WSS, при наличии `LIVE_VOICE_SOCKS5_HOST`, через SOCKS5. API key, Gemini token в proxy mode и SOCKS5 credentials не передаются в frontend.
 
 ### Context files
 

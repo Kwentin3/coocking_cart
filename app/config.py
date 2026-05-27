@@ -79,6 +79,11 @@ class AppConfig:
     live_voice_new_session_seconds: int
     live_voice_input_sample_rate: int
     live_voice_response_modality: str
+    live_voice_transport: str
+    live_voice_socks5_host: str
+    live_voice_socks5_port: int
+    live_voice_socks5_username: str
+    live_voice_socks5_password: str
     enable_context_inspector: bool
     enable_llm_trace: bool
     bootstrap_admin_email: str
@@ -115,6 +120,7 @@ class AppConfig:
             and self.live_voice_provider == "gemini"
             and not _is_blank_or_placeholder(self.live_voice_model)
             and not _is_blank_or_placeholder(self.live_voice_api_key)
+            and self.live_voice_transport in {"direct_client", "server_proxy"}
         )
 
     @property
@@ -157,6 +163,8 @@ class AppConfig:
                 errors.append("Не настроена Live Voice модель.")
             if _is_blank_or_placeholder(self.live_voice_api_key):
                 errors.append("Не настроен API key Live Voice.")
+        if self.live_voice_enabled and self.live_voice_transport not in {"direct_client", "server_proxy"}:
+            errors.append("Invalid LIVE_VOICE_TRANSPORT.")
         return errors
 
     def admin_diagnostics(self) -> list[str]:
@@ -190,6 +198,8 @@ class AppConfig:
             diagnostics.append("LIVE_VOICE_MODEL is missing, blank, or placeholder.")
         if self.live_voice_enabled and _is_blank_or_placeholder(self.live_voice_api_key):
             diagnostics.append("LIVE_VOICE_API_KEY is missing, blank, or placeholder.")
+        if self.live_voice_enabled and self.live_voice_transport not in {"direct_client", "server_proxy"}:
+            diagnostics.append("LIVE_VOICE_TRANSPORT must be direct_client or server_proxy.")
         return diagnostics
 
 
@@ -215,6 +225,13 @@ def load_config() -> AppConfig:
     stt_model = get("STT_MODEL") or get("LLM_MODEL", "")
     live_voice_api_key = get("LIVE_VOICE_API_KEY") or stt_api_key
     live_voice_model = get("LIVE_VOICE_MODEL", "gemini-3.1-flash-live-preview")
+    live_voice_socks5_host = (
+        get("LIVE_VOICE_SOCKS5_HOST")
+        or get("LIVE_VOICE_SOCKS5_IP")
+        or get("LIVE_VOICE_SOCKS5_SERVER")
+        or get("SOCKS5_HOST", "")
+    )
+    live_voice_transport = get("LIVE_VOICE_TRANSPORT") or ("server_proxy" if live_voice_socks5_host else "direct_client")
 
     return AppConfig(
         app_env=get("APP_ENV", "demo"),
@@ -240,7 +257,9 @@ def load_config() -> AppConfig:
         stt_countdown_seconds=_int_value(get("STT_COUNTDOWN_SECONDS"), 15),
         stt_max_audio_bytes=_int_value(get("STT_MAX_AUDIO_BYTES"), 12_000_000),
         live_voice_enabled=_bool_value(get("LIVE_VOICE_ENABLED"), True),
-        live_voice_provider=(get("LIVE_VOICE_PROVIDER") or get("STT_PROVIDER") or get("LLM_PROVIDER", "gemini")).strip().lower(),
+        live_voice_provider=(
+            get("LIVE_VOICE_PROVIDER") or get("STT_PROVIDER") or get("LLM_PROVIDER", "gemini")
+        ).strip().lower(),
         live_voice_model=live_voice_model,
         live_voice_api_key=live_voice_api_key,
         live_voice_base_url=get("LIVE_VOICE_BASE_URL") or get("STT_BASE_URL") or get("LLM_BASE_URL", ""),
@@ -249,6 +268,11 @@ def load_config() -> AppConfig:
         live_voice_new_session_seconds=_int_value(get("LIVE_VOICE_NEW_SESSION_SECONDS"), 60),
         live_voice_input_sample_rate=_int_value(get("LIVE_VOICE_INPUT_SAMPLE_RATE"), 16000),
         live_voice_response_modality=get("LIVE_VOICE_RESPONSE_MODALITY", "TEXT").strip().upper(),
+        live_voice_transport=live_voice_transport.strip().lower(),
+        live_voice_socks5_host=live_voice_socks5_host,
+        live_voice_socks5_port=_int_value(get("LIVE_VOICE_SOCKS5_PORT") or get("SOCKS5_PORT"), 1080),
+        live_voice_socks5_username=get("LIVE_VOICE_SOCKS5_USERNAME") or get("SOCKS5_USERNAME", ""),
+        live_voice_socks5_password=get("LIVE_VOICE_SOCKS5_PASSWORD") or get("SOCKS5_PASSWORD", ""),
         enable_context_inspector=_bool_value(get("ENABLE_CONTEXT_INSPECTOR"), True),
         enable_llm_trace=_bool_value(get("ENABLE_LLM_TRACE"), True),
         bootstrap_admin_email=get("BOOTSTRAP_ADMIN_EMAIL", ""),
