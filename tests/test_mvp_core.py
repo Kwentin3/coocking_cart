@@ -579,7 +579,6 @@ class CoreContractsTest(unittest.TestCase):
                 connection.request("POST", "/api/live-voice/token", body="{}", headers=headers)
                 response = connection.getresponse()
                 payload = json.loads(response.read().decode("utf-8"))
-                connection.close()
 
                 self.assertEqual(response.status, 200)
                 self.assertTrue(payload["ok"])
@@ -591,6 +590,17 @@ class CoreContractsTest(unittest.TestCase):
                 self.assertEqual(session["user_id"], user.id)
                 self.assertIn("access_token=secret", session["websocket_url"])
 
+                connection.request("POST", "/api/live-voice/token", body="{}", headers=headers)
+                second_response = connection.getresponse()
+                second_payload = json.loads(second_response.read().decode("utf-8"))
+                connection.close()
+
+                self.assertEqual(second_response.status, 200)
+                self.assertTrue(second_payload["ok"])
+                self.assertEqual(second_payload["transport"], "server_proxy")
+                self.assertNotIn("token", second_payload)
+                self.assertEqual(len(state.live_voice_sessions), 2)
+
                 session_id = payload["websocket_url"].rsplit("/", 1)[-1]
                 connection = HTTPConnection(host, port, timeout=3)
                 connection.request("GET", f"/api/live-voice/ws/{session_id}", headers={"Cookie": f"{COOKIE_NAME}={cookie}"})
@@ -600,7 +610,7 @@ class CoreContractsTest(unittest.TestCase):
 
                 self.assertEqual(invalid_upgrade.status, 400)
                 self.assertFalse(invalid_payload["ok"])
-                self.assertEqual(len(state.live_voice_sessions), 1)
+                self.assertEqual(len(state.live_voice_sessions), 2)
             finally:
                 server.shutdown()
                 server.server_close()

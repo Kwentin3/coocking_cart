@@ -162,6 +162,7 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
             self._issue_session(user)
             return
         if parsed.path == "/api/logout":
+            self._discard_request_body()
             token = self._current_token()
             if token:
                 self.state.storage.delete_auth_session(token)
@@ -185,6 +186,7 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
             self._json(payload, status)
             return
         if parsed.path == "/api/live-voice/token":
+            self._discard_request_body()
             user = self._require_user()
             if not user:
                 return
@@ -351,6 +353,14 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
             return parsed if isinstance(parsed, dict) else {}
         except json.JSONDecodeError:
             return {}
+
+    def _discard_request_body(self) -> None:
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            length = 0
+        if length > 0:
+            self.rfile.read(length)
 
     def _read_audio_upload(self) -> dict[str, Any]:
         try:
