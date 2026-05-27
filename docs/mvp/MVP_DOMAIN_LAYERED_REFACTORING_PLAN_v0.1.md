@@ -19,6 +19,7 @@
 - JSON route orchestration moved by domain to `app/routes/config_routes.py`, `auth_routes.py`, `chat_routes.py`, `admin_routes.py`, and `voice_routes.py`.
 - Route modules receive only `RouteContext`; this keeps direct `BaseHTTPRequestHandler` usage out of domain route functions.
 - `app/routes/contracts.py` records the explicit method/path/domain/guard map. Test `test_route_domain_contracts_keep_protected_routes_explicit` is the anti-drift check for protected routes.
+- `POST /api/demo-login` now drains its optional JSON body before responding, so HTTP/1.1 keep-alive clients do not leak `{}` into the next request line.
 - API URLs, JSON keys and UI behavior were intentionally preserved. Frontend `app/static/app.js` is still a later slice.
 
 ## Target Layers

@@ -15,6 +15,7 @@ def post_login(ctx: RouteContext) -> None:
 
 
 def post_demo_login(ctx: RouteContext) -> None:
+    ctx.discard_request_body()
     if not ctx.state.config.demo_mode:
         ctx.json({"ok": False, "error": "Demo mode выключен."}, HTTPStatus.FORBIDDEN)
         return

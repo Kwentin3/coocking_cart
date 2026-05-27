@@ -546,6 +546,53 @@ class CoreContractsTest(unittest.TestCase):
                 if original_state is not None:
                     DemoMvpHandler.state = original_state
 
+    def test_demo_login_consumes_json_body_before_keep_alive_next_request(self) -> None:
+        class FakeState:
+            def __init__(self, config: AppConfig, storage: Storage):
+                self.config = config
+                self.storage = storage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            config = make_test_config(Path(tmp) / "demo.sqlite", api_key="")
+            storage = Storage(config.sqlite_db_path)
+            state = FakeState(config, storage)
+            original_state = getattr(DemoMvpHandler, "state", None)
+            DemoMvpHandler.state = state
+            server = ThreadingHTTPServer(("127.0.0.1", 0), DemoMvpHandler)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                host, port = server.server_address
+                connection = HTTPConnection(host, port, timeout=3)
+                connection.request(
+                    "POST",
+                    "/api/demo-login",
+                    body="{}",
+                    headers={"Content-Type": "application/json"},
+                )
+                login_response = connection.getresponse()
+                login_payload = json.loads(login_response.read().decode("utf-8"))
+                cookie = (login_response.getheader("Set-Cookie") or "").split(";", 1)[0]
+
+                connection.request("GET", "/api/sessions", headers={"Cookie": cookie})
+                sessions_response = connection.getresponse()
+                sessions_payload = json.loads(sessions_response.read().decode("utf-8"))
+                connection.close()
+
+                self.assertEqual(login_response.status, 200)
+                self.assertTrue(login_payload["ok"])
+                self.assertEqual(sessions_response.status, 200)
+                self.assertTrue(sessions_payload["ok"])
+                self.assertIn("sessions", sessions_payload)
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=3)
+                if original_state is not None:
+                    DemoMvpHandler.state = original_state
+                else:
+                    delattr(DemoMvpHandler, "state")
+
     def test_gemini_adapter_sends_response_schema_in_generation_config(self) -> None:
         captured: dict[str, Any] = {}
 
