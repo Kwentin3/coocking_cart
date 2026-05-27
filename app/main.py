@@ -14,27 +14,22 @@ from typing import Any
 from urllib.parse import urlparse
 
 from .config import REPO_ROOT, AppConfig, load_config
+from .http.cookies import COOKIE_NAME, build_session_cookie_header, should_use_secure_session_cookie
 from .live_voice_proxy import (
     connect_gemini_live_websocket,
     is_websocket_upgrade,
     relay_websocket,
     websocket_accept_value,
 )
+from .routes import admin_routes, auth_routes, chat_routes, config_routes, voice_routes
+from .routes.context import RouteContext
 from .runtime import DemoRuntime
 from .security import session_token, sign_cookie, unsign_cookie
 from .storage import Storage, User
 
 
-COOKIE_NAME = "cc_session"
 STATIC_DIR = REPO_ROOT / "app" / "static"
 INDEX_PATH = REPO_ROOT / "app" / "templates" / "index.html"
-
-
-def build_session_cookie_header(name: str, value: str, *, max_age: int, secure: bool) -> str:
-    header = f"{name}={value}; HttpOnly; SameSite=Lax; Path=/; Max-Age={max_age}"
-    if secure:
-        header += "; Secure"
-    return header
 
 
 class AppState:
@@ -55,6 +50,8 @@ class AppState:
 
 
 class DemoMvpHandler(BaseHTTPRequestHandler):
+    # Sticky edge boundary: JSON route orchestration lives in app/routes;
+    # raw WebSocket relay stays here because BaseHTTPRequestHandler owns the socket streams.
     state: AppState
     protocol_version = "HTTP/1.1"
 
@@ -63,6 +60,7 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
+        ctx = RouteContext(self, parsed.path)
         if parsed.path.startswith("/api/live-voice/ws/"):
             self._handle_live_voice_websocket(parsed.path)
             return
@@ -73,73 +71,34 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
             self._serve_static(parsed.path)
             return
         if parsed.path == "/api/config":
-            self._json({"ok": True, "config_errors": self.state.config.public_errors(), "voice_input": self._voice_input_config()})
+            config_routes.get_config(ctx)
             return
         if parsed.path == "/api/me":
-            user = self._current_user()
-            self._json({
-                "ok": True,
-                "user": self._user_payload(user),
-                "config_errors": self.state.config.public_errors(),
-                "voice_input": self._voice_input_config(),
-            })
+            config_routes.get_me(ctx)
             return
         if parsed.path == "/api/admin/users":
-            admin = self._require_admin()
-            if not admin:
-                return
-            self._json({"ok": True, "users": self.state.storage.list_users(current_user_id=admin.id)})
+            admin_routes.get_users(ctx)
             return
         if parsed.path == "/api/admin/dashboard":
-            admin = self._require_admin()
-            if not admin:
-                return
-            self._json({"ok": True, "dashboard": self.state.storage.admin_dashboard()})
+            admin_routes.get_dashboard(ctx)
             return
         if parsed.path == "/api/admin/context":
-            admin = self._require_admin()
-            if not admin:
-                return
-            self._json(self.state.runtime.admin_context_payload(admin))
+            admin_routes.get_context(ctx)
             return
         if parsed.path == "/api/sessions":
-            user = self._require_user()
-            if not user:
-                return
-            self._json({"ok": True, "sessions": self.state.storage.list_chat_sessions(user)})
+            chat_routes.list_sessions(ctx)
             return
         if parsed.path.startswith("/api/sessions/") and parsed.path.endswith("/inspector"):
-            user = self._require_user()
-            if not user:
-                return
-            session_id = self._session_id_from_path(parsed.path, suffix="/inspector")
-            if session_id is None:
-                return
-            self._json(self.state.runtime.context_inspector_payload(session_id, user))
+            chat_routes.get_inspector(ctx)
             return
         if parsed.path.startswith("/api/sessions/"):
-            user = self._require_user()
-            if not user:
-                return
-            session_id = self._session_id_from_path(parsed.path)
-            if session_id is None:
-                return
-            if not self.state.storage.can_access_session(session_id, user):
-                self._json({"ok": False, "error": "Нет доступа к сессии."}, HTTPStatus.FORBIDDEN)
-                return
-            payload = self.state.storage.session_payload(session_id, user)
-            if user.role != "admin" and payload.get("latest_turn"):
-                payload["latest_turn"] = {
-                    key: value
-                    for key, value in payload["latest_turn"].items()
-                    if key != "trace"
-                }
-            self._json({"ok": True, **payload})
+            chat_routes.get_session(ctx)
             return
         self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND)
 
     def do_HEAD(self) -> None:
         parsed = urlparse(self.path)
+        ctx = RouteContext(self, parsed.path)
         if parsed.path == "/":
             self._send_file(INDEX_PATH, "text/html; charset=utf-8", body=False)
             return
@@ -147,178 +106,58 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
             self._serve_static(parsed.path, body=False)
             return
         if parsed.path == "/api/config":
-            self._json({"ok": True, "config_errors": self.state.config.public_errors(), "voice_input": self._voice_input_config()}, body=False)
+            config_routes.get_config(ctx, body=False)
             return
         self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND, body=False)
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
+        ctx = RouteContext(self, parsed.path)
         if parsed.path == "/api/login":
-            body = self._read_json()
-            user = self.state.storage.authenticate(str(body.get("email", "")), str(body.get("password", "")))
-            if not user:
-                self._json({"ok": False, "error": "Неверный email или пароль."}, HTTPStatus.UNAUTHORIZED)
-                return
-            self._issue_session(user)
+            auth_routes.post_login(ctx)
             return
         if parsed.path == "/api/demo-login":
-            if not self.state.config.demo_mode:
-                self._json({"ok": False, "error": "Demo mode выключен."}, HTTPStatus.FORBIDDEN)
-                return
-            user = self.state.storage.ensure_demo_user()
-            self._issue_session(user)
+            auth_routes.post_demo_login(ctx)
             return
         if parsed.path == "/api/logout":
-            self._discard_request_body()
-            token = self._current_token()
-            if token:
-                self.state.storage.delete_auth_session(token)
-            self._json({"ok": True}, headers=[self._clear_cookie_header()])
+            auth_routes.post_logout(ctx)
             return
         if parsed.path == "/api/transcribe":
-            user = self._require_user()
-            if not user:
-                return
-            audio = self._read_audio_upload()
-            if not audio["ok"]:
-                self._json({"ok": False, "error": audio["error"]}, audio["status"])
-                return
-            payload = self.state.runtime.transcribe_audio(
-                user,
-                audio["audio_bytes"],
-                audio["mime_type"],
-                audio["duration_ms"],
-            )
-            status = HTTPStatus(payload.pop("status", 200))
-            self._json(payload, status)
+            voice_routes.post_transcribe(ctx)
             return
         if parsed.path == "/api/live-voice/token":
-            self._discard_request_body()
-            user = self._require_user()
-            if not user:
-                return
-            payload = self.state.runtime.create_live_voice_token(user)
-            status = HTTPStatus(payload.pop("status", 200))
-            if status == HTTPStatus.OK and payload.get("ok"):
-                payload, status = self._prepare_live_voice_token_response(user, payload)
-            self._json(payload, status)
+            voice_routes.post_live_voice_token(ctx)
             return
         if parsed.path == "/api/admin/users":
-            admin = self._require_admin()
-            if not admin:
-                return
-            body = self._read_json()
-            try:
-                user = self.state.storage.create_user(
-                    email=str(body.get("email", "")),
-                    password=str(body.get("password", "")),
-                    role=str(body.get("role", "user")),
-                )
-            except ValueError as exc:
-                self._json({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
-                return
-            user["is_current"] = user["id"] == admin.id
-            self._json({"ok": True, "user": user}, HTTPStatus.CREATED)
+            admin_routes.post_user(ctx)
             return
         if parsed.path == "/api/sessions":
-            user = self._require_user()
-            if not user:
-                return
-            body = self._read_json()
-            session_id = self.state.storage.create_chat_session(user.id, str(body.get("title") or "Новая сессия"))
-            self._json({"ok": True, "session_id": session_id})
+            chat_routes.create_session(ctx)
             return
         if parsed.path.startswith("/api/sessions/") and parsed.path.endswith("/messages"):
-            user = self._require_user()
-            if not user:
-                return
-            session_id = self._session_id_from_path(parsed.path, suffix="/messages")
-            if session_id is None:
-                return
-            body = self._read_json()
-            message = str(body.get("message") or "").strip()
-            if not message:
-                self._json({"ok": False, "error": "Сообщение пустое."}, HTTPStatus.BAD_REQUEST)
-                return
-            self._json(self.state.runtime.process_user_message(session_id, user, message))
+            chat_routes.post_message(ctx)
             return
         self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND)
 
     def do_PATCH(self) -> None:
         parsed = urlparse(self.path)
+        ctx = RouteContext(self, parsed.path)
         if parsed.path.startswith("/api/admin/users/"):
-            admin = self._require_admin()
-            if not admin:
-                return
-            user_id = self._admin_user_id_from_path(parsed.path)
-            if user_id is None:
-                return
-            body = self._read_json()
-            try:
-                user = self.state.storage.update_user(
-                    user_id,
-                    email=str(body["email"]) if "email" in body else None,
-                    role=str(body["role"]) if "role" in body else None,
-                    password=str(body["password"]) if "password" in body else None,
-                    current_admin_id=admin.id,
-                )
-            except ValueError as exc:
-                self._json({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
-                return
-            self._json({"ok": True, "user": user})
+            admin_routes.patch_user(ctx)
             return
         if parsed.path.startswith("/api/sessions/"):
-            user = self._require_user()
-            if not user:
-                return
-            session_id = self._session_id_from_path(parsed.path)
-            if session_id is None:
-                return
-            body = self._read_json()
-            try:
-                session = self.state.storage.update_chat_session(session_id, user, str(body.get("title", "")))
-            except PermissionError as exc:
-                self._json({"ok": False, "error": str(exc)}, HTTPStatus.FORBIDDEN)
-                return
-            except ValueError as exc:
-                self._json({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
-                return
-            self._json({"ok": True, "session": session})
+            chat_routes.patch_session(ctx)
             return
         self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND)
 
     def do_DELETE(self) -> None:
         parsed = urlparse(self.path)
+        ctx = RouteContext(self, parsed.path)
         if parsed.path.startswith("/api/admin/users/"):
-            admin = self._require_admin()
-            if not admin:
-                return
-            user_id = self._admin_user_id_from_path(parsed.path)
-            if user_id is None:
-                return
-            try:
-                self.state.storage.delete_user(user_id, current_admin_id=admin.id)
-            except ValueError as exc:
-                self._json({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
-                return
-            self._json({"ok": True})
+            admin_routes.delete_user(ctx)
             return
         if parsed.path.startswith("/api/sessions/"):
-            user = self._require_user()
-            if not user:
-                return
-            session_id = self._session_id_from_path(parsed.path)
-            if session_id is None:
-                return
-            try:
-                self.state.storage.delete_chat_session(session_id, user)
-            except PermissionError as exc:
-                self._json({"ok": False, "error": str(exc)}, HTTPStatus.FORBIDDEN)
-                return
-            except ValueError as exc:
-                self._json({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
-                return
-            self._json({"ok": True})
+            chat_routes.delete_session(ctx)
             return
         self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND)
 
@@ -612,17 +451,11 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
         )
 
     def _use_secure_session_cookie(self) -> bool:
-        mode = self.state.config.session_cookie_secure
-        if mode == "true":
-            return True
-        if mode == "false":
-            return False
-        forwarded_proto = str(self.headers.get("X-Forwarded-Proto", "")).split(",", 1)[0].strip().lower()
-        if forwarded_proto:
-            return forwarded_proto == "https"
-        host = str(self.headers.get("Host", "")).split(":", 1)[0].strip().lower()
-        app_base = urlparse(self.state.config.app_base_url)
-        return app_base.scheme == "https" and host not in {"127.0.0.1", "::1", "localhost"}
+        return should_use_secure_session_cookie(
+            self.state.config,
+            forwarded_proto=str(self.headers.get("X-Forwarded-Proto", "")),
+            host_header=str(self.headers.get("Host", "")),
+        )
 
     def _voice_input_config(self) -> dict[str, Any]:
         return {

@@ -1,6 +1,6 @@
 ﻿# MVP domain-layered refactoring plan v0.1
 
-- Status: implementation blueprint
+- Status: active implementation plan; backend route split slice completed
 - Date: 2026-05-27
 - Scope: Demo MVP codebase after Live Voice, Markdown chat rendering and SQLite hardening
 
@@ -9,6 +9,17 @@
 Разнести текущие монолитные поверхности по доменам и слоям так, чтобы контракты были явными, а новые фичи не требовали менять `app/main.py`, `app/storage.py` и `app/static/app.js` одновременно.
 
 Не цель: переписать проект на новый framework, заменить SQLite или построить production IAM. Рефакторинг должен идти малыми проверяемыми срезами с сохранением текущих route URL, JSON response shapes и UI-поведения.
+
+## Implementation Status
+
+2026-05-27 backend slice completed:
+
+- `app/main.py` remains the stdlib `ThreadingHTTPServer` entrypoint and owns static files, raw request/response IO helpers, session helpers and the socket-bound Live Voice WebSocket relay.
+- Cookie contract moved to `app/http/cookies.py`: `COOKIE_NAME`, `build_session_cookie_header`, and `should_use_secure_session_cookie`.
+- JSON route orchestration moved by domain to `app/routes/config_routes.py`, `auth_routes.py`, `chat_routes.py`, `admin_routes.py`, and `voice_routes.py`.
+- Route modules receive only `RouteContext`; this keeps direct `BaseHTTPRequestHandler` usage out of domain route functions.
+- `app/routes/contracts.py` records the explicit method/path/domain/guard map. Test `test_route_domain_contracts_keep_protected_routes_explicit` is the anti-drift check for protected routes.
+- API URLs, JSON keys and UI behavior were intentionally preserved. Frontend `app/static/app.js` is still a later slice.
 
 ## Target Layers
 
@@ -26,13 +37,13 @@
 
 | Domain | Backend modules after refactor | Frontend modules after refactor | Contract boundary |
 | --- | --- | --- | --- |
-| Auth/session | `app/http/cookies.py`, `app/api/auth_routes.py`, `app/storage/users.py` | `static/js/auth.js`, `static/js/system_menu.js` | `CurrentUserDTO`, `LoginResponse`, cookie policy |
-| Chat/session | `app/api/chat_routes.py`, `app/runtime.py`, `app/storage/chat.py` | `static/js/chat.js`, `static/js/sessions.js` | `ChatSessionDTO`, `MessageDTO`, `SendMessageResponse` |
+| Auth/session | `app/http/cookies.py`, `app/routes/auth_routes.py`, `app/storage/users.py` | `static/js/auth.js`, `static/js/system_menu.js` | `CurrentUserDTO`, `LoginResponse`, cookie policy |
+| Chat/session | `app/routes/chat_routes.py`, `app/runtime.py`, `app/storage/chat.py` | `static/js/chat.js`, `static/js/sessions.js` | `ChatSessionDTO`, `MessageDTO`, `SendMessageResponse` |
 | Structured result/artifact | `app/storage/turns.py`, `app/structured_output.py` | `static/js/artifacts.js` | `StructuredOutput`, `TurnResultDTO` |
-| Admin/demo ops | `app/api/admin_routes.py`, `app/storage/admin.py` | `static/js/admin.js` | `AdminUserDTO`, `DashboardDTO`, read-only context payload |
+| Admin/demo ops | `app/routes/admin_routes.py`, `app/storage/admin.py` | `static/js/admin.js` | `AdminUserDTO`, `DashboardDTO`, read-only context payload |
 | Context pack | `app/context_loader.py`, future `app/context_contracts.py` | `static/js/inspector.js` | `ContextPackDTO`, manifest/layer metadata |
-| Voice/STT | `app/api/voice_routes.py`, `app/stt.py`, `app/live_voice.py`, `app/live_voice_proxy.py` | `static/js/voice.js` | `VoiceInputConfig`, `TranscriptionResponse`, `LiveVoiceSessionDTO` |
-| Config/health | `app/config.py`, `app/api/config_routes.py` | `static/js/config.js` | public config only, no secrets |
+| Voice/STT | `app/routes/voice_routes.py`, `app/stt.py`, `app/live_voice.py`, `app/live_voice_proxy.py` | `static/js/voice.js` | `VoiceInputConfig`, `TranscriptionResponse`, `LiveVoiceSessionDTO` |
+| Config/health | `app/config.py`, `app/routes/config_routes.py` | `static/js/config.js` | public config only, no secrets |
 
 ## Slice 1: Contract Definitions Before Extraction
 
@@ -73,7 +84,7 @@ Problem: manual `if parsed.path` chains mix unrelated route ownership.
 Work:
 
 1. Introduce a tiny route table that maps `(method, path pattern)` to route handlers.
-2. Move auth/session/admin/voice route functions into `app/api/*_routes.py`.
+2. Move auth/session/admin/voice route functions into `app/routes/*_routes.py`.
 3. Route handlers receive an explicit request context: config, storage, runtime, current user helpers, parsed body.
 4. Preserve all current JSON shapes.
 

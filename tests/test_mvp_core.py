@@ -38,6 +38,7 @@ from app.live_voice_proxy import (
 )
 from app.llm import GeminiAdapter
 from app.main import COOKIE_NAME, DemoMvpHandler, build_session_cookie_header
+from app.routes.contracts import ROUTE_DOMAIN_CONTRACTS
 from app.runtime import DemoRuntime
 from app.security import session_token, sign_cookie
 from app.storage import Storage
@@ -452,6 +453,47 @@ class CoreContractsTest(unittest.TestCase):
         self.assertIn("Max-Age=604800", secure_cookie)
         self.assertIn("Secure", secure_cookie)
         self.assertNotIn("Secure", local_cookie)
+
+    def test_route_domain_contracts_keep_protected_routes_explicit(self) -> None:
+        contracts = {(item.method, item.path): item for item in ROUTE_DOMAIN_CONTRACTS}
+        self.assertEqual(len(contracts), len(ROUTE_DOMAIN_CONTRACTS))
+        expected = {
+            ("GET", "/api/config"): ("config", "public"),
+            ("HEAD", "/api/config"): ("config", "public"),
+            ("GET", "/api/me"): ("auth", "public"),
+            ("POST", "/api/login"): ("auth", "public"),
+            ("POST", "/api/demo-login"): ("auth", "public"),
+            ("POST", "/api/logout"): ("auth", "public"),
+            ("GET", "/api/admin/users"): ("admin", "admin"),
+            ("POST", "/api/admin/users"): ("admin", "admin"),
+            ("PATCH", "/api/admin/users/{user_id}"): ("admin", "admin"),
+            ("DELETE", "/api/admin/users/{user_id}"): ("admin", "admin"),
+            ("GET", "/api/admin/dashboard"): ("admin", "admin"),
+            ("GET", "/api/admin/context"): ("admin", "admin"),
+            ("GET", "/api/sessions"): ("chat", "user"),
+            ("POST", "/api/sessions"): ("chat", "user"),
+            ("GET", "/api/sessions/{session_id}"): ("chat", "user"),
+            ("PATCH", "/api/sessions/{session_id}"): ("chat", "user"),
+            ("DELETE", "/api/sessions/{session_id}"): ("chat", "user"),
+            ("POST", "/api/sessions/{session_id}/messages"): ("chat", "user"),
+            ("GET", "/api/sessions/{session_id}/inspector"): ("context", "user"),
+            ("POST", "/api/transcribe"): ("voice", "user"),
+            ("POST", "/api/live-voice/token"): ("voice", "user"),
+            ("GET", "/api/live-voice/ws/{session_id}"): ("voice", "user"),
+        }
+
+        for key, (domain, guard) in expected.items():
+            self.assertIn(key, contracts)
+            self.assertEqual(contracts[key].domain, domain)
+            self.assertEqual(contracts[key].guard, guard)
+            self.assertIn(".", contracts[key].handler)
+
+    def test_route_modules_keep_provider_and_sql_boundaries_out(self) -> None:
+        for path in (REPO_ROOT / "app" / "routes").glob("*_routes.py"):
+            source = path.read_text(encoding="utf-8")
+            self.assertNotIn("Gemini", source, path.name)
+            self.assertNotIn("sqlite3", source, path.name)
+            self.assertNotIn("connect_gemini_live_websocket", source, path.name)
 
     def test_session_cookie_auto_secure_uses_forwarded_https(self) -> None:
         class FakeState:
