@@ -12,6 +12,7 @@ from .security import hash_password, token_hash, verify_password
 
 
 VALID_ROLES = {"user", "admin"}
+SCHEMA_VERSION = 1
 
 
 def utc_now() -> str:
@@ -71,57 +72,158 @@ class Storage:
 
     def _init_schema(self) -> None:
         with self.connect() as conn:
-            conn.executescript(
-                """
-                CREATE TABLE IF NOT EXISTS roles (
-                    name TEXT PRIMARY KEY
-                );
-
-                CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    email TEXT UNIQUE NOT NULL,
-                    password_hash TEXT,
-                    role TEXT NOT NULL REFERENCES roles(name),
-                    created_at TEXT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS auth_sessions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    token_hash TEXT UNIQUE NOT NULL,
-                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                    expires_at TEXT NOT NULL,
-                    created_at TEXT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS chat_sessions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    title TEXT NOT NULL,
-                    owner_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS messages (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    session_id INTEGER NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
-                    role TEXT NOT NULL,
-                    content TEXT NOT NULL,
-                    created_at TEXT NOT NULL
-                );
-
-                CREATE TABLE IF NOT EXISTS turn_results (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    session_id INTEGER NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
-                    user_message_id INTEGER,
-                    assistant_message_id INTEGER,
-                    structured_output TEXT NOT NULL,
-                    trace TEXT NOT NULL,
-                    document_draft TEXT,
-                    created_at TEXT NOT NULL
-                );
-                """
-            )
+            self._ensure_base_schema(conn)
+            self._apply_schema_migrations(conn)
+            self._ensure_product_indexes(conn)
             conn.executemany("INSERT OR IGNORE INTO roles(name) VALUES (?)", [("user",), ("admin",)])
+
+    def _ensure_base_schema(self, conn: sqlite3.Connection) -> None:
+        conn.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+                version INTEGER PRIMARY KEY,
+                name TEXT NOT NULL,
+                applied_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS roles (
+                name TEXT PRIMARY KEY
+            );
+
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT,
+                role TEXT NOT NULL REFERENCES roles(name),
+                created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS auth_sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                token_hash TEXT UNIQUE NOT NULL,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                expires_at TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS chat_sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                owner_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id INTEGER NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+                role TEXT NOT NULL,
+                content TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS turn_results (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id INTEGER NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+                user_message_id INTEGER REFERENCES messages(id) ON DELETE SET NULL,
+                assistant_message_id INTEGER REFERENCES messages(id) ON DELETE SET NULL,
+                structured_output TEXT NOT NULL,
+                trace TEXT NOT NULL,
+                document_draft TEXT,
+                created_at TEXT NOT NULL
+            );
+            """
+        )
+
+    def _apply_schema_migrations(self, conn: sqlite3.Connection) -> None:
+        current = self._schema_version(conn)
+        if current < 1:
+            if not self._turn_results_has_message_foreign_keys(conn):
+                self._rebuild_turn_results_with_message_foreign_keys(conn)
+            self._record_schema_migration(conn, 1, "turn_results_message_fks_and_product_indexes")
+        if self._schema_version(conn) > SCHEMA_VERSION:
+            raise RuntimeError("SQLite schema version is newer than this application.")
+
+    @staticmethod
+    def _schema_version(conn: sqlite3.Connection) -> int:
+        row = conn.execute("SELECT MAX(version) AS version FROM schema_migrations").fetchone()
+        return int(row["version"] or 0)
+
+    @staticmethod
+    def _record_schema_migration(conn: sqlite3.Connection, version: int, name: str) -> None:
+        conn.execute(
+            "INSERT OR IGNORE INTO schema_migrations(version, name, applied_at) VALUES (?, ?, ?)",
+            (version, name, utc_now()),
+        )
+
+    @staticmethod
+    def _turn_results_has_message_foreign_keys(conn: sqlite3.Connection) -> bool:
+        rows = conn.execute("PRAGMA foreign_key_list(turn_results)").fetchall()
+        message_columns = {
+            row["from"]
+            for row in rows
+            if row["table"] == "messages" and row["from"] in {"user_message_id", "assistant_message_id"}
+        }
+        return message_columns == {"user_message_id", "assistant_message_id"}
+
+    @staticmethod
+    def _rebuild_turn_results_with_message_foreign_keys(conn: sqlite3.Connection) -> None:
+        conn.executescript(
+            """
+            DROP TABLE IF EXISTS turn_results_v1;
+
+            CREATE TABLE turn_results_v1 (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id INTEGER NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+                user_message_id INTEGER REFERENCES messages(id) ON DELETE SET NULL,
+                assistant_message_id INTEGER REFERENCES messages(id) ON DELETE SET NULL,
+                structured_output TEXT NOT NULL,
+                trace TEXT NOT NULL,
+                document_draft TEXT,
+                created_at TEXT NOT NULL
+            );
+
+            INSERT INTO turn_results_v1(
+                id, session_id, user_message_id, assistant_message_id, structured_output, trace, document_draft, created_at
+            )
+            SELECT
+                tr.id,
+                tr.session_id,
+                CASE
+                    WHEN tr.user_message_id IS NOT NULL
+                    AND EXISTS (SELECT 1 FROM messages m WHERE m.id = tr.user_message_id)
+                    THEN tr.user_message_id
+                    ELSE NULL
+                END,
+                CASE
+                    WHEN tr.assistant_message_id IS NOT NULL
+                    AND EXISTS (SELECT 1 FROM messages m WHERE m.id = tr.assistant_message_id)
+                    THEN tr.assistant_message_id
+                    ELSE NULL
+                END,
+                tr.structured_output,
+                tr.trace,
+                tr.document_draft,
+                tr.created_at
+            FROM turn_results tr
+            WHERE EXISTS (SELECT 1 FROM chat_sessions cs WHERE cs.id = tr.session_id);
+
+            DROP TABLE turn_results;
+            ALTER TABLE turn_results_v1 RENAME TO turn_results;
+            """
+        )
+
+    @staticmethod
+    def _ensure_product_indexes(conn: sqlite3.Connection) -> None:
+        conn.executescript(
+            """
+            CREATE INDEX IF NOT EXISTS idx_auth_sessions_expires_at ON auth_sessions(expires_at);
+            CREATE INDEX IF NOT EXISTS idx_chat_sessions_owner_updated ON chat_sessions(owner_user_id, updated_at DESC, id DESC);
+            CREATE INDEX IF NOT EXISTS idx_messages_session_id_id ON messages(session_id, id);
+            CREATE INDEX IF NOT EXISTS idx_turn_results_session_id_id ON turn_results(session_id, id);
+            CREATE INDEX IF NOT EXISTS idx_turn_results_created_at ON turn_results(created_at);
+            """
+        )
 
     def bootstrap_admin(self, email: str, password: str = "", password_hash_value: str = "") -> User | None:
         if not email or (not password and not password_hash_value):

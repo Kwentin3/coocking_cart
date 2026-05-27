@@ -45,6 +45,11 @@ def _int_value(value: str | None, default: int) -> int:
         return default
 
 
+def _session_cookie_secure_mode(value: str | None) -> str:
+    mode = (value or "auto").strip().lower()
+    return mode or "auto"
+
+
 @dataclass(frozen=True)
 class AppConfig:
     app_env: str
@@ -97,6 +102,7 @@ class AppConfig:
     bootstrap_admin_password: str
     bootstrap_admin_password_hash: str
     auth_session_secret: str
+    session_cookie_secure: str
     deploy_host: str
     deploy_user: str
     traefik_network_name: str
@@ -172,6 +178,8 @@ class AppConfig:
                 errors.append("Не настроен API key Live Voice.")
         if self.live_voice_enabled and self.live_voice_transport not in {"direct_client", "server_proxy"}:
             errors.append("Invalid LIVE_VOICE_TRANSPORT.")
+        if self.session_cookie_secure not in {"auto", "true", "false"}:
+            errors.append("Invalid SESSION_COOKIE_SECURE.")
         return errors
 
     def admin_diagnostics(self) -> list[str]:
@@ -207,6 +215,8 @@ class AppConfig:
             diagnostics.append("LIVE_VOICE_API_KEY is missing, blank, or placeholder.")
         if self.live_voice_enabled and self.live_voice_transport not in {"direct_client", "server_proxy"}:
             diagnostics.append("LIVE_VOICE_TRANSPORT must be direct_client or server_proxy.")
+        if self.session_cookie_secure not in {"auto", "true", "false"}:
+            diagnostics.append("SESSION_COOKIE_SECURE must be auto, true, or false.")
         return diagnostics
 
 
@@ -299,6 +309,7 @@ def load_config() -> AppConfig:
         bootstrap_admin_password=get("BOOTSTRAP_ADMIN_PASSWORD", ""),
         bootstrap_admin_password_hash=get("BOOTSTRAP_ADMIN_PASSWORD_HASH", ""),
         auth_session_secret=get("AUTH_SESSION_SECRET", ""),
+        session_cookie_secure=_session_cookie_secure_mode(get("SESSION_COOKIE_SECURE", "auto")),
         deploy_host=get("DEPLOY_HOST", ""),
         deploy_user=get("DEPLOY_USER", ""),
         traefik_network_name=get("TRAEFIK_NETWORK_NAME", ""),

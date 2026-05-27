@@ -20,6 +20,7 @@
 - [Demo MVP documentation pack](mvp/README.md) - минимальный пакет документации для демонстрационного прототипа.
 - [MVP implementation handoff](mvp/MVP_IMPLEMENTATION_HANDOFF_v0.1.md) - порядок чтения и инварианты для будущей реализации.
 - [MVP implementation roadmap](mvp/MVP_IMPLEMENTATION_ROADMAP_v0.1.md) - фазовый порядок реализации Demo MVP с gate-критериями и stop rules.
+- [MVP domain-layered refactoring plan](mvp/MVP_DOMAIN_LAYERED_REFACTORING_PLAN_v0.1.md) - план разнесения текущих backend/frontend монолитов по доменам, слоям и контрактам.
 - [MVP demo scenarios](mvp/MVP_DEMO_SCENARIOS_v0.1.md) - первые сценарии проверки демо.
 - [MVP acceptance criteria](mvp/MVP_ACCEPTANCE_CRITERIA_v0.1.md) - критерии готовности документации и будущего прототипа.
 - [MVP frontend visual contract](mvp/MVP_FRONTEND_VISUAL_CONTRACT_v0.1.md) - UI/composition contract для чата, результата, Context Inspector, desktop/mobile и states.

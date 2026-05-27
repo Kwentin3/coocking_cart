@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import json
 import socket
+import sqlite3
 import tempfile
 import threading
 import unittest
@@ -36,7 +37,7 @@ from app.live_voice_proxy import (
     websocket_accept_value,
 )
 from app.llm import GeminiAdapter
-from app.main import COOKIE_NAME, DemoMvpHandler
+from app.main import COOKIE_NAME, DemoMvpHandler, build_session_cookie_header
 from app.runtime import DemoRuntime
 from app.security import session_token, sign_cookie
 from app.storage import Storage
@@ -97,6 +98,7 @@ def make_test_config(db_path: Path, *, api_key: str = "") -> AppConfig:
         bootstrap_admin_password="password",
         bootstrap_admin_password_hash="",
         auth_session_secret="test-session-secret",
+        session_cookie_secure="auto",
         deploy_host="",
         deploy_user="",
         traefik_network_name="",
@@ -302,6 +304,131 @@ class CoreContractsTest(unittest.TestCase):
             self.assertFalse(storage.can_access_session(session_id, admin))
             self.assertEqual(storage.list_messages(session_id), [])
 
+    def test_storage_schema_has_migrations_indexes_and_turn_message_fks(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = make_test_config(Path(tmp) / "demo.sqlite", api_key="")
+            storage = Storage(config.sqlite_db_path)
+            owner = storage.ensure_demo_user()
+            session_id = storage.create_chat_session(owner.id, "Schema test")
+            user_message_id = storage.add_message(session_id, "user", "request")
+            assistant_message_id = storage.add_message(session_id, "assistant", "answer")
+            storage.save_turn_result(
+                session_id,
+                user_message_id,
+                assistant_message_id,
+                {"user_answer": "answer"},
+                {"trace": "ok"},
+            )
+
+            with storage.connect() as conn:
+                version = conn.execute("SELECT MAX(version) AS version FROM schema_migrations").fetchone()["version"]
+                fk_rows = conn.execute("PRAGMA foreign_key_list(turn_results)").fetchall()
+                fk_targets = {(row["from"], row["table"], row["on_delete"]) for row in fk_rows}
+                message_indexes = {row["name"] for row in conn.execute("PRAGMA index_list(messages)").fetchall()}
+                turn_indexes = {row["name"] for row in conn.execute("PRAGMA index_list(turn_results)").fetchall()}
+
+                self.assertEqual(version, 1)
+                self.assertIn(("user_message_id", "messages", "SET NULL"), fk_targets)
+                self.assertIn(("assistant_message_id", "messages", "SET NULL"), fk_targets)
+                self.assertIn("idx_messages_session_id_id", message_indexes)
+                self.assertIn("idx_turn_results_session_id_id", turn_indexes)
+                with self.assertRaises(sqlite3.IntegrityError):
+                    conn.execute(
+                        """
+                        INSERT INTO turn_results(
+                            session_id, user_message_id, assistant_message_id, structured_output, trace, created_at
+                        ) VALUES (?, ?, ?, '{}', '{}', ?)
+                        """,
+                        (session_id, 999_001, assistant_message_id, "2026-05-27T00:00:00+00:00"),
+                    )
+
+    def test_storage_migrates_legacy_turn_results_without_losing_valid_links(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = Path(tmp) / "legacy.sqlite"
+            now = "2026-05-27T00:00:00+00:00"
+            conn = sqlite3.connect(db_path)
+            try:
+                conn.executescript(
+                    """
+                    PRAGMA foreign_keys = ON;
+                    CREATE TABLE roles (name TEXT PRIMARY KEY);
+                    CREATE TABLE users (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        email TEXT UNIQUE NOT NULL,
+                        password_hash TEXT,
+                        role TEXT NOT NULL REFERENCES roles(name),
+                        created_at TEXT NOT NULL
+                    );
+                    CREATE TABLE auth_sessions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        token_hash TEXT UNIQUE NOT NULL,
+                        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        expires_at TEXT NOT NULL,
+                        created_at TEXT NOT NULL
+                    );
+                    CREATE TABLE chat_sessions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        title TEXT NOT NULL,
+                        owner_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        created_at TEXT NOT NULL,
+                        updated_at TEXT NOT NULL
+                    );
+                    CREATE TABLE messages (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        session_id INTEGER NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+                        role TEXT NOT NULL,
+                        content TEXT NOT NULL,
+                        created_at TEXT NOT NULL
+                    );
+                    CREATE TABLE turn_results (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        session_id INTEGER NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+                        user_message_id INTEGER,
+                        assistant_message_id INTEGER,
+                        structured_output TEXT NOT NULL,
+                        trace TEXT NOT NULL,
+                        document_draft TEXT,
+                        created_at TEXT NOT NULL
+                    );
+                    INSERT INTO roles(name) VALUES ('user'), ('admin');
+                    INSERT INTO users(id, email, password_hash, role, created_at) VALUES (1, 'legacy@example.test', NULL, 'user', '2026-05-27T00:00:00+00:00');
+                    INSERT INTO chat_sessions(id, title, owner_user_id, created_at, updated_at) VALUES (1, 'Legacy', 1, '2026-05-27T00:00:00+00:00', '2026-05-27T00:00:00+00:00');
+                    INSERT INTO messages(id, session_id, role, content, created_at) VALUES (1, 1, 'user', 'request', '2026-05-27T00:00:00+00:00');
+                    INSERT INTO messages(id, session_id, role, content, created_at) VALUES (2, 1, 'assistant', 'answer', '2026-05-27T00:00:00+00:00');
+                    """
+                )
+                conn.execute(
+                    """
+                    INSERT INTO turn_results(
+                        id, session_id, user_message_id, assistant_message_id, structured_output, trace, document_draft, created_at
+                    ) VALUES (1, 1, 1, 2, ?, '{}', NULL, ?)
+                    """,
+                    (json.dumps({"user_answer": "valid"}), now),
+                )
+                conn.execute(
+                    """
+                    INSERT INTO turn_results(
+                        id, session_id, user_message_id, assistant_message_id, structured_output, trace, document_draft, created_at
+                    ) VALUES (2, 1, 999, 1000, ?, '{}', NULL, ?)
+                    """,
+                    (json.dumps({"user_answer": "legacy-invalid"}), now),
+                )
+                conn.commit()
+            finally:
+                conn.close()
+
+            storage = Storage(db_path)
+            with storage.connect() as conn:
+                conn.row_factory = sqlite3.Row
+                rows = conn.execute(
+                    "SELECT id, user_message_id, assistant_message_id FROM turn_results ORDER BY id"
+                ).fetchall()
+                fk_errors = conn.execute("PRAGMA foreign_key_check").fetchall()
+
+            self.assertEqual((rows[0]["user_message_id"], rows[0]["assistant_message_id"]), (1, 2))
+            self.assertEqual((rows[1]["user_message_id"], rows[1]["assistant_message_id"]), (None, None))
+            self.assertEqual(fk_errors, [])
+
     def test_placeholder_bootstrap_values_are_not_ready(self) -> None:
         config = make_test_config(Path("unused.sqlite"), api_key="<GEMINI_API_KEY>")
         config = AppConfig(
@@ -315,6 +442,67 @@ class CoreContractsTest(unittest.TestCase):
         self.assertFalse(config.bootstrap_ready)
         self.assertFalse(config.auth_ready)
         self.assertFalse(config.llm_ready)
+
+    def test_session_cookie_header_secure_contract(self) -> None:
+        secure_cookie = build_session_cookie_header(COOKIE_NAME, "signed-token", max_age=604800, secure=True)
+        local_cookie = build_session_cookie_header(COOKIE_NAME, "signed-token", max_age=604800, secure=False)
+
+        self.assertIn("HttpOnly", secure_cookie)
+        self.assertIn("SameSite=Lax", secure_cookie)
+        self.assertIn("Max-Age=604800", secure_cookie)
+        self.assertIn("Secure", secure_cookie)
+        self.assertNotIn("Secure", local_cookie)
+
+    def test_session_cookie_auto_secure_uses_forwarded_https(self) -> None:
+        class FakeState:
+            def __init__(self, config: AppConfig, storage: Storage):
+                self.config = config
+                self.storage = storage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            config = make_test_config(Path(tmp) / "demo.sqlite", api_key="")
+            config = AppConfig(
+                **{
+                    **config.__dict__,
+                    "app_base_url": "https://coocking-cart.speechbattle.com",
+                    "session_cookie_secure": "auto",
+                }
+            )
+            storage = Storage(config.sqlite_db_path)
+            state = FakeState(config, storage)
+            original_state = getattr(DemoMvpHandler, "state", None)
+            DemoMvpHandler.state = state
+            server = ThreadingHTTPServer(("127.0.0.1", 0), DemoMvpHandler)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                host, port = server.server_address
+                https_connection = HTTPConnection(host, port, timeout=3)
+                https_connection.request("POST", "/api/demo-login", body="", headers={"X-Forwarded-Proto": "https"})
+                https_response = https_connection.getresponse()
+                https_payload = json.loads(https_response.read().decode("utf-8"))
+                https_cookie = https_response.getheader("Set-Cookie") or ""
+                https_connection.close()
+
+                local_connection = HTTPConnection(host, port, timeout=3)
+                local_connection.request("POST", "/api/demo-login", body="")
+                local_response = local_connection.getresponse()
+                local_payload = json.loads(local_response.read().decode("utf-8"))
+                local_cookie = local_response.getheader("Set-Cookie") or ""
+                local_connection.close()
+
+                self.assertEqual(https_response.status, 200)
+                self.assertTrue(https_payload["ok"])
+                self.assertIn("Secure", https_cookie)
+                self.assertEqual(local_response.status, 200)
+                self.assertTrue(local_payload["ok"])
+                self.assertNotIn("Secure", local_cookie)
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=3)
+                if original_state is not None:
+                    DemoMvpHandler.state = original_state
 
     def test_gemini_adapter_sends_response_schema_in_generation_config(self) -> None:
         captured: dict[str, Any] = {}

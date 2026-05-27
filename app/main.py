@@ -30,6 +30,13 @@ STATIC_DIR = REPO_ROOT / "app" / "static"
 INDEX_PATH = REPO_ROOT / "app" / "templates" / "index.html"
 
 
+def build_session_cookie_header(name: str, value: str, *, max_age: int, secure: bool) -> str:
+    header = f"{name}={value}; HttpOnly; SameSite=Lax; Path=/; Max-Age={max_age}"
+    if secure:
+        header += "; Secure"
+    return header
+
+
 class AppState:
     def __init__(self, config: AppConfig):
         self.config = config
@@ -592,16 +599,30 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
             self._json({"ok": False, "error": "Некорректный user id."}, HTTPStatus.BAD_REQUEST)
             return None
 
-    @staticmethod
-    def _cookie_header(value: str) -> tuple[str, str]:
+    def _cookie_header(self, value: str) -> tuple[str, str]:
         return (
             "Set-Cookie",
-            f"{COOKIE_NAME}={value}; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800",
+            build_session_cookie_header(COOKIE_NAME, value, max_age=604800, secure=self._use_secure_session_cookie()),
         )
 
-    @staticmethod
-    def _clear_cookie_header() -> tuple[str, str]:
-        return ("Set-Cookie", f"{COOKIE_NAME}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0")
+    def _clear_cookie_header(self) -> tuple[str, str]:
+        return (
+            "Set-Cookie",
+            build_session_cookie_header(COOKIE_NAME, "", max_age=0, secure=self._use_secure_session_cookie()),
+        )
+
+    def _use_secure_session_cookie(self) -> bool:
+        mode = self.state.config.session_cookie_secure
+        if mode == "true":
+            return True
+        if mode == "false":
+            return False
+        forwarded_proto = str(self.headers.get("X-Forwarded-Proto", "")).split(",", 1)[0].strip().lower()
+        if forwarded_proto:
+            return forwarded_proto == "https"
+        host = str(self.headers.get("Host", "")).split(":", 1)[0].strip().lower()
+        app_base = urlparse(self.state.config.app_base_url)
+        return app_base.scheme == "https" and host not in {"127.0.0.1", "::1", "localhost"}
 
     def _voice_input_config(self) -> dict[str, Any]:
         return {

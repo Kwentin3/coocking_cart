@@ -38,6 +38,7 @@ Production architecture остается future track. Managed state, state mach
 - [MVP scope](MVP_SCOPE_v0.1.md) - цель, сценарии, включения, исключения и сознательные ограничения Demo MVP.
 - [Implementation handoff](MVP_IMPLEMENTATION_HANDOFF_v0.1.md) - порядок чтения и инварианты для будущей реализации прототипа.
 - [Implementation roadmap](MVP_IMPLEMENTATION_ROADMAP_v0.1.md) - основной документ порядка реализации по фазам, gates и stop rules.
+- [Domain-layered refactoring plan](MVP_DOMAIN_LAYERED_REFACTORING_PLAN_v0.1.md) - план разнесения текущих монолитов по доменам, слоям и контрактам.
 - [Demo scenarios](MVP_DEMO_SCENARIOS_v0.1.md) - первые сценарии проверки: "курица по-вьетнамски" и "яичница/омлет".
 - [Acceptance criteria](MVP_ACCEPTANCE_CRITERIA_v0.1.md) - критерии готовности документации и будущего демо-прототипа.
 - [Frontend visual contract](MVP_FRONTEND_VISUAL_CONTRACT_v0.1.md) - desktop/mobile layout, composition layer, result panel, Context Inspector UI, icon-first подход, language/theme policy.

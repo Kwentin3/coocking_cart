@@ -8,6 +8,8 @@
 
 1. Скопируйте `.env.example` в локальный `.env`.
 2. Заполните runtime secrets вне Git: `AUTH_SESSION_SECRET`, bootstrap admin credentials и `LLM_API_KEY`.
+
+For local HTTP, keep `SESSION_COOKIE_SECURE=auto` and open the app through `127.0.0.1`/`localhost`, or set `APP_BASE_URL=http://127.0.0.1:8000`.
 3. Запустите приложение:
 
 ```powershell
