@@ -17,6 +17,10 @@ const state = {
   },
   voice: {
     supported: false,
+    streamingEnabled: false,
+    batchEnabled: true,
+    mode: "batch",
+    connecting: false,
     recording: false,
     transcribing: false,
     startedAt: 0,
@@ -29,6 +33,13 @@ const state = {
     chunks: [],
     totalSamples: 0,
     inputSampleRate: 0,
+    liveInputSampleRate: 16000,
+    websocket: null,
+    setupComplete: false,
+    setupResolver: null,
+    setupRejecter: null,
+    liveTranscript: "",
+    liveHadError: false,
     maxSeconds: 180,
     countdownSeconds: 15,
   },
@@ -237,7 +248,10 @@ function applyVoiceConfig(config) {
   if (!config) return;
   state.voice.maxSeconds = Number(config.max_audio_seconds || state.voice.maxSeconds);
   state.voice.countdownSeconds = Number(config.countdown_seconds || state.voice.countdownSeconds);
-  if (config.enabled === false) {
+  state.voice.streamingEnabled = !!config.streaming_enabled;
+  state.voice.batchEnabled = config.batch_enabled !== false && config.enabled !== false;
+  state.voice.liveInputSampleRate = Number(config.streaming_sample_rate || state.voice.liveInputSampleRate);
+  if (config.enabled === false && !state.voice.streamingEnabled) {
     state.voice.supported = false;
     updateVoiceStatus("");
     el("voiceBtn").title = "Голосовой ввод выключен";
@@ -459,7 +473,7 @@ function renderMessages(messages) {
 
 async function sendMessage(event) {
   event?.preventDefault();
-  if (state.voice.recording || state.voice.transcribing) {
+  if (state.voice.connecting || state.voice.recording || state.voice.transcribing) {
     showToast("Дождитесь завершения голосового ввода.");
     return;
   }
@@ -983,6 +997,35 @@ async function startVoiceRecording() {
     showToast("Браузер не поддерживает запись аудио.");
     return;
   }
+  if (state.voice.streamingEnabled && window.WebSocket) {
+    try {
+      await startLiveVoiceRecording();
+      return;
+    } catch (error) {
+      cleanupLiveVoiceSession();
+      if (!state.voice.batchEnabled) {
+        const message = error?.message || "Не удалось запустить потоковый голосовой ввод.";
+        updateVoiceStatus(message);
+        showToast(message);
+        refreshVoiceControls();
+        return;
+      }
+      updateVoiceStatus("Потоковый режим недоступен. Использую обычную запись.");
+    }
+  }
+  if (!state.voice.batchEnabled) {
+    updateVoiceStatus("Голосовой ввод выключен.");
+    refreshVoiceControls();
+    return;
+  }
+  await startBatchVoiceRecording();
+}
+
+async function startBatchVoiceRecording() {
+  if (!state.voice.supported) {
+    showToast("Браузер не поддерживает запись аудио.");
+    return;
+  }
   try {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     const stream = await navigator.mediaDevices.getUserMedia({audio: true});
@@ -991,6 +1034,7 @@ async function startVoiceRecording() {
     const processor = audioContext.createScriptProcessor(4096, 1, 1);
     const gain = audioContext.createGain();
     gain.gain.value = 0;
+    state.voice.mode = "batch";
     state.voice.chunks = [];
     state.voice.totalSamples = 0;
     state.voice.inputSampleRate = audioContext.sampleRate;
@@ -1021,13 +1065,17 @@ async function startVoiceRecording() {
 }
 
 async function cancelVoiceRecording() {
-  if (!state.voice.recording) return;
+  if (!state.voice.recording && !state.voice.connecting) return;
   await stopVoiceRecording({transcribe: false});
   updateVoiceStatus("");
   showToast("Запись отменена.");
 }
 
 async function stopVoiceRecording({transcribe}) {
+  if (state.voice.mode === "live" || state.voice.connecting) {
+    await stopLiveVoiceRecording({transcribe});
+    return;
+  }
   if (!state.voice.recording) return;
   const durationMs = Date.now() - state.voice.startedAt;
   state.voice.recording = false;
@@ -1049,6 +1097,264 @@ async function stopVoiceRecording({transcribe}) {
   state.voice.chunks = [];
   state.voice.totalSamples = 0;
   await transcribeVoiceBlob(wavBlob, durationMs);
+}
+
+async function startLiveVoiceRecording() {
+  state.voice.mode = "live";
+  state.voice.connecting = true;
+  state.voice.liveHadError = false;
+  state.voice.liveTranscript = "";
+  state.voice.setupComplete = false;
+  state.voice.chunks = [];
+  state.voice.totalSamples = 0;
+  refreshVoiceControls();
+  updateVoiceStatus("Подключаю потоковое распознавание...");
+
+  const tokenPayload = await api("/api/live-voice/token", {method: "POST", body: "{}"});
+  if (!tokenPayload.ok) {
+    throw new Error(tokenPayload.error || "Не удалось получить временный Live API token.");
+  }
+  const websocket = new WebSocket(tokenPayload.websocket_url);
+  state.voice.websocket = websocket;
+  await waitForLiveSetup(websocket, tokenPayload.setup || {});
+  await startLiveAudioCapture(Number(tokenPayload.input_sample_rate || state.voice.liveInputSampleRate));
+}
+
+function waitForLiveSetup(websocket, setup) {
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error("Live API не подтвердил подключение."));
+    }, 10000);
+    state.voice.setupResolver = () => {
+      clearTimeout(timeoutId);
+      resolve();
+    };
+    state.voice.setupRejecter = (error) => {
+      clearTimeout(timeoutId);
+      reject(error);
+    };
+    websocket.onopen = () => {
+      websocket.send(JSON.stringify({setup}));
+    };
+    websocket.onmessage = handleLiveVoiceMessage;
+    websocket.onerror = () => {
+      state.voice.liveHadError = true;
+      if (!state.voice.setupComplete) {
+        state.voice.setupRejecter?.(new Error("Ошибка WebSocket Live API."));
+        return;
+      }
+      if (state.voice.recording) {
+        handleUnexpectedLiveClose();
+      }
+    };
+    websocket.onclose = () => {
+      if (state.voice.connecting && !state.voice.setupComplete) {
+        state.voice.setupRejecter?.(new Error("Live API закрыл соединение до начала записи."));
+        return;
+      }
+      if (state.voice.recording) {
+        handleUnexpectedLiveClose();
+      }
+    };
+  });
+}
+
+async function startLiveAudioCapture(targetSampleRate) {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: {channelCount: 1, echoCancellation: true, noiseSuppression: true},
+  });
+  const audioContext = new AudioContextClass();
+  await audioContext.resume?.();
+  const source = audioContext.createMediaStreamSource(stream);
+  const processor = audioContext.createScriptProcessor(4096, 1, 1);
+  const gain = audioContext.createGain();
+  gain.gain.value = 0;
+  state.voice.inputSampleRate = audioContext.sampleRate;
+  state.voice.liveInputSampleRate = targetSampleRate || 16000;
+  processor.onaudioprocess = (event) => {
+    if (!state.voice.recording || state.voice.mode !== "live") return;
+    const input = event.inputBuffer.getChannelData(0);
+    const samples = downsampleBuffer(input, state.voice.inputSampleRate, state.voice.liveInputSampleRate);
+    const pcm = float32ToPcm16(samples);
+    state.voice.totalSamples += samples.length;
+    sendLiveAudioChunk(pcm, state.voice.liveInputSampleRate);
+  };
+  source.connect(processor);
+  processor.connect(gain);
+  gain.connect(audioContext.destination);
+  state.voice.audioContext = audioContext;
+  state.voice.source = source;
+  state.voice.processor = processor;
+  state.voice.gain = gain;
+  state.voice.stream = stream;
+  state.voice.startedAt = Date.now();
+  state.voice.connecting = false;
+  state.voice.recording = true;
+  state.voice.timerId = setInterval(updateVoiceRecordingUi, 250);
+  updateVoiceRecordingUi();
+  refreshVoiceControls();
+}
+
+async function stopLiveVoiceRecording({transcribe}) {
+  const websocket = state.voice.websocket;
+  const hadText = !!state.voice.liveTranscript.trim();
+  state.voice.connecting = false;
+  state.voice.recording = false;
+  clearInterval(state.voice.timerId);
+  state.voice.timerId = null;
+  cleanupVoiceRecorder();
+  refreshVoiceControls();
+
+  if (!transcribe) {
+    closeLiveWebSocket(websocket);
+    cleanupLiveVoiceSession();
+    return;
+  }
+
+  state.voice.transcribing = true;
+  refreshVoiceControls();
+  updateVoiceStatus(hadText ? "Завершаю потоковый транскрипт..." : "Завершаю потоковое распознавание...");
+  if (websocket?.readyState === WebSocket.OPEN) {
+    websocket.send(JSON.stringify({realtimeInput: {audioStreamEnd: true}}));
+    await delay(1200);
+  }
+  closeLiveWebSocket(websocket);
+  const transcript = state.voice.liveTranscript.trim();
+  if (transcript) {
+    insertTranscript(transcript);
+    updateVoiceStatus("Распознано потоково. Проверьте текст перед отправкой.");
+    showToast("Текст распознан.");
+  } else {
+    updateVoiceStatus("Потоковый транскрипт пустой.");
+    showToast("Транскрипт пустой.");
+  }
+  state.voice.transcribing = false;
+  cleanupLiveVoiceSession();
+  refreshVoiceControls();
+}
+
+function handleLiveVoiceMessage(event) {
+  const parse = (raw) => {
+    try {
+      return JSON.parse(raw);
+    } catch (_error) {
+      return null;
+    }
+  };
+  const handlePayload = (payload) => {
+    if (!payload) return;
+    if (payload.setupComplete) {
+      state.voice.setupComplete = true;
+      state.voice.setupResolver?.();
+      return;
+    }
+    const transcript = payload.serverContent?.inputTranscription?.text || "";
+    if (transcript) {
+      appendLiveTranscript(transcript);
+    }
+    if (payload.serverContent?.turnComplete && state.voice.liveTranscript.trim()) {
+      updateVoiceStatus(`Слышу: ${shortVoicePreview(state.voice.liveTranscript)}`);
+    }
+    if (payload.goAway?.timeLeft) {
+      updateVoiceStatus("Live API скоро закроет соединение. Завершите запись.");
+    }
+  };
+  if (event.data instanceof Blob) {
+    event.data.text().then((text) => handlePayload(parse(text)));
+    return;
+  }
+  handlePayload(parse(String(event.data)));
+}
+
+function appendLiveTranscript(text) {
+  const incoming = String(text || "").trim();
+  if (!incoming) return;
+  const current = state.voice.liveTranscript.trim();
+  if (!current) {
+    state.voice.liveTranscript = incoming;
+  } else if (incoming.startsWith(current)) {
+    state.voice.liveTranscript = incoming;
+  } else if (!current.endsWith(incoming)) {
+    state.voice.liveTranscript = `${current} ${incoming}`.replace(/\s+/g, " ");
+  }
+  updateVoiceStatus(`Слышу: ${shortVoicePreview(state.voice.liveTranscript)}`);
+}
+
+function shortVoicePreview(text) {
+  const clean = String(text || "").replace(/\s+/g, " ").trim();
+  return clean.length > 90 ? `...${clean.slice(-90)}` : clean;
+}
+
+function sendLiveAudioChunk(pcmBytes, sampleRate) {
+  const websocket = state.voice.websocket;
+  if (!websocket || websocket.readyState !== WebSocket.OPEN || !state.voice.setupComplete) return;
+  if (websocket.bufferedAmount > 1_000_000) return;
+  websocket.send(JSON.stringify({
+    realtimeInput: {
+      audio: {
+        data: bytesToBase64(pcmBytes),
+        mimeType: `audio/pcm;rate=${sampleRate}`,
+      },
+    },
+  }));
+}
+
+function float32ToPcm16(samples) {
+  const bytes = new Uint8Array(samples.length * 2);
+  const view = new DataView(bytes.buffer);
+  for (let i = 0; i < samples.length; i += 1) {
+    const sample = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(i * 2, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+  }
+  return bytes;
+}
+
+function bytesToBase64(bytes) {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+function closeLiveWebSocket(websocket) {
+  if (websocket && websocket.readyState <= WebSocket.OPEN) {
+    websocket.close();
+  }
+}
+
+function cleanupLiveVoiceSession() {
+  closeLiveWebSocket(state.voice.websocket);
+  state.voice.mode = "batch";
+  state.voice.connecting = false;
+  state.voice.setupComplete = false;
+  state.voice.setupResolver = null;
+  state.voice.setupRejecter = null;
+  state.voice.websocket = null;
+  state.voice.liveHadError = false;
+}
+
+function handleUnexpectedLiveClose() {
+  const transcript = state.voice.liveTranscript.trim();
+  state.voice.recording = false;
+  state.voice.connecting = false;
+  clearInterval(state.voice.timerId);
+  state.voice.timerId = null;
+  cleanupVoiceRecorder();
+  if (transcript) {
+    insertTranscript(transcript);
+    updateVoiceStatus("Соединение прервано. Полученный фрагмент вставлен в поле ввода.");
+  } else {
+    updateVoiceStatus("Соединение потокового распознавания прервано.");
+  }
+  cleanupLiveVoiceSession();
+  refreshVoiceControls();
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function cleanupVoiceRecorder() {
@@ -1077,10 +1383,13 @@ function updateVoiceRecordingUi() {
   }
   const elapsedLabel = formatDuration(elapsedSeconds);
   const maxLabel = formatDuration(state.voice.maxSeconds);
+  const livePrefix = state.voice.mode === "live" && state.voice.liveTranscript.trim()
+    ? `Слышу: ${shortVoicePreview(state.voice.liveTranscript)} · `
+    : "";
   if (remaining <= state.voice.countdownSeconds) {
-    updateVoiceStatus(`Запись ${elapsedLabel} / ${maxLabel}. Автостоп через ${remaining} сек.`);
+    updateVoiceStatus(`${livePrefix}Запись ${elapsedLabel} / ${maxLabel}. Автостоп через ${remaining} сек.`);
   } else {
-    updateVoiceStatus(`Запись ${elapsedLabel} / ${maxLabel}`);
+    updateVoiceStatus(`${livePrefix}Запись ${elapsedLabel} / ${maxLabel}`);
   }
 }
 
@@ -1204,14 +1513,14 @@ function refreshVoiceControls() {
   const voiceBtn = el("voiceBtn");
   const cancelBtn = el("voiceCancelBtn");
   const sendBtn = el("sendBtn");
-  const busy = state.voice.recording || state.voice.transcribing;
-  voiceBtn.disabled = !state.voice.supported || state.voice.transcribing;
+  const busy = state.voice.connecting || state.voice.recording || state.voice.transcribing;
+  voiceBtn.disabled = !state.voice.supported || state.voice.connecting || state.voice.transcribing;
   voiceBtn.classList.toggle("recording", state.voice.recording);
-  voiceBtn.textContent = state.voice.recording ? "■" : "◉";
+  voiceBtn.textContent = state.voice.recording ? "■" : (state.voice.connecting || state.voice.transcribing ? "…" : "◉");
   voiceBtn.title = state.voice.recording ? "Остановить и распознать" : "Голосовой ввод";
   voiceBtn.setAttribute("aria-label", state.voice.recording ? "Остановить запись и распознать" : "Начать голосовой ввод");
-  cancelBtn.classList.toggle("hidden", !state.voice.recording);
-  cancelBtn.disabled = !state.voice.recording;
+  cancelBtn.classList.toggle("hidden", !(state.voice.recording || state.voice.connecting));
+  cancelBtn.disabled = !(state.voice.recording || state.voice.connecting);
   sendBtn.disabled = state.sending || busy;
 }
 

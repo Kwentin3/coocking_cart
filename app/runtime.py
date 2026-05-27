@@ -4,6 +4,7 @@ from typing import Any
 
 from .config import AppConfig
 from .context_loader import ContextLoader, ContextPack
+from .live_voice import make_live_voice_adapter
 from .llm import GeminiAdapter
 from .stt import SUPPORTED_STT_MIME_TYPES, make_stt_adapter, normalize_mime_type
 from .storage import Storage, User, estimate_tokens, utc_now
@@ -17,6 +18,7 @@ class DemoRuntime:
         self.context_loader = ContextLoader(config.context_manifest_path, config.context_layers_dir)
         self.llm_adapter = GeminiAdapter(config)
         self.stt_adapter = make_stt_adapter(config)
+        self.live_voice_adapter = make_live_voice_adapter(config)
 
     def load_context_pack(self) -> ContextPack:
         return self.context_loader.load()
@@ -161,6 +163,34 @@ class DemoRuntime:
             "text": result.text,
             "provider": result.provider,
             "model": result.model,
+        }
+
+    def create_live_voice_token(self, user: User) -> dict[str, Any]:
+        if not self.config.live_voice_enabled:
+            return {"ok": False, "error": "Потоковый голосовой ввод выключен.", "status": 503}
+
+        result = self.live_voice_adapter.create_token()
+        if not result.ok:
+            return {
+                "ok": False,
+                "error": result.error or "Не удалось подготовить потоковый голосовой ввод.",
+                "status": 502,
+                "provider": result.provider,
+                "model": result.model,
+                "admin_hint": result.admin_hint if user.role == "admin" else None,
+            }
+
+        return {
+            "ok": True,
+            "provider": result.provider,
+            "model": result.model,
+            "token": result.token,
+            "websocket_url": result.websocket_url,
+            "setup": result.setup or {},
+            "expires_at": result.expires_at,
+            "new_session_expires_at": result.new_session_expires_at,
+            "input_sample_rate": self.config.live_voice_input_sample_rate,
+            "max_audio_seconds": self.config.stt_max_audio_seconds,
         }
 
     def context_inspector_payload(self, session_id: int, user: User) -> dict[str, Any]:

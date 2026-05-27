@@ -69,6 +69,16 @@ class AppConfig:
     stt_max_audio_seconds: int
     stt_countdown_seconds: int
     stt_max_audio_bytes: int
+    live_voice_enabled: bool
+    live_voice_provider: str
+    live_voice_model: str
+    live_voice_api_key: str
+    live_voice_base_url: str
+    live_voice_timeout_seconds: int
+    live_voice_token_ttl_seconds: int
+    live_voice_new_session_seconds: int
+    live_voice_input_sample_rate: int
+    live_voice_response_modality: str
     enable_context_inspector: bool
     enable_llm_trace: bool
     bootstrap_admin_email: str
@@ -96,6 +106,15 @@ class AppConfig:
             and self.stt_provider == "gemini"
             and not _is_blank_or_placeholder(self.stt_model)
             and not _is_blank_or_placeholder(self.stt_api_key)
+        )
+
+    @property
+    def live_voice_ready(self) -> bool:
+        return (
+            self.live_voice_enabled
+            and self.live_voice_provider == "gemini"
+            and not _is_blank_or_placeholder(self.live_voice_model)
+            and not _is_blank_or_placeholder(self.live_voice_api_key)
         )
 
     @property
@@ -131,6 +150,13 @@ class AppConfig:
                 errors.append("Не настроена модель STT.")
             if _is_blank_or_placeholder(self.stt_api_key):
                 errors.append("Не настроен API key STT.")
+        if self.live_voice_enabled:
+            if self.live_voice_provider != "gemini":
+                errors.append("Для потокового голосового ввода ожидается LIVE_VOICE_PROVIDER=gemini.")
+            if _is_blank_or_placeholder(self.live_voice_model):
+                errors.append("Не настроена Live Voice модель.")
+            if _is_blank_or_placeholder(self.live_voice_api_key):
+                errors.append("Не настроен API key Live Voice.")
         return errors
 
     def admin_diagnostics(self) -> list[str]:
@@ -158,6 +184,12 @@ class AppConfig:
             diagnostics.append("STT_MODEL is missing, blank, or placeholder.")
         if self.stt_enabled and _is_blank_or_placeholder(self.stt_api_key):
             diagnostics.append("STT_API_KEY is missing, blank, or placeholder.")
+        if self.live_voice_enabled and self.live_voice_provider != "gemini":
+            diagnostics.append("LIVE_VOICE_PROVIDER must be gemini for Demo MVP.")
+        if self.live_voice_enabled and _is_blank_or_placeholder(self.live_voice_model):
+            diagnostics.append("LIVE_VOICE_MODEL is missing, blank, or placeholder.")
+        if self.live_voice_enabled and _is_blank_or_placeholder(self.live_voice_api_key):
+            diagnostics.append("LIVE_VOICE_API_KEY is missing, blank, or placeholder.")
         return diagnostics
 
 
@@ -181,6 +213,8 @@ def load_config() -> AppConfig:
     llm_api_key = get("LLM_API_KEY") or get("GEMINI_API_KEY")
     stt_api_key = get("STT_API_KEY") or llm_api_key
     stt_model = get("STT_MODEL") or get("LLM_MODEL", "")
+    live_voice_api_key = get("LIVE_VOICE_API_KEY") or stt_api_key
+    live_voice_model = get("LIVE_VOICE_MODEL", "gemini-3.1-flash-live-preview")
 
     return AppConfig(
         app_env=get("APP_ENV", "demo"),
@@ -205,6 +239,16 @@ def load_config() -> AppConfig:
         stt_max_audio_seconds=_int_value(get("STT_MAX_AUDIO_SECONDS"), 180),
         stt_countdown_seconds=_int_value(get("STT_COUNTDOWN_SECONDS"), 15),
         stt_max_audio_bytes=_int_value(get("STT_MAX_AUDIO_BYTES"), 12_000_000),
+        live_voice_enabled=_bool_value(get("LIVE_VOICE_ENABLED"), True),
+        live_voice_provider=(get("LIVE_VOICE_PROVIDER") or get("STT_PROVIDER") or get("LLM_PROVIDER", "gemini")).strip().lower(),
+        live_voice_model=live_voice_model,
+        live_voice_api_key=live_voice_api_key,
+        live_voice_base_url=get("LIVE_VOICE_BASE_URL") or get("STT_BASE_URL") or get("LLM_BASE_URL", ""),
+        live_voice_timeout_seconds=_int_value(get("LIVE_VOICE_TIMEOUT_SECONDS"), 10),
+        live_voice_token_ttl_seconds=_int_value(get("LIVE_VOICE_TOKEN_TTL_SECONDS"), 1800),
+        live_voice_new_session_seconds=_int_value(get("LIVE_VOICE_NEW_SESSION_SECONDS"), 60),
+        live_voice_input_sample_rate=_int_value(get("LIVE_VOICE_INPUT_SAMPLE_RATE"), 16000),
+        live_voice_response_modality=get("LIVE_VOICE_RESPONSE_MODALITY", "TEXT").strip().upper(),
         enable_context_inspector=_bool_value(get("ENABLE_CONTEXT_INSPECTOR"), True),
         enable_llm_trace=_bool_value(get("ENABLE_LLM_TRACE"), True),
         bootstrap_admin_email=get("BOOTSTRAP_ADMIN_EMAIL", ""),

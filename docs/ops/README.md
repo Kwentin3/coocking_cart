@@ -1,4 +1,4 @@
-# Ops documentation placeholders
+﻿# Ops documentation placeholders
 
 - Статус: placeholder-пакет для будущей инфраструктурной документации
 - Дата: 2026-05-24
@@ -38,6 +38,7 @@
 - [Server audit checklist](SERVER_AUDIT_CHECKLIST_v0.1.md) - что проверить на сервере до любых изменений.
 - [Server audit report: 91.132.48.224](SERVER_AUDIT_REPORT_91.132.48.224_v0.1.md) - результат read-only аудита.
 - [Environment preparation notes](ENVIRONMENT_PREPARATION_NOTES_v0.1.md) - как относиться к `.env`, placeholders и секретам.
+- [Local testing and production runtime runbook](LOCAL_TESTING_AND_PRODUCTION_RUNBOOK_v0.1.md) - фиксирует, что локально нет Docker/Linux, а production Docker/Linux живет на хостинговом сервере.
 
 ## Не-goals
 

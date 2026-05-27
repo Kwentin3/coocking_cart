@@ -7,8 +7,19 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+# Sticky test environment note: this local workspace is Windows-only and must not
+# be treated as Docker/Linux parity. Production Docker/Linux runs on the hosting
+# server; local tests verify code contracts, while runtime parity is checked by
+# a server-side build/artifact or an explicit artifact simulation.
 from app.config import AppConfig, REPO_ROOT, is_blank_or_placeholder
 from app.context_loader import ContextLoader
+from app.live_voice import (
+    FORBIDDEN,
+    FACTORY_REQUIRED,
+    GeminiLiveVoiceAdapter,
+    live_voice_setup,
+    make_live_voice_adapter,
+)
 from app.llm import GeminiAdapter
 from app.runtime import DemoRuntime
 from app.storage import Storage
@@ -40,6 +51,16 @@ def make_test_config(db_path: Path, *, api_key: str = "") -> AppConfig:
         stt_max_audio_seconds=180,
         stt_countdown_seconds=15,
         stt_max_audio_bytes=12_000_000,
+        live_voice_enabled=True,
+        live_voice_provider="gemini",
+        live_voice_model="gemini-3.1-flash-live-preview",
+        live_voice_api_key=api_key,
+        live_voice_base_url="",
+        live_voice_timeout_seconds=5,
+        live_voice_token_ttl_seconds=1800,
+        live_voice_new_session_seconds=60,
+        live_voice_input_sample_rate=16000,
+        live_voice_response_modality="TEXT",
         enable_context_inspector=True,
         enable_llm_trace=True,
         bootstrap_admin_email="admin@example.test",
@@ -361,6 +382,78 @@ class CoreContractsTest(unittest.TestCase):
         self.assertEqual(unsupported["status"], 415)
         self.assertFalse(too_long["ok"])
         self.assertEqual(too_long["status"], 413)
+
+    def test_live_voice_factory_and_anti_drift_anchors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = make_test_config(Path(tmp) / "demo.sqlite", api_key="fake-key")
+            adapter = make_live_voice_adapter(config)
+
+        self.assertIsInstance(adapter, GeminiLiveVoiceAdapter)
+        self.assertIn("make_live_voice_adapter", FACTORY_REQUIRED)
+        self.assertIn("DO_NOT_CALL_GEMINI_LIVE_TOKEN_ENDPOINT", FORBIDDEN)
+
+    def test_gemini_live_voice_adapter_creates_constrained_ephemeral_token(self) -> None:
+        captured: dict[str, Any] = {}
+
+        class FakeResponse:
+            def __enter__(self) -> "FakeResponse":
+                return self
+
+            def __exit__(self, *_args: Any) -> None:
+                return None
+
+            def read(self) -> bytes:
+                return json.dumps({"name": "auth_tokens/test-token"}).encode("utf-8")
+
+        original_urlopen = urllib.request.urlopen
+
+        def fake_urlopen(request: urllib.request.Request, timeout: int = 0) -> FakeResponse:
+            captured["url"] = request.full_url
+            captured["payload"] = json.loads(request.data.decode("utf-8"))  # type: ignore[union-attr]
+            captured["headers"] = dict(request.header_items())
+            captured["timeout"] = timeout
+            return FakeResponse()
+
+        try:
+            urllib.request.urlopen = fake_urlopen  # type: ignore[assignment]
+            with tempfile.TemporaryDirectory() as tmp:
+                config = make_test_config(Path(tmp) / "demo.sqlite", api_key="fake-key")
+                result = GeminiLiveVoiceAdapter(config).create_token()
+        finally:
+            urllib.request.urlopen = original_urlopen  # type: ignore[assignment]
+
+        self.assertTrue(result.ok)
+        self.assertEqual(result.token, "auth_tokens/test-token")
+        self.assertIn("/v1alpha/auth_tokens", captured["url"])
+        self.assertEqual(captured["headers"]["X-goog-api-key"], "fake-key")
+        self.assertEqual(captured["timeout"], 5)
+        payload = captured["payload"]
+        self.assertEqual(payload["uses"], 1)
+        setup = payload["bidiGenerateContentSetup"]
+        self.assertEqual(setup["model"], "models/gemini-3.1-flash-live-preview")
+        self.assertEqual(setup["generationConfig"]["responseModalities"], ["TEXT"])
+        self.assertEqual(setup["inputAudioTranscription"], {})
+        self.assertIn("access_token=auth_tokens%2Ftest-token", result.websocket_url)
+
+    def test_runtime_live_voice_token_returns_user_safe_error_for_missing_key(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = make_test_config(Path(tmp) / "demo.sqlite", api_key="")
+            storage = Storage(config.sqlite_db_path)
+            user = storage.ensure_demo_user()
+            result = DemoRuntime(config, storage).create_live_voice_token(user)
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["status"], 502)
+        self.assertNotIn("admin_hint", {key: value for key, value in result.items() if value is not None})
+
+    def test_live_voice_setup_enables_input_transcription(self) -> None:
+        config = make_test_config(Path("unused.sqlite"), api_key="fake-key")
+        setup = live_voice_setup(config)
+
+        self.assertEqual(setup["model"], "models/gemini-3.1-flash-live-preview")
+        self.assertEqual(setup["generationConfig"]["responseModalities"], ["TEXT"])
+        self.assertEqual(setup["inputAudioTranscription"], {})
+        self.assertIn("realtimeInputConfig", setup)
 
     def test_structured_json_is_derived_when_draft_exists(self) -> None:
         normalized = normalize_structured_output(

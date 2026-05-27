@@ -1,4 +1,4 @@
-# Документация проекта
+﻿# Документация проекта
 
 ## Что это за проект
 
@@ -33,11 +33,13 @@
 - [MVP roles/env/bootstrap](mvp/MVP_ROLES_AND_ACCESS_v0.1.md) - минимальные роли, environment contract и bootstrap data contract.
 - [MVP admin user CRUD blueprint](mvp/MVP_ADMIN_USER_CRUD_BLUEPRINT_v0.1.md) - admin-only CRUD пользователей без production IAM/RBAC.
 - [MVP voice input transcription blueprint](mvp/MVP_VOICE_INPUT_TRANSCRIPTION_BLUEPRINT_v0.1.md) - голосовой ввод как STT в редактируемый chat input без voice chat.
+- [MVP Gemini Live streaming voice research](mvp/MVP_GEMINI_LIVE_STREAMING_VOICE_RESEARCH_v0.1.md) - low-latency voice input через Gemini Live API, ephemeral tokens и adapter/factory boundary.
 - [Safe env example](../.env.example) - безопасный шаблон переменного окружения; реальные `.env` не коммитятся.
 - [Demo MVP context layers](mvp/context/) - markdown-слои статического контекста для будущего runtime context pack.
 - [Ops docs](ops/README.md) - deployment context, server audit и шаблоны будущего deployment task.
 - [Deployment context: coocking-cart.speechbattle.com](ops/DEPLOYMENT_CONTEXT_coocking-cart.speechbattle.com_v0.1.md) - target domain/server для будущего Demo MVP.
 - [Deployment preparation handoff](ops/DEPLOYMENT_PREPARATION_HANDOFF_v0.1.md) - порядок подготовки будущего deployment task.
+- [Local testing and production runtime runbook](ops/LOCAL_TESTING_AND_PRODUCTION_RUNBOOK_v0.1.md) - локальные проверки Windows/PowerShell, отсутствие локального Docker/Linux и production runtime на сервере.
 - [Server audit report: 91.132.48.224](ops/SERVER_AUDIT_REPORT_91.132.48.224_v0.1.md) - результат read-only аудита сервера.
 - [Production future track](production/README.md) - placeholder будущей production-архитектуры.
 - [Documentation audits](audits/) - аудит документационного пула и рекомендация по разделению MVP/production.

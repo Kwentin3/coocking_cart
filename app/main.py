@@ -169,6 +169,14 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
             status = HTTPStatus(payload.pop("status", 200))
             self._json(payload, status)
             return
+        if parsed.path == "/api/live-voice/token":
+            user = self._require_user()
+            if not user:
+                return
+            payload = self.state.runtime.create_live_voice_token(user)
+            status = HTTPStatus(payload.pop("status", 200))
+            self._json(payload, status)
+            return
         if parsed.path == "/api/admin/users":
             admin = self._require_admin()
             if not admin:
@@ -453,6 +461,10 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
     def _voice_input_config(self) -> dict[str, Any]:
         return {
             "enabled": self.state.config.stt_enabled,
+            "streaming_enabled": self.state.config.live_voice_ready,
+            "streaming_model": self.state.config.live_voice_model if self.state.config.live_voice_ready else "",
+            "streaming_sample_rate": self.state.config.live_voice_input_sample_rate,
+            "batch_enabled": self.state.config.stt_enabled,
             "max_audio_seconds": self.state.config.stt_max_audio_seconds,
             "countdown_seconds": self.state.config.stt_countdown_seconds,
             "max_audio_bytes": self.state.config.stt_max_audio_bytes,
