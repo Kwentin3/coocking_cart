@@ -76,7 +76,7 @@ def make_test_config(db_path: Path, *, api_key: str = "") -> AppConfig:
         live_voice_token_ttl_seconds=1800,
         live_voice_new_session_seconds=60,
         live_voice_input_sample_rate=16000,
-        live_voice_response_modality="TEXT",
+        live_voice_response_modality="AUDIO",
         live_voice_transport="direct_client",
         live_voice_socks5_host="",
         live_voice_socks5_port=1080,
@@ -649,7 +649,7 @@ class CoreContractsTest(unittest.TestCase):
         self.assertEqual(payload["uses"], 1)
         setup = payload["bidiGenerateContentSetup"]
         self.assertEqual(setup["model"], "models/gemini-3.1-flash-live-preview")
-        self.assertEqual(setup["generationConfig"]["responseModalities"], ["TEXT"])
+        self.assertEqual(setup["generationConfig"]["responseModalities"], ["AUDIO"])
         self.assertEqual(setup["inputAudioTranscription"], {})
         self.assertIn("access_token=auth_tokens%2Ftest-token", result.websocket_url)
 
@@ -669,7 +669,7 @@ class CoreContractsTest(unittest.TestCase):
         setup = live_voice_setup(config)
 
         self.assertEqual(setup["model"], "models/gemini-3.1-flash-live-preview")
-        self.assertEqual(setup["generationConfig"]["responseModalities"], ["TEXT"])
+        self.assertEqual(setup["generationConfig"]["responseModalities"], ["AUDIO"])
         self.assertEqual(setup["inputAudioTranscription"], {})
         self.assertIn("realtimeInputConfig", setup)
 

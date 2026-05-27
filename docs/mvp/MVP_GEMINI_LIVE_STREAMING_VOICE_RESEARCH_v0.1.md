@@ -262,6 +262,7 @@ Raw WebSocket shape:
 - Runtime routing: `DemoRuntime.create_live_voice_token`.
 - Direct frontend path: browser получает ephemeral token, открывает WSS напрямую в Gemini Live API, отправляет `setup`, затем `realtimeInput.audio` чанками PCM16.
 - Server proxy path: browser получает backend WSS URL `/api/live-voice/ws/<session>`, отправляет тот же `setup`/`realtimeInput.audio`, а backend relays WebSocket frames в Gemini Live. SOCKS5 применяется только на backend стороне при наличии `LIVE_VOICE_SOCKS5_HOST`.
+- Live setup: `responseModalities=["AUDIO"]`; UI для режима диктовки читает только `serverContent.inputTranscription.text` и игнорирует audio output. Probe через SOCKS5 показал `setupComplete` именно с `AUDIO`, тогда как `TEXT` закрывался Gemini Live с `1011`.
 - Fallback: если streaming недоступен, UI использует текущий batch-STT `/api/transcribe`.
 - Chat invariant: transcript вставляется в editable textarea и не отправляется автоматически.
 

@@ -164,7 +164,7 @@ def live_voice_setup(config: AppConfig) -> dict[str, Any]:
     return {
         "model": _model_resource(config.live_voice_model),
         "generationConfig": {
-            "responseModalities": [config.live_voice_response_modality or "TEXT"],
+            "responseModalities": [config.live_voice_response_modality or "AUDIO"],
             "temperature": 0,
         },
         "systemInstruction": {

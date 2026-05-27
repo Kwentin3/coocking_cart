@@ -53,6 +53,7 @@ Live Voice transport:
 
 - browser JavaScript must not receive SOCKS5 credentials and cannot force `fetch`/`WebSocket` through an application-level SOCKS5 proxy;
 - if Gemini Live direct WSS is rejected by location, set `LIVE_VOICE_TRANSPORT=server_proxy` in `/opt/coocking-cart/runtime/.env`;
+- set `LIVE_VOICE_RESPONSE_MODALITY=AUDIO`; the browser still uses only Live input transcription for textarea dictation;
 - set real `LIVE_VOICE_SOCKS5_HOST`, `LIVE_VOICE_SOCKS5_PORT`, `LIVE_VOICE_SOCKS5_USERNAME`, `LIVE_VOICE_SOCKS5_PASSWORD` only in the server runtime env, never in Git or docs;
 - in `server_proxy` mode `/api/live-voice/token` returns backend WSS `/api/live-voice/ws/<session>` to the browser; the backend connects to Gemini Live WSS through SOCKS5.
 

@@ -267,7 +267,7 @@ def load_config() -> AppConfig:
         live_voice_token_ttl_seconds=_int_value(get("LIVE_VOICE_TOKEN_TTL_SECONDS"), 1800),
         live_voice_new_session_seconds=_int_value(get("LIVE_VOICE_NEW_SESSION_SECONDS"), 60),
         live_voice_input_sample_rate=_int_value(get("LIVE_VOICE_INPUT_SAMPLE_RATE"), 16000),
-        live_voice_response_modality=get("LIVE_VOICE_RESPONSE_MODALITY", "TEXT").strip().upper(),
+        live_voice_response_modality=get("LIVE_VOICE_RESPONSE_MODALITY", "AUDIO").strip().upper(),
         live_voice_transport=live_voice_transport.strip().lower(),
         live_voice_socks5_host=live_voice_socks5_host,
         live_voice_socks5_port=_int_value(get("LIVE_VOICE_SOCKS5_PORT") or get("SOCKS5_PORT"), 1080),
