@@ -135,6 +135,8 @@ Artifact panel отвечает за артефакты:
 - optional action button "Сформировать карту", только если контекст уже близок к формированию документа;
 - explicit disabled/loading state для всех async actions.
 
+Send-message contract: после submit пользовательское сообщение сразу появляется в chat history как pending user bubble, textarea очищается, а ниже появляется assistant typing/loading bubble только с анимированными точками. Видимый текст вроде "формирую ответ" не используется; доступность обеспечивается aria-label. После ответа backend локальные pending nodes заменяются server truth.
+
 Чат показывает `user_answer`. Остальные поля structured output отображаются в отдельных блоках результата или debug/admin area.
 
 ## Chat/session management

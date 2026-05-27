@@ -466,12 +466,53 @@ function renderMessages(messages) {
     return;
   }
   for (const message of messages) {
-    const node = document.createElement("div");
-    node.className = `message ${message.role}`;
-    node.textContent = message.content;
-    box.appendChild(node);
+    appendMessageBubble(message.role, message.content);
   }
   box.scrollTop = box.scrollHeight;
+}
+
+function appendMessageBubble(role, content = "", options = {}) {
+  const box = el("messages");
+  const wasEmptyState = box.classList.contains("empty-state");
+  box.classList.remove("empty-state");
+  if (wasEmptyState) {
+    box.innerHTML = "";
+  }
+  const node = document.createElement("div");
+  node.className = `message ${role}${options.pending ? " pending" : ""}${options.typing ? " typing" : ""}`;
+  if (options.typing) {
+    node.setAttribute("role", "status");
+    node.setAttribute("aria-live", "polite");
+    node.setAttribute("aria-label", "Ассистент печатает");
+    const dots = document.createElement("span");
+    dots.className = "typing-dots";
+    dots.setAttribute("aria-hidden", "true");
+    dots.innerHTML = "<span></span><span></span><span></span>";
+    node.appendChild(dots);
+  } else {
+    node.textContent = content;
+  }
+  box.appendChild(node);
+  box.scrollTop = box.scrollHeight;
+  return node;
+}
+
+function appendOptimisticChatTurn(text) {
+  // Sticky chat turn UI contract: send shows the user bubble immediately and
+  // uses a non-text typing bubble until server truth replaces local nodes.
+  return {
+    userNode: appendMessageBubble("user", text, {pending: true}),
+    assistantNode: appendMessageBubble("assistant", "", {pending: true, typing: true}),
+  };
+}
+
+function removeOptimisticChatTurn(turn) {
+  turn?.assistantNode?.remove();
+  turn?.userNode?.remove();
+  const box = el("messages");
+  if (!box.children.length) {
+    renderMessages([]);
+  }
 }
 
 async function sendMessage(event) {
@@ -482,28 +523,49 @@ async function sendMessage(event) {
   }
   const text = el("messageInput").value.trim();
   if (!text) return;
+  setLoading(true);
   if (!state.sessionId) {
     await createSession(text.slice(0, 80));
   }
-  if (!state.sessionId) return;
-  setLoading(true);
-  const payload = await api(`/api/sessions/${state.sessionId}/messages`, {
-    method: "POST",
-    body: JSON.stringify({message: text}),
-  });
-  el("messageInput").value = "";
-  setLoading(false);
-  if (!payload.ok) {
-    showToast(payload.error || "Не удалось отправить сообщение.");
+  if (!state.sessionId) {
+    setLoading(false);
     return;
   }
-  await openSession(state.sessionId);
+  el("messageInput").value = "";
+  const optimisticTurn = appendOptimisticChatTurn(text);
+  try {
+    const payload = await api(`/api/sessions/${state.sessionId}/messages`, {
+      method: "POST",
+      body: JSON.stringify({message: text}),
+    });
+    setLoading(false);
+    if (!payload.ok) {
+      setLoading(false);
+      removeOptimisticChatTurn(optimisticTurn);
+      el("messageInput").value = text;
+      el("messageInput").focus();
+      showToast(payload.error || "Не удалось отправить сообщение.");
+      return;
+    }
+    await openSession(state.sessionId);
+    setLoading(false);
+  } catch (_error) {
+    setLoading(false);
+    removeOptimisticChatTurn(optimisticTurn);
+    el("messageInput").value = text;
+    el("messageInput").focus();
+    showToast("Сервер недоступен. Сообщение не отправлено.");
+  }
 }
 
 function setLoading(isLoading) {
   state.sending = isLoading;
-  el("sendBtn").disabled = isLoading;
-  el("sendBtn").textContent = isLoading ? "…" : "➤";
+  const sendBtn = el("sendBtn");
+  const input = el("messageInput");
+  sendBtn.disabled = isLoading;
+  sendBtn.setAttribute("aria-busy", isLoading ? "true" : "false");
+  sendBtn.textContent = "➤";
+  input.disabled = isLoading;
   refreshVoiceControls();
 }
 

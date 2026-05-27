@@ -576,6 +576,20 @@ class CoreContractsTest(unittest.TestCase):
         self.assertNotIn("server_proxy", js_source)
         self.assertNotIn("SOCKS5", js_source)
 
+    def test_chat_send_uses_optimistic_typing_contract(self) -> None:
+        js_source = (REPO_ROOT / "app" / "static" / "app.js").read_text(encoding="utf-8")
+        css_source = (REPO_ROOT / "app" / "static" / "styles.css").read_text(encoding="utf-8")
+
+        self.assertIn("Sticky chat turn UI contract", js_source)
+        self.assertIn("appendOptimisticChatTurn", js_source)
+        self.assertIn('appendMessageBubble("user", text, {pending: true})', js_source)
+        self.assertIn('appendMessageBubble("assistant", "", {pending: true, typing: true})', js_source)
+        self.assertIn('aria-label", "Ассистент печатает"', js_source)
+        self.assertIn(".typing-dots", css_source)
+        self.assertIn("@keyframes typing-dot", css_source)
+        self.assertNotIn("Формирую ответ", js_source)
+        self.assertNotIn("Формирую ответ", css_source)
+
     def test_live_voice_server_proxy_token_route_hides_gemini_token(self) -> None:
         class FakeRuntime:
             def create_live_voice_token(self, _user: Any) -> dict[str, Any]:
