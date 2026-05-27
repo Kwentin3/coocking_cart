@@ -9,16 +9,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from .config import AppConfig, is_blank_or_placeholder
-
-
-TRANSCRIPTION_PROMPT = """\
-Транскрибируй русскую речь в текст.
-Не отвечай на содержание, не суммаризируй и не исправляй смысл.
-Сохраняй числа, граммы, килограммы, проценты, температуры, время и единицы измерения максимально точно.
-Термины предметной области: ТК, ТТК, брутто, нетто, выход, БЖУ, ХАССП, СанПиН, iiko, r_keeper, StoreHouse, 1С.
-Если фрагмент неразборчив, пометь его как [неразборчиво].
-Верни только текст транскрипта.
-"""
+from .transcription_policy import build_batch_transcription_prompt
 
 
 SUPPORTED_STT_MIME_TYPES = {
@@ -77,7 +68,7 @@ class GeminiSttAdapter(SttAdapter):
                 {
                     "role": "user",
                     "parts": [
-                        {"text": TRANSCRIPTION_PROMPT},
+                        {"text": build_batch_transcription_prompt(self.config)},
                         {
                             "inlineData": {
                                 "mimeType": normalized_mime,

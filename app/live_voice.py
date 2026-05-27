@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from .config import AppConfig, is_blank_or_placeholder
+from .transcription_policy import build_live_voice_transcription_instruction
 
 
 FACTORY_REQUIRED = "LIVE_VOICE_PROVIDER_CALLS_MUST_USE_make_live_voice_adapter"
@@ -18,15 +19,6 @@ FORBIDDEN = "DO_NOT_CALL_GEMINI_LIVE_TOKEN_ENDPOINT_FROM_ROUTES_OR_UI"
 # through make_live_voice_adapter. The browser never receives the Gemini API key;
 # in direct_client mode it receives an ephemeral token, and in server_proxy mode
 # it receives only our backend WebSocket URL.
-
-LIVE_VOICE_TRANSCRIPTION_INSTRUCTION = """\
-Транскрибируй русскую речь пользователя для черновика сообщения в чат.
-Не отвечай на содержание, не суммаризируй и не отправляй сообщение.
-Сохраняй числа, граммы, килограммы, проценты, температуры, время и единицы измерения максимально точно.
-Термины предметной области: ТК, ТТК, брутто, нетто, выход, БЖУ, ХАССП, СанПиН, iiko, r_keeper, StoreHouse, 1С.
-Если фрагмент неразборчив, пометь его как [неразборчиво].
-"""
-
 
 @dataclass(frozen=True)
 class LiveVoiceTokenResult:
@@ -170,7 +162,7 @@ def live_voice_setup(config: AppConfig) -> dict[str, Any]:
         "systemInstruction": {
             "parts": [
                 {
-                    "text": LIVE_VOICE_TRANSCRIPTION_INSTRUCTION.strip(),
+                    "text": build_live_voice_transcription_instruction(config),
                 }
             ]
         },

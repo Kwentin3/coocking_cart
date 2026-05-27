@@ -231,6 +231,7 @@ Raw WebSocket shape:
 - Визуальный контракт live-режима: idle-control выглядит как микрофон; во время активного стриминга микрофон показывает motion/pulse state.
 - Визуальный контракт fallback/batch-режима: сохраняются понятные состояния record -> stop, без имитации live streaming.
 - Transport details (`server_proxy`, SOCKS5, Gemini token) не являются user-facing copy; механизм понятен по визуальному состоянию control.
+- Language/script preference управляется shared `VOICE_TRANSCRIPTION_*` policy. Для Gemini Live это `systemInstruction`, потому что `AudioTranscriptionConfig` не даёт отдельного hard `languageCode` для input transcription.
 - Частичный transcript можно показывать как черновик, но не отправлять.
 - Stop завершает аудио-поток и вставляет финальный transcript в textarea.
 - Cancel закрывает live session и отбрасывает transcript buffer.
@@ -266,6 +267,7 @@ Raw WebSocket shape:
 - Direct frontend path: browser получает ephemeral token, открывает WSS напрямую в Gemini Live API, отправляет `setup`, затем `realtimeInput.audio` чанками PCM16.
 - Server proxy path: browser получает backend WSS URL `/api/live-voice/ws/<session>`, отправляет тот же `setup`/`realtimeInput.audio`, а backend relays WebSocket frames в Gemini Live. SOCKS5 применяется только на backend стороне при наличии `LIVE_VOICE_SOCKS5_HOST`.
 - Live setup: `responseModalities=["AUDIO"]`; UI для режима диктовки читает только `serverContent.inputTranscription.text` и игнорирует audio output. Probe через SOCKS5 показал `setupComplete` именно с `AUDIO`, тогда как `TEXT` закрывался Gemini Live с `1011`.
+- Transcription prompt: Live и batch используют общий builder `app/transcription_policy.py`; язык, скрипт, латинский allowlist, предметные термины и override управляются через `VOICE_TRANSCRIPTION_*` env.
 - Fallback: если streaming недоступен, UI использует текущий batch-STT `/api/transcribe` и визуально остаётся в record/stop режиме.
 - Chat invariant: transcript вставляется в editable textarea и не отправляется автоматически.
 

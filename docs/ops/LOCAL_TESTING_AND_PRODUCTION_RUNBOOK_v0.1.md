@@ -57,6 +57,7 @@ Live Voice transport:
 - set real `LIVE_VOICE_SOCKS5_HOST`, `LIVE_VOICE_SOCKS5_PORT`, `LIVE_VOICE_SOCKS5_USERNAME`, `LIVE_VOICE_SOCKS5_PASSWORD` only in the server runtime env, never in Git or docs;
 - in `server_proxy` mode `/api/live-voice/token` returns backend WSS `/api/live-voice/ws/<session>` to the browser; the backend connects to Gemini Live WSS through SOCKS5.
 - GUI contract: batch fallback shows record/stop controls; Live streaming shows an animated mic. Do not expose `server_proxy` or SOCKS5 labels in user-facing GUI copy.
+- Transcription policy is shared by batch and Live: configure `VOICE_TRANSCRIPTION_LANGUAGE`, `VOICE_TRANSCRIPTION_SCRIPT`, `VOICE_TRANSCRIPTION_LATIN_ALLOWLIST`, `VOICE_TRANSCRIPTION_DOMAIN_TERMS`, `VOICE_TRANSCRIPTION_EXTRA_INSTRUCTION`, or full `VOICE_TRANSCRIPTION_PROMPT_OVERRIDE` in runtime env. For Gemini Live this is a prompt-level preference, not hard API `languageCode`.
 
 Перед серверным deploy:
 

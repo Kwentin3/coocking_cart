@@ -84,6 +84,13 @@ class AppConfig:
     live_voice_socks5_port: int
     live_voice_socks5_username: str
     live_voice_socks5_password: str
+    voice_transcription_language: str
+    voice_transcription_script: str
+    voice_transcription_latin_allowlist: str
+    voice_transcription_domain_terms: str
+    voice_transcription_unclear_marker: str
+    voice_transcription_extra_instruction: str
+    voice_transcription_prompt_override: str
     enable_context_inspector: bool
     enable_llm_trace: bool
     bootstrap_admin_email: str
@@ -273,6 +280,19 @@ def load_config() -> AppConfig:
         live_voice_socks5_port=_int_value(get("LIVE_VOICE_SOCKS5_PORT") or get("SOCKS5_PORT"), 1080),
         live_voice_socks5_username=get("LIVE_VOICE_SOCKS5_USERNAME") or get("SOCKS5_USERNAME", ""),
         live_voice_socks5_password=get("LIVE_VOICE_SOCKS5_PASSWORD") or get("SOCKS5_PASSWORD", ""),
+        voice_transcription_language=get("VOICE_TRANSCRIPTION_LANGUAGE", "русский"),
+        voice_transcription_script=get("VOICE_TRANSCRIPTION_SCRIPT", "кириллица"),
+        voice_transcription_latin_allowlist=get(
+            "VOICE_TRANSCRIPTION_LATIN_ALLOWLIST",
+            "iiko, r_keeper, StoreHouse, HACCP",
+        ),
+        voice_transcription_domain_terms=get(
+            "VOICE_TRANSCRIPTION_DOMAIN_TERMS",
+            "ТК, ТТК, брутто, нетто, выход, БЖУ, ХАССП, СанПиН, 1С",
+        ),
+        voice_transcription_unclear_marker=get("VOICE_TRANSCRIPTION_UNCLEAR_MARKER", "[неразборчиво]"),
+        voice_transcription_extra_instruction=get("VOICE_TRANSCRIPTION_EXTRA_INSTRUCTION", ""),
+        voice_transcription_prompt_override=get("VOICE_TRANSCRIPTION_PROMPT_OVERRIDE", ""),
         enable_context_inspector=_bool_value(get("ENABLE_CONTEXT_INSPECTOR"), True),
         enable_llm_trace=_bool_value(get("ENABLE_LLM_TRACE"), True),
         bootstrap_admin_email=get("BOOTSTRAP_ADMIN_EMAIL", ""),

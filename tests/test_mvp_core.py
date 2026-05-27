@@ -7,6 +7,7 @@ import tempfile
 import threading
 import unittest
 import urllib.request
+from dataclasses import replace
 from http.client import HTTPConnection
 from http.server import ThreadingHTTPServer
 from pathlib import Path
@@ -40,6 +41,7 @@ from app.runtime import DemoRuntime
 from app.security import session_token, sign_cookie
 from app.storage import Storage
 from app.stt import GeminiSttAdapter, SUPPORTED_STT_MIME_TYPES, normalize_mime_type
+from app.transcription_policy import build_batch_transcription_prompt, build_live_voice_transcription_instruction
 from app.structured_output import STRUCTURED_OUTPUT_SCHEMA, normalize_structured_output
 
 
@@ -82,6 +84,13 @@ def make_test_config(db_path: Path, *, api_key: str = "") -> AppConfig:
         live_voice_socks5_port=1080,
         live_voice_socks5_username="",
         live_voice_socks5_password="",
+        voice_transcription_language="русский",
+        voice_transcription_script="кириллица",
+        voice_transcription_latin_allowlist="iiko, r_keeper, StoreHouse, HACCP",
+        voice_transcription_domain_terms="ТК, ТТК, брутто, нетто, выход, БЖУ, ХАССП, СанПиН, 1С",
+        voice_transcription_unclear_marker="[неразборчиво]",
+        voice_transcription_extra_instruction="",
+        voice_transcription_prompt_override="",
         enable_context_inspector=True,
         enable_llm_trace=True,
         bootstrap_admin_email="admin@example.test",
@@ -375,7 +384,9 @@ class CoreContractsTest(unittest.TestCase):
         self.assertEqual(result.text, "200 грамм курицы")
         self.assertIn("audio/wav", SUPPORTED_STT_MIME_TYPES)
         parts = captured["payload"]["contents"][0]["parts"]
-        self.assertIn("Транскрибируй русскую речь", parts[0]["text"])
+        self.assertIn("Предпочтительный язык транскрипта: русский.", parts[0]["text"])
+        self.assertIn("Предпочтительный алфавит/скрипт: кириллица.", parts[0]["text"])
+        self.assertIn("iiko, r_keeper, StoreHouse, HACCP", parts[0]["text"])
         self.assertEqual(parts[1]["inlineData"]["mimeType"], "audio/wav")
         self.assertTrue(parts[1]["inlineData"]["data"])
         self.assertEqual(captured["timeout"], 5)
@@ -384,6 +395,32 @@ class CoreContractsTest(unittest.TestCase):
         self.assertEqual(normalize_mime_type("audio/m4a"), "audio/mp4")
         self.assertEqual(normalize_mime_type("audio/x-m4a; codecs=mp4a.40.2"), "audio/mp4")
         self.assertIn("audio/mp4", SUPPORTED_STT_MIME_TYPES)
+
+    def test_voice_transcription_policy_is_configurable_for_batch_and_live(self) -> None:
+        config = make_test_config(Path("unused.sqlite"), api_key="fake-key")
+        custom = replace(
+            config,
+            voice_transcription_language="русский язык",
+            voice_transcription_script="кириллица",
+            voice_transcription_latin_allowlist="iiko, SKU-42",
+            voice_transcription_domain_terms="нетто, выход",
+            voice_transcription_extra_instruction="Не заменяй проценты словами.",
+        )
+
+        batch_prompt = build_batch_transcription_prompt(custom)
+        live_prompt = build_live_voice_transcription_instruction(custom)
+
+        self.assertIn("русский язык", batch_prompt)
+        self.assertIn("кириллица", batch_prompt)
+        self.assertIn("iiko, SKU-42", batch_prompt)
+        self.assertIn("нетто, выход", batch_prompt)
+        self.assertIn("Не заменяй проценты словами.", live_prompt)
+        self.assertIn("черновик сообщения в чат", live_prompt)
+        self.assertNotIn("Верни только текст транскрипта.", live_prompt)
+
+        override = replace(config, voice_transcription_prompt_override="FULL CUSTOM PROMPT")
+        self.assertEqual(build_batch_transcription_prompt(override), "FULL CUSTOM PROMPT")
+        self.assertEqual(build_live_voice_transcription_instruction(override), "FULL CUSTOM PROMPT")
 
     def test_runtime_transcribe_audio_validates_limits_before_provider_call(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -675,6 +712,10 @@ class CoreContractsTest(unittest.TestCase):
         self.assertEqual(setup["model"], "models/gemini-3.1-flash-live-preview")
         self.assertEqual(setup["generationConfig"]["responseModalities"], ["AUDIO"])
         self.assertEqual(setup["inputAudioTranscription"], {})
+        instruction = setup["systemInstruction"]["parts"][0]["text"]
+        self.assertIn("Предпочтительный язык транскрипта: русский.", instruction)
+        self.assertIn("Предпочтительный алфавит/скрипт: кириллица.", instruction)
+        self.assertIn("Не транслитерируй", instruction)
         self.assertIn("access_token=auth_tokens%2Ftest-token", result.websocket_url)
 
     def test_runtime_live_voice_token_returns_user_safe_error_for_missing_key(self) -> None:
@@ -696,6 +737,7 @@ class CoreContractsTest(unittest.TestCase):
         self.assertEqual(setup["generationConfig"]["responseModalities"], ["AUDIO"])
         self.assertEqual(setup["inputAudioTranscription"], {})
         self.assertIn("realtimeInputConfig", setup)
+        self.assertIn("Предпочтительный язык транскрипта: русский.", setup["systemInstruction"]["parts"][0]["text"])
 
     def test_structured_json_is_derived_when_draft_exists(self) -> None:
         normalized = normalize_structured_output(

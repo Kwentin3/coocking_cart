@@ -44,6 +44,7 @@
 - On success, transcript is inserted into `messageInput`, not sent.
 - If `messageInput` already contains text, transcript is appended on a new line.
 - User can edit transcript before sending.
+- Transcription language/script semantics are not hardcoded in transport code; batch and streaming share `VOICE_TRANSCRIPTION_*` policy from env/config.
 
 Visible states:
 
