@@ -1,4 +1,30 @@
 services:
+  landing:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_MVP_ENTRY_URL: /mvp
+    container_name: coocking-cart-landing
+    restart: unless-stopped
+    networks:
+      - edge
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: edge
+      traefik.http.middlewares.coocking-cart-https-redirect.redirectscheme.scheme: https
+      traefik.http.middlewares.coocking-cart-https-redirect.redirectscheme.permanent: "true"
+      traefik.http.routers.coocking-cart-web.entrypoints: web
+      traefik.http.routers.coocking-cart-web.middlewares: coocking-cart-https-redirect
+      traefik.http.routers.coocking-cart-web.rule: Host(`coocking-cart.speechbattle.com`)
+      traefik.http.routers.coocking-cart-landing-websecure.entrypoints: websecure
+      traefik.http.routers.coocking-cart-landing-websecure.rule: Host(`coocking-cart.speechbattle.com`)
+      traefik.http.routers.coocking-cart-landing-websecure.priority: "10"
+      traefik.http.routers.coocking-cart-landing-websecure.service: coocking-cart-landing-svc
+      traefik.http.routers.coocking-cart-landing-websecure.tls: "true"
+      traefik.http.routers.coocking-cart-landing-websecure.tls.certresolver: le
+      traefik.http.services.coocking-cart-landing-svc.loadbalancer.server.port: "3000"
+
   app:
     build:
       context: .
@@ -9,6 +35,7 @@ services:
       - /opt/coocking-cart/runtime/.env
     environment:
       APP_BASE_URL: https://coocking-cart.speechbattle.com
+      APP_BASE_PATH: /mvp
       PUBLIC_DOMAIN: coocking-cart.speechbattle.com
       SQLITE_DB_PATH: /app/data/demo.sqlite
       CONTEXT_MANIFEST_PATH: /app/docs/mvp/context/context_manifest.yml
@@ -20,17 +47,13 @@ services:
     labels:
       traefik.enable: "true"
       traefik.docker.network: edge
-      traefik.http.middlewares.coocking-cart-https-redirect.redirectscheme.scheme: https
-      traefik.http.middlewares.coocking-cart-https-redirect.redirectscheme.permanent: "true"
-      traefik.http.routers.coocking-cart-web.entrypoints: web
-      traefik.http.routers.coocking-cart-web.middlewares: coocking-cart-https-redirect
-      traefik.http.routers.coocking-cart-web.rule: Host(`coocking-cart.speechbattle.com`)
-      traefik.http.routers.coocking-cart-websecure.entrypoints: websecure
-      traefik.http.routers.coocking-cart-websecure.rule: Host(`coocking-cart.speechbattle.com`)
-      traefik.http.routers.coocking-cart-websecure.service: coocking-cart-svc
-      traefik.http.routers.coocking-cart-websecure.tls: "true"
-      traefik.http.routers.coocking-cart-websecure.tls.certresolver: le
-      traefik.http.services.coocking-cart-svc.loadbalancer.server.port: "8000"
+      traefik.http.routers.coocking-cart-mvp-websecure.entrypoints: websecure
+      traefik.http.routers.coocking-cart-mvp-websecure.rule: Host(`coocking-cart.speechbattle.com`) && PathPrefix(`/mvp`)
+      traefik.http.routers.coocking-cart-mvp-websecure.priority: "100"
+      traefik.http.routers.coocking-cart-mvp-websecure.service: coocking-cart-mvp-svc
+      traefik.http.routers.coocking-cart-mvp-websecure.tls: "true"
+      traefik.http.routers.coocking-cart-mvp-websecure.tls.certresolver: le
+      traefik.http.services.coocking-cart-mvp-svc.loadbalancer.server.port: "8000"
 
 networks:
   edge:

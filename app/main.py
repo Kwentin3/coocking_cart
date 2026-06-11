@@ -60,106 +60,140 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
-        ctx = RouteContext(self, parsed.path)
-        if parsed.path.startswith("/api/live-voice/ws/"):
-            self._handle_live_voice_websocket(parsed.path)
+        path = self._route_path(parsed.path)
+        if path is None:
+            self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND)
             return
-        if parsed.path == "/":
-            self._send_file(INDEX_PATH, "text/html; charset=utf-8")
+        ctx = RouteContext(self, path)
+        if path.startswith("/api/live-voice/ws/"):
+            self._handle_live_voice_websocket(path)
             return
-        if parsed.path.startswith("/static/"):
-            self._serve_static(parsed.path)
+        if path == "/":
+            self._send_index()
             return
-        if parsed.path == "/api/config":
+        if path.startswith("/static/"):
+            self._serve_static(path)
+            return
+        if path == "/api/config":
             config_routes.get_config(ctx)
             return
-        if parsed.path == "/api/me":
+        if path == "/api/me":
             config_routes.get_me(ctx)
             return
-        if parsed.path == "/api/admin/users":
+        if path == "/api/admin/users":
             admin_routes.get_users(ctx)
             return
-        if parsed.path == "/api/admin/dashboard":
+        if path == "/api/admin/dashboard":
             admin_routes.get_dashboard(ctx)
             return
-        if parsed.path == "/api/admin/context":
+        if path == "/api/admin/context":
             admin_routes.get_context(ctx)
             return
-        if parsed.path == "/api/sessions":
+        if path == "/api/sessions":
             chat_routes.list_sessions(ctx)
             return
-        if parsed.path.startswith("/api/sessions/") and parsed.path.endswith("/inspector"):
+        if path.startswith("/api/sessions/") and path.endswith("/inspector"):
             chat_routes.get_inspector(ctx)
             return
-        if parsed.path.startswith("/api/sessions/"):
+        if path.startswith("/api/sessions/"):
             chat_routes.get_session(ctx)
             return
         self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND)
 
     def do_HEAD(self) -> None:
         parsed = urlparse(self.path)
-        ctx = RouteContext(self, parsed.path)
-        if parsed.path == "/":
-            self._send_file(INDEX_PATH, "text/html; charset=utf-8", body=False)
+        path = self._route_path(parsed.path)
+        if path is None:
+            self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND, body=False)
             return
-        if parsed.path.startswith("/static/"):
-            self._serve_static(parsed.path, body=False)
+        ctx = RouteContext(self, path)
+        if path == "/":
+            self._send_index(body=False)
             return
-        if parsed.path == "/api/config":
+        if path.startswith("/static/"):
+            self._serve_static(path, body=False)
+            return
+        if path == "/api/config":
             config_routes.get_config(ctx, body=False)
             return
         self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND, body=False)
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
-        ctx = RouteContext(self, parsed.path)
-        if parsed.path == "/api/login":
+        path = self._route_path(parsed.path)
+        if path is None:
+            self._discard_request_body()
+            self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND)
+            return
+        ctx = RouteContext(self, path)
+        if path == "/api/login":
             auth_routes.post_login(ctx)
             return
-        if parsed.path == "/api/demo-login":
+        if path == "/api/demo-login":
             auth_routes.post_demo_login(ctx)
             return
-        if parsed.path == "/api/logout":
+        if path == "/api/logout":
             auth_routes.post_logout(ctx)
             return
-        if parsed.path == "/api/transcribe":
+        if path == "/api/transcribe":
             voice_routes.post_transcribe(ctx)
             return
-        if parsed.path == "/api/live-voice/token":
+        if path == "/api/live-voice/token":
             voice_routes.post_live_voice_token(ctx)
             return
-        if parsed.path == "/api/admin/users":
+        if path == "/api/admin/users":
             admin_routes.post_user(ctx)
             return
-        if parsed.path == "/api/sessions":
+        if path == "/api/sessions":
             chat_routes.create_session(ctx)
             return
-        if parsed.path.startswith("/api/sessions/") and parsed.path.endswith("/messages"):
+        if path.startswith("/api/sessions/") and path.endswith("/messages"):
             chat_routes.post_message(ctx)
             return
+        self._discard_request_body()
         self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND)
 
     def do_PATCH(self) -> None:
         parsed = urlparse(self.path)
-        ctx = RouteContext(self, parsed.path)
-        if parsed.path.startswith("/api/admin/users/"):
+        path = self._route_path(parsed.path)
+        if path is None:
+            self._discard_request_body()
+            self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND)
+            return
+        ctx = RouteContext(self, path)
+        if path.startswith("/api/admin/users/"):
             admin_routes.patch_user(ctx)
             return
-        if parsed.path.startswith("/api/sessions/"):
+        if path.startswith("/api/sessions/"):
             chat_routes.patch_session(ctx)
             return
+        self._discard_request_body()
         self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND)
 
     def do_DELETE(self) -> None:
         parsed = urlparse(self.path)
-        ctx = RouteContext(self, parsed.path)
-        if parsed.path.startswith("/api/admin/users/"):
+        path = self._route_path(parsed.path)
+        if path is None:
+            self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND)
+            return
+        ctx = RouteContext(self, path)
+        if path.startswith("/api/admin/users/"):
             admin_routes.delete_user(ctx)
             return
-        if parsed.path.startswith("/api/sessions/"):
+        if path.startswith("/api/sessions/"):
             chat_routes.delete_session(ctx)
             return
         self._json({"ok": False, "error": "Not found."}, HTTPStatus.NOT_FOUND)
+
+    def _route_path(self, path: str) -> str | None:
+        base_path = self.state.config.app_base_path
+        if not base_path:
+            return path
+        if path == base_path:
+            return "/"
+        if path.startswith(f"{base_path}/"):
+            return path.removeprefix(base_path) or "/"
+        return None
 
     def _serve_static(self, path: str, *, body: bool = True) -> None:
         parts = [part for part in path.removeprefix("/static/").split("/") if part]
@@ -174,6 +208,24 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
         if content_type.startswith("text/") or content_type in {"application/javascript", "text/javascript"}:
             content_type += "; charset=utf-8"
         self._send_file(file_path, content_type, body=body)
+
+    def _send_index(self, *, body: bool = True) -> None:
+        try:
+            html = INDEX_PATH.read_text(encoding="utf-8")
+        except OSError:
+            self._json({"ok": False, "error": "File not found."}, HTTPStatus.NOT_FOUND)
+            return
+        base_path = self.state.config.app_base_path
+        rendered = html.replace("__MVP_PUBLIC_BASE_PATH__", base_path)
+        rendered = rendered.replace("__MVP_BASE_PATH_JSON__", json.dumps(base_path))
+        data = rendered.encode("utf-8")
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        if body:
+            self.wfile.write(data)
 
     def _send_file(self, path: Path, content_type: str, *, body: bool = True) -> None:
         try:
@@ -369,7 +421,7 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
         else:
             scheme = "ws"
         host = forwarded_host or self.headers.get("Host") or app_base.netloc
-        return f"{scheme}://{host}/api/live-voice/ws/{session_id}"
+        return f"{scheme}://{host}{self._public_path(f'/api/live-voice/ws/{session_id}')}"
 
     def _current_token(self) -> str | None:
         if not self.state.config.auth_ready:
@@ -411,7 +463,7 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
         token = session_token()
         self.state.storage.create_auth_session(token, user.id)
         signed = sign_cookie(token, self.state.config.auth_session_secret).value
-        self._json({"ok": True, "user": self._user_payload(user)}, headers=[self._cookie_header(signed)])
+        self._json({"ok": True, "user": self._user_payload(user)}, headers=self._session_cookie_headers(signed))
 
     @staticmethod
     def _user_payload(user: User | None) -> dict[str, Any] | None:
@@ -439,16 +491,66 @@ class DemoMvpHandler(BaseHTTPRequestHandler):
             return None
 
     def _cookie_header(self, value: str) -> tuple[str, str]:
-        return (
-            "Set-Cookie",
-            build_session_cookie_header(COOKIE_NAME, value, max_age=604800, secure=self._use_secure_session_cookie()),
-        )
+        return self._session_cookie_headers(value)[0]
+
+    def _session_cookie_headers(self, value: str) -> list[tuple[str, str]]:
+        secure = self._use_secure_session_cookie()
+        cookie_path = self._session_cookie_path()
+        headers = [
+            (
+                "Set-Cookie",
+                build_session_cookie_header(
+                    COOKIE_NAME,
+                    value,
+                    max_age=604800,
+                    secure=secure,
+                    path=cookie_path,
+                ),
+            )
+        ]
+        if cookie_path != "/":
+            headers.append(
+                (
+                    "Set-Cookie",
+                    build_session_cookie_header(COOKIE_NAME, "", max_age=0, secure=secure, path="/"),
+                )
+            )
+        return headers
 
     def _clear_cookie_header(self) -> tuple[str, str]:
-        return (
-            "Set-Cookie",
-            build_session_cookie_header(COOKIE_NAME, "", max_age=0, secure=self._use_secure_session_cookie()),
-        )
+        return self._clear_cookie_headers()[0]
+
+    def _clear_cookie_headers(self) -> list[tuple[str, str]]:
+        secure = self._use_secure_session_cookie()
+        cookie_path = self._session_cookie_path()
+        headers = [
+            (
+                "Set-Cookie",
+                build_session_cookie_header(
+                    COOKIE_NAME,
+                    "",
+                    max_age=0,
+                    secure=secure,
+                    path=cookie_path,
+                ),
+            )
+        ]
+        if cookie_path != "/":
+            headers.append(
+                (
+                    "Set-Cookie",
+                    build_session_cookie_header(COOKIE_NAME, "", max_age=0, secure=secure, path="/"),
+                )
+            )
+        return headers
+
+    def _session_cookie_path(self) -> str:
+        return self.state.config.app_base_path or "/"
+
+    def _public_path(self, route_path: str) -> str:
+        path = f"/{route_path.lstrip('/')}"
+        base_path = self.state.config.app_base_path
+        return f"{base_path}{path}" if base_path else path
 
     def _use_secure_session_cookie(self) -> bool:
         return should_use_secure_session_cookie(

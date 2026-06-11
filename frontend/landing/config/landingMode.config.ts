@@ -38,6 +38,16 @@ function readMvpEntryHref() {
     return undefined;
   }
 
+  if (
+    rawHref.startsWith("/")
+    && !rawHref.startsWith("//")
+    && !rawHref.includes("\\")
+    && !rawHref.includes("?")
+    && !rawHref.includes("#")
+  ) {
+    return rawHref.replace(/\/+$/, "") || "/";
+  }
+
   try {
     const url = new URL(rawHref);
     return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : undefined;
@@ -49,7 +59,7 @@ function readMvpEntryHref() {
 const mvpEntryHref = readMvpEntryHref();
 
 // STICKY-MVP-ENTRY:
-// The MVP URL is temporary and must come from config/env.
+// The MVP URL/path is temporary and must come from config/env.
 // Do not hardcode deployment domains in sections or components.
 export const mvpEntryConfig: LandingModeConfig["mvpEntry"] = {
   href: mvpEntryHref,

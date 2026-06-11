@@ -54,6 +54,9 @@ class RouteContext:
     def clear_cookie_header(self) -> tuple[str, str]:
         return self.handler._clear_cookie_header()
 
+    def clear_cookie_headers(self) -> list[tuple[str, str]]:
+        return self.handler._clear_cookie_headers()
+
     def user_payload(self, user: User | None) -> dict[str, Any] | None:
         return self.handler._user_payload(user)
 

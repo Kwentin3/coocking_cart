@@ -28,4 +28,4 @@ def post_logout(ctx: RouteContext) -> None:
     token = ctx.current_token()
     if token:
         ctx.state.storage.delete_auth_session(token)
-    ctx.json({"ok": True}, headers=[ctx.clear_cookie_header()])
+    ctx.json({"ok": True}, headers=ctx.clear_cookie_headers())

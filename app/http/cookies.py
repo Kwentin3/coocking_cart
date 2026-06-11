@@ -9,8 +9,9 @@ COOKIE_NAME = "cc_session"
 LOCAL_COOKIE_HOSTS = {"127.0.0.1", "::1", "localhost"}
 
 
-def build_session_cookie_header(name: str, value: str, *, max_age: int, secure: bool) -> str:
-    header = f"{name}={value}; HttpOnly; SameSite=Lax; Path=/; Max-Age={max_age}"
+def build_session_cookie_header(name: str, value: str, *, max_age: int, secure: bool, path: str = "/") -> str:
+    cookie_path = _cookie_path(path)
+    header = f"{name}={value}; HttpOnly; SameSite=Lax; Path={cookie_path}; Max-Age={max_age}"
     if secure:
         header += "; Secure"
     return header
@@ -38,3 +39,10 @@ def _host_without_port(host_header: str) -> str:
             return raw_host[1:end]
         return raw_host.strip("[]")
     return raw_host.split(":", 1)[0]
+
+
+def _cookie_path(path: str) -> str:
+    raw = str(path or "/").strip() or "/"
+    if not raw.startswith("/") or any(ch in raw for ch in [";", ",", "\r", "\n", "\t", " "]):
+        return "/"
+    return raw

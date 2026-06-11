@@ -50,11 +50,28 @@ def _session_cookie_secure_mode(value: str | None) -> str:
     return mode or "auto"
 
 
+def _app_base_path(value: str | None) -> str:
+    raw = (value or "").strip()
+    if raw in {"", "/"}:
+        return ""
+    if (
+        not raw.startswith("/")
+        or raw.startswith("//")
+        or "\\" in raw
+        or "?" in raw
+        or "#" in raw
+        or "//" in raw
+    ):
+        raise ValueError("APP_BASE_PATH must be empty or a clean absolute path like /mvp.")
+    return raw.rstrip("/")
+
+
 @dataclass(frozen=True)
 class AppConfig:
     app_env: str
     app_name: str
     app_base_url: str
+    app_base_path: str
     public_domain: str
     demo_mode: bool
     sqlite_db_path: Path
@@ -254,6 +271,7 @@ def load_config() -> AppConfig:
         app_env=get("APP_ENV", "demo"),
         app_name=get("APP_NAME", "coocking-cart"),
         app_base_url=get("APP_BASE_URL", "http://127.0.0.1:8000"),
+        app_base_path=_app_base_path(get("APP_BASE_PATH") or get("MVP_BASE_PATH", "")),
         public_domain=get("PUBLIC_DOMAIN", ""),
         demo_mode=_bool_value(get("DEMO_MODE"), True),
         sqlite_db_path=repo_path(get("SQLITE_DB_PATH"), "./data/demo.sqlite"),

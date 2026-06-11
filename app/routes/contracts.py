@@ -12,6 +12,8 @@ class RouteContract:
     handler: str
 
 
+# These are internal route paths after DemoMvpHandler strips APP_BASE_PATH.
+# Public deployments may expose them under a prefix such as /mvp/api/...
 ROUTE_DOMAIN_CONTRACTS: tuple[RouteContract, ...] = (
     RouteContract("GET", "/api/config", "config", "public", "config_routes.get_config"),
     RouteContract("HEAD", "/api/config", "config", "public", "config_routes.get_config"),

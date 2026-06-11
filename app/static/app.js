@@ -51,9 +51,28 @@ const state = {
 
 const el = (id) => document.getElementById(id);
 
+// Sticky same-domain mount boundary: keep API callers on internal /api paths;
+// appPath adds the optional external APP_BASE_PATH such as /mvp at fetch time.
+const appBasePath = (() => {
+  const raw = String(window.__MVP_BASE_PATH__ || "").trim();
+  if (!raw || raw === "/" || !raw.startsWith("/") || raw.startsWith("//")) {
+    return "";
+  }
+  return raw.replace(/\/+$/, "");
+})();
+
+function appPath(path) {
+  const raw = String(path || "/");
+  if (/^https?:\/\//i.test(raw)) {
+    return raw;
+  }
+  const normalized = raw.startsWith("/") ? raw : `/${raw}`;
+  return `${appBasePath}${normalized}`;
+}
+
 async function api(path, options = {}) {
   try {
-    const response = await fetch(path, {
+    const response = await fetch(appPath(path), {
       credentials: "same-origin",
       headers: {"Content-Type": "application/json", ...(options.headers || {})},
       ...options,
@@ -1607,7 +1626,7 @@ async function transcribeVoiceBlob(blob, durationMs) {
   refreshVoiceControls();
   updateVoiceStatus("Распознаю аудио...");
   try {
-    const response = await fetch("/api/transcribe", {
+    const response = await fetch(appPath("/api/transcribe"), {
       method: "POST",
       credentials: "same-origin",
       headers: {

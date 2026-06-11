@@ -54,6 +54,7 @@ def make_test_config(db_path: Path, *, api_key: str = "") -> AppConfig:
         app_env="test",
         app_name="coocking-cart",
         app_base_url="http://127.0.0.1:8000",
+        app_base_path="",
         public_domain="",
         demo_mode=True,
         sqlite_db_path=db_path,
@@ -449,9 +450,18 @@ class CoreContractsTest(unittest.TestCase):
     def test_session_cookie_header_secure_contract(self) -> None:
         secure_cookie = build_session_cookie_header(COOKIE_NAME, "signed-token", max_age=604800, secure=True)
         local_cookie = build_session_cookie_header(COOKIE_NAME, "signed-token", max_age=604800, secure=False)
+        prefixed_cookie = build_session_cookie_header(
+            COOKIE_NAME,
+            "signed-token",
+            max_age=604800,
+            secure=False,
+            path="/mvp",
+        )
 
         self.assertIn("HttpOnly", secure_cookie)
         self.assertIn("SameSite=Lax", secure_cookie)
+        self.assertIn("Path=/", secure_cookie)
+        self.assertIn("Path=/mvp", prefixed_cookie)
         self.assertIn("Max-Age=604800", secure_cookie)
         self.assertIn("Secure", secure_cookie)
         self.assertNotIn("Secure", local_cookie)
@@ -586,6 +596,84 @@ class CoreContractsTest(unittest.TestCase):
                 self.assertEqual(sessions_response.status, 200)
                 self.assertTrue(sessions_payload["ok"])
                 self.assertIn("sessions", sessions_payload)
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=3)
+                if original_state is not None:
+                    DemoMvpHandler.state = original_state
+                else:
+                    delattr(DemoMvpHandler, "state")
+
+    def test_mvp_base_path_mount_routes_assets_api_and_cookie_path(self) -> None:
+        class FakeState:
+            def __init__(self, config: AppConfig, storage: Storage):
+                self.config = config
+                self.storage = storage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            config = replace(make_test_config(Path(tmp) / "demo.sqlite", api_key=""), app_base_path="/mvp")
+            storage = Storage(config.sqlite_db_path)
+            state = FakeState(config, storage)
+            original_state = getattr(DemoMvpHandler, "state", None)
+            DemoMvpHandler.state = state
+            server = ThreadingHTTPServer(("127.0.0.1", 0), DemoMvpHandler)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                host, port = server.server_address
+                connection = HTTPConnection(host, port, timeout=3)
+
+                connection.request("GET", "/mvp")
+                index_response = connection.getresponse()
+                index_html = index_response.read().decode("utf-8")
+
+                connection.request("GET", "/")
+                root_response = connection.getresponse()
+                root_response.read()
+
+                connection.request("GET", "/mvp/static/app.js")
+                static_response = connection.getresponse()
+                static_source = static_response.read().decode("utf-8")
+
+                connection.request("POST", "/mvp/api/demo-login", body="{}", headers={"Content-Type": "application/json"})
+                login_response = connection.getresponse()
+                login_payload = json.loads(login_response.read().decode("utf-8"))
+                cookie_header = login_response.getheader("Set-Cookie") or ""
+                cookie = cookie_header.split(";", 1)[0]
+
+                connection.request("GET", "/mvp/api/sessions", headers={"Cookie": cookie})
+                sessions_response = connection.getresponse()
+                sessions_payload = json.loads(sessions_response.read().decode("utf-8"))
+
+                connection.request("POST", "/mvp/api/logout", body="{}", headers={"Cookie": cookie})
+                logout_response = connection.getresponse()
+                logout_payload = json.loads(logout_response.read().decode("utf-8"))
+                logout_cookie_header = logout_response.getheader("Set-Cookie") or ""
+
+                connection.request("GET", "/api/sessions", headers={"Cookie": cookie})
+                root_api_response = connection.getresponse()
+                root_api_response.read()
+                connection.close()
+
+                self.assertEqual(index_response.status, 200)
+                self.assertIn('href="/mvp/static/styles.css"', index_html)
+                self.assertIn('window.__MVP_BASE_PATH__ = "/mvp";', index_html)
+                self.assertIn('src="/mvp/static/app.js"', index_html)
+                self.assertEqual(root_response.status, 404)
+                self.assertEqual(static_response.status, 200)
+                self.assertIn("function appPath(path)", static_source)
+                self.assertEqual(login_response.status, 200)
+                self.assertTrue(login_payload["ok"])
+                self.assertIn("Path=/mvp", cookie_header)
+                self.assertIn("Path=/; Max-Age=0", cookie_header)
+                self.assertEqual(sessions_response.status, 200)
+                self.assertTrue(sessions_payload["ok"])
+                self.assertEqual(logout_response.status, 200)
+                self.assertTrue(logout_payload["ok"])
+                self.assertIn("Path=/mvp; Max-Age=0", logout_cookie_header)
+                self.assertIn("Path=/; Max-Age=0", logout_cookie_header)
+                self.assertEqual(root_api_response.status, 404)
             finally:
                 server.shutdown()
                 server.server_close()
@@ -918,6 +1006,7 @@ class CoreContractsTest(unittest.TestCase):
             config = AppConfig(
                 **{
                     **config.__dict__,
+                    "app_base_path": "/mvp",
                     "live_voice_transport": "server_proxy",
                     "live_voice_socks5_host": "127.0.0.10",
                     "live_voice_socks5_username": "proxy-user",
@@ -942,7 +1031,7 @@ class CoreContractsTest(unittest.TestCase):
                     "Content-Type": "application/json",
                 }
                 connection = HTTPConnection(host, port, timeout=3)
-                connection.request("POST", "/api/live-voice/token", body="{}", headers=headers)
+                connection.request("POST", "/mvp/api/live-voice/token", body="{}", headers=headers)
                 response = connection.getresponse()
                 payload = json.loads(response.read().decode("utf-8"))
 
@@ -950,13 +1039,13 @@ class CoreContractsTest(unittest.TestCase):
                 self.assertTrue(payload["ok"])
                 self.assertEqual(payload["transport"], "server_proxy")
                 self.assertNotIn("token", payload)
-                self.assertTrue(payload["websocket_url"].startswith(f"ws://{host}:{port}/api/live-voice/ws/"))
+                self.assertTrue(payload["websocket_url"].startswith(f"ws://{host}:{port}/mvp/api/live-voice/ws/"))
                 self.assertEqual(len(state.live_voice_sessions), 1)
                 session = next(iter(state.live_voice_sessions.values()))
                 self.assertEqual(session["user_id"], user.id)
                 self.assertIn("access_token=secret", session["websocket_url"])
 
-                connection.request("POST", "/api/live-voice/token", body="{}", headers=headers)
+                connection.request("POST", "/mvp/api/live-voice/token", body="{}", headers=headers)
                 second_response = connection.getresponse()
                 second_payload = json.loads(second_response.read().decode("utf-8"))
                 connection.close()
@@ -969,7 +1058,7 @@ class CoreContractsTest(unittest.TestCase):
 
                 session_id = payload["websocket_url"].rsplit("/", 1)[-1]
                 connection = HTTPConnection(host, port, timeout=3)
-                connection.request("GET", f"/api/live-voice/ws/{session_id}", headers={"Cookie": f"{COOKIE_NAME}={cookie}"})
+                connection.request("GET", f"/mvp/api/live-voice/ws/{session_id}", headers={"Cookie": f"{COOKIE_NAME}={cookie}"})
                 invalid_upgrade = connection.getresponse()
                 invalid_payload = json.loads(invalid_upgrade.read().decode("utf-8"))
                 connection.close()
