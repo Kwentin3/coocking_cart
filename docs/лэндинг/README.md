@@ -22,9 +22,10 @@
 14. [Landing Implementation Plan](LANDING_IMPLEMENTATION_PLAN_v0.1.md) — Phase 0 repo audit, выбранный Next.js путь, структура реализации, риски и validation plan.
 15. [Landing Implementation Progress](LANDING_IMPLEMENTATION_PROGRESS.md) — журнал фаз реализации, проверок, отклонений и следующего шага.
 16. [Landing Owner Gates](LANDING_OWNER_GATES_v0.1.md) — решения владельца продукта, блокирующие showcase publish, beta и public launch.
-17. [Landing Control Plane Blueprint](../landing-control-plane-blueprint.md) — архитектура agent-native управления лендингом через content modules, registries, validation, preview, diff и rollback.
-18. [AI Asset Generation Pipeline](../ai-asset-generation-pipeline.md) — генерация candidate assets через image providers с ручным approval, provenance, registry publishing и rollback.
-19. [Эскизы](эскизы/) — визуальные референсы. Используются для сверки композиции, но не заменяют контракты.
+17. [Landing Showcase Publish Report](LANDING_SHOWCASE_PUBLISH_REPORT_v0.1.md) — результат подготовки controlled showcase publish: env, MVP entry, commercial gates, placeholder assets, build/static checks и visual smoke.
+18. [Landing Control Plane Blueprint](../landing-control-plane-blueprint.md) — архитектура agent-native управления лендингом через content modules, registries, validation, preview, diff и rollback.
+19. [AI Asset Generation Pipeline](../ai-asset-generation-pipeline.md) — генерация candidate assets через image providers с ручным approval, provenance, registry publishing и rollback.
+20. [Эскизы](эскизы/) — визуальные референсы. Используются для сверки композиции, но не заменяют контракты.
 
 ## Порядок чтения
 
@@ -40,9 +41,10 @@
 10. Перед началом верстки читать Landing Implementation Handoff: он переводит продуктовые и визуальные контракты в инженерный план реализации.
 11. Читать Landing Implementation Plan и Landing Implementation Progress при проверке фактической реализации.
 12. Читать Landing Owner Gates перед showcase publish, beta или public launch.
-13. Потом читать Landing Control Plane Blueprint, если задача касается агентного управления, CLI/API, validation, preview или rollback.
-14. Читать AI Asset Generation Pipeline, если задача касается генерации, замены или публикации новых изображений.
-15. Эскизы смотреть при визуальной сверке hero, карточек, плотности, кропов и общей атмосферы.
+13. Читать Landing Showcase Publish Report, если задача касается controlled showcase publish, deploy env или текущего publish readiness.
+14. Потом читать Landing Control Plane Blueprint, если задача касается агентного управления, CLI/API, validation, preview или rollback.
+15. Читать AI Asset Generation Pipeline, если задача касается генерации, замены или публикации новых изображений.
+16. Эскизы смотреть при визуальной сверке hero, карточек, плотности, кропов и общей атмосферы.
 
 ## Правила консистентности
 

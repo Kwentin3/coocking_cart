@@ -26,6 +26,7 @@ CTA типа signup/pricing/export/MVP-entry не вырезаются из до
 * Action Visibility Resolver применяет mode + owner/function gates перед render;
 * engineering scaffold ready;
 * showcase publish допустим как controlled Target Product storefront, не как полноценный SaaS launch;
+* showcase publish допустим с placeholder/scaffold assets, если deploy env предоставляет `NEXT_PUBLIC_MVP_ENTRY_URL` для служебного MVP entry;
 * public `launch` blocked by owner gates;
 * `LANDING_SHOWCASE_MODE_STRATEGY_v0.1.md` фиксирует mode policy.
 

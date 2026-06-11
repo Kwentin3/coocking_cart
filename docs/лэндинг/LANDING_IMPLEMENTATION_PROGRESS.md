@@ -383,3 +383,41 @@ Deviations:
 Next:
 - После production asset approval заменить placeholder assets через `AssetRegistry`.
 - После замены выполнить visual smoke across desktop/mobile.
+
+## Phase 16 — Controlled showcase publish preparation
+
+Status: done
+
+Done:
+- Проверена текущая controlled showcase configuration: `landingMode = showcase`, `ownerGates.landingMode = true`, `ownerGates.publicLaunch = false`.
+- Проверено, что `NEXT_PUBLIC_MVP_ENTRY_URL` управляет `nav.login` через config/resolver, а не через section/component/registry hardcode.
+- С env `NEXT_PUBLIC_MVP_ENTRY_URL=https://coocking-cart.speechbattle.com/` MVP entry рендерится как icon-only service action: без visible text, с `aria-label="Вход в MVP"` and href из env.
+- Без env и с невалидным env validation проходит, а `nav.login` остается hidden/owner_gated.
+- Проверено, что commercial actions остаются gated: `signup.freeStart` disabled, `pricing.view` hidden, `docx.download` disabled roadmap action.
+- Проверено, что current asset registry содержит 6 scaffold records, все с `rightsStatus: "local-scaffold"`.
+- Проверено, что planned production keys (`hero.chef`, hero backdrop, final CTA edge decor, dish cutout/content image additions) не добавлены без файлов and approval.
+- Выполнен visual smoke desktop/mobile с env и без env; screenshots сохранены в `frontend/.next-logs/publish-*.png`.
+- Создан `LANDING_SHOWCASE_PUBLISH_REPORT_v0.1.md`.
+
+Validation:
+- PowerShell env syntax used: `$env:NEXT_PUBLIC_MVP_ENTRY_URL='https://coocking-cart.speechbattle.com/'; npm ...`.
+- `npm run validate` with env — pass; expected warnings only.
+- `npm run lint` — pass.
+- `npm run build` with env — pass; final build artifact собран с MVP entry URL.
+- `npm audit --omit=dev` — pass, `0 vulnerabilities`.
+- `npm run validate` without env — pass with `MVP entry nav.login remains owner-gated`.
+- `npm run validate` with invalid env — pass with `MVP entry nav.login remains owner-gated`.
+- Static checks по temporary domain, direct colors, direct section assets, inline section layout, section-local analytics and planned production keys — pass.
+- Playwright visual smoke via cached `playwright@1.60.0` — pass: desktop/mobile, no horizontal overflow, hero/documents/final CTA present, MVP entry visible only with env.
+
+Deviations:
+- Production deploy itself was not executed in this phase.
+- Production assets were not generated or approved.
+- Analytics dispatch and automated accessibility audit remain follow-up tasks.
+- Public SaaS launch не объявлен готовым.
+
+Next:
+- Configure `NEXT_PUBLIC_MVP_ENTRY_URL` in deploy runtime for controlled showcase publish.
+- Add analytics dispatch if click metrics are required for showcase.
+- Run production asset workflow separately before asset freeze.
+- Keep public launch blocked until commercial/legal/accessibility/asset gates are closed.
