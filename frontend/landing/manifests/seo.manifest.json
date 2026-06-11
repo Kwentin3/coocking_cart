@@ -1,0 +1,8 @@
+{
+  "id": "landing.seo",
+  "contentFile": "content/ru/seo.json",
+  "schemaFile": "schemas/seo.schema.ts",
+  "riskLevel": "medium",
+  "claimMaturityRefs": ["claim.target.techcards", "claim.target.kitchenDocuments"],
+  "previewMode": "metadata"
+}

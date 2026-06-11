@@ -1,0 +1,12 @@
+{
+  "id": "landing.documents",
+  "section": "DocumentsSection",
+  "contentFile": "content/ru/documents.json",
+  "schemaFile": "schemas/documents.schema.ts",
+  "allowedAssetKeys": ["documents.techCardPreview", "documents.costCardPreview"],
+  "allowedIconKeys": ["benefit.documents", "workflow.calculate", "workflow.export", "action.lock"],
+  "allowedActionIds": ["sample.project.view", "docx.download"],
+  "riskLevel": "high",
+  "claimMaturityRefs": ["claim.target.kitchenDocuments", "claim.roadmap.exports"],
+  "previewMode": "isolated-and-page"
+}

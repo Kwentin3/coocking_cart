@@ -1,0 +1,12 @@
+{
+  "id": "landing.standards",
+  "title": "Осторожная работа со стандартами",
+  "description": "ТехКухня помогает готовить материалы с учётом требований, но не заменяет юридическую или санитарную экспертизу.",
+  "items": [
+    { "id": "human-review", "text": "Финальные документы требуют проверки ответственным специалистом.", "iconKey": "standard.check" },
+    { "id": "cautious-copy", "text": "Лендинг не обещает абсолютное соответствие без проверки.", "iconKey": "standard.shield" },
+    { "id": "traceable-context", "text": "Формулировки должны иметь источник в Product Vision, Roadmap или owner decision.", "iconKey": "benefit.analytics" }
+  ],
+  "disclaimer": "Нормативные и юридические обещания остаются gated до отдельного owner/legal решения.",
+  "claimRefs": ["claim.cautious.standards"]
+}

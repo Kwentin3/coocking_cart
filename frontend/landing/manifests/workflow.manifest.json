@@ -1,0 +1,10 @@
+{
+  "id": "landing.workflow",
+  "section": "WorkflowSection",
+  "contentFile": "content/ru/workflow.json",
+  "schemaFile": "schemas/workflow.schema.ts",
+  "allowedIconKeys": ["workflow.recipe", "workflow.calculate", "workflow.approve", "workflow.export"],
+  "allowedActionIds": [],
+  "riskLevel": "medium",
+  "previewMode": "isolated-and-page"
+}

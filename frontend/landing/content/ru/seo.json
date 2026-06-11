@@ -1,0 +1,6 @@
+{
+  "id": "landing.seo",
+  "title": "ТехКухня — технологические карты, расчёты и документы для общепита",
+  "description": "Публичная витрина Target Product для управляемой работы с рецептурами, технологическими картами, расчётами и документами кухни.",
+  "claimRefs": ["claim.target.techcards", "claim.target.kitchenDocuments"]
+}

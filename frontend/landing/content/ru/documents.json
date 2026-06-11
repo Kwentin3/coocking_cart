@@ -1,0 +1,33 @@
+{
+  "id": "landing.documents",
+  "title": "Рецептуры и документы в пару кликов",
+  "description": "Витрина показывает целевой набор материалов вокруг блюда, но экспортные действия остаются disabled до подтверждения реализации.",
+  "previewAssetKeys": ["documents.techCardPreview", "documents.costCardPreview"],
+  "documentTypes": [
+    {
+      "id": "tech-card",
+      "title": "Технологическая карта",
+      "description": "Структурированный черновик с составом, выходом, этапами и параметрами приготовления.",
+      "iconKey": "benefit.documents",
+      "claimRefs": ["claim.mvp.techcards", "claim.target.techcards"]
+    },
+    {
+      "id": "calculation-card",
+      "title": "Расчётная карточка",
+      "description": "Целевой слой для показателей блюда; публично подаётся без обещания завершённого cost engine.",
+      "iconKey": "workflow.calculate",
+      "claimRefs": ["claim.roadmap.costControl"]
+    },
+    {
+      "id": "work-pack",
+      "title": "Рабочий пакет кухни",
+      "description": "Материалы для согласования рецептуры и передачи в работу, связанные с исходными данными блюда.",
+      "iconKey": "workflow.export",
+      "claimRefs": ["claim.target.kitchenDocuments"]
+    }
+  ],
+  "sampleActionId": "sample.project.view",
+  "exportActionId": "docx.download",
+  "disclaimer": "Предпросмотр отражает целевую продуктовую модель. Экспорт DOCX/PDF/Excel не показывается как доступная функция без отдельного подтверждения.",
+  "claimRefs": ["claim.target.kitchenDocuments", "claim.roadmap.exports"]
+}

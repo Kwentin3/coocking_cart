@@ -22,6 +22,13 @@
 - `POST /api/demo-login` now drains its optional JSON body before responding, so HTTP/1.1 keep-alive clients do not leak `{}` into the next request line.
 - API URLs, JSON keys and UI behavior were intentionally preserved. Frontend `app/static/app.js` is still a later slice.
 
+Not yet done:
+
+- Dedicated typed DTO contract files are still future work. Current explicit contract is the route/domain/guard map plus response-shape tests.
+- JSON/audio request parsing still lives on `DemoMvpHandler`; only cookie policy moved to `app/http/cookies.py`.
+- `DemoMvpHandler` still owns the explicit method/path dispatcher. A full route table/router is not introduced yet.
+- Persistence repositories and frontend static module split remain future slices.
+
 ## Target Layers
 
 | Layer | Owns | Must not own |
@@ -48,6 +55,8 @@
 
 ## Slice 1: Contract Definitions Before Extraction
 
+Status: partially completed through route guard contracts; typed DTO files remain future work.
+
 Problem: if files are split before response contracts are named, drift can hide inside the refactor.
 
 Work:
@@ -63,6 +72,8 @@ Acceptance:
 - Existing tests pass plus response-shape tests.
 
 ## Slice 2: HTTP Edge Helpers
+
+Status: partially completed. Cookie policy moved to `app/http/cookies.py`; JSON/audio request-response helpers remain in `DemoMvpHandler`.
 
 Problem: `DemoMvpHandler` owns parsing, cookies, JSON response, auth and route behavior.
 
@@ -80,11 +91,13 @@ Acceptance:
 
 ## Slice 3: Route Modules By Domain
 
+Status: completed for JSON routes with explicit dispatcher. WebSocket relay remains in `DemoMvpHandler` by design because `BaseHTTPRequestHandler` owns the socket streams.
+
 Problem: manual `if parsed.path` chains mix unrelated route ownership.
 
 Work:
 
-1. Introduce a tiny route table that maps `(method, path pattern)` to route handlers.
+1. Keep the current explicit dispatcher or introduce a tiny route table that maps `(method, path pattern)` to route handlers.
 2. Move auth/session/admin/voice route functions into `app/routes/*_routes.py`.
 3. Route handlers receive an explicit request context: config, storage, runtime, current user helpers, parsed body.
 4. Preserve all current JSON shapes.

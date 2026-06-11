@@ -1,0 +1,10 @@
+export { headerSchema, type HeaderContent } from "./header.schema";
+export { heroSchema, type HeroContent } from "./hero.schema";
+export { audienceSchema, type AudienceContent } from "./audience.schema";
+export { benefitsSchema, type BenefitsContent } from "./benefits.schema";
+export { workflowSchema, type WorkflowContent } from "./workflow.schema";
+export { documentsSchema, type DocumentsContent } from "./documents.schema";
+export { standardsSchema, type StandardsContent } from "./standards.schema";
+export { testimonialsSchema, type TestimonialsContent } from "./testimonials.schema";
+export { finalCtaSchema, type FinalCtaContent } from "./finalCta.schema";
+export { seoSchema, type SeoContent } from "./seo.schema";

@@ -1,0 +1,78 @@
+import {
+  ArrowRight,
+  BadgeCheck,
+  BarChart3,
+  BookOpenCheck,
+  Calculator,
+  ChefHat,
+  CheckCircle2,
+  ClipboardCheck,
+  ClipboardList,
+  Clock3,
+  Factory,
+  FileText,
+  Leaf,
+  LineChart,
+  LogIn,
+  LockKeyhole,
+  PackageCheck,
+  PlayCircle,
+  ShieldCheck,
+  Sparkles,
+  Store,
+  UsersRound,
+  WalletCards,
+  type LucideIcon,
+} from "lucide-react";
+
+export const iconKeys = [
+  "action.arrowRight",
+  "action.login",
+  "action.play",
+  "action.lock",
+  "audience.restaurant",
+  "audience.chef",
+  "audience.production",
+  "audience.manager",
+  "benefit.time",
+  "benefit.cost",
+  "benefit.documents",
+  "benefit.analytics",
+  "workflow.recipe",
+  "workflow.calculate",
+  "workflow.approve",
+  "workflow.export",
+  "standard.shield",
+  "standard.check",
+  "brand.spark",
+  "brand.leaf",
+] as const;
+
+export type IconKey = (typeof iconKeys)[number];
+
+export const iconRegistry: Record<IconKey, { component: LucideIcon; label: string }> = {
+  "action.arrowRight": { component: ArrowRight, label: "Перейти" },
+  "action.login": { component: LogIn, label: "Вход" },
+  "action.play": { component: PlayCircle, label: "Открыть пример" },
+  "action.lock": { component: LockKeyhole, label: "Недоступно" },
+  "audience.restaurant": { component: Store, label: "Ресторан" },
+  "audience.chef": { component: ChefHat, label: "Шеф-повар" },
+  "audience.production": { component: Factory, label: "Производство" },
+  "audience.manager": { component: UsersRound, label: "Менеджер" },
+  "benefit.time": { component: Clock3, label: "Время" },
+  "benefit.cost": { component: WalletCards, label: "Себестоимость" },
+  "benefit.documents": { component: FileText, label: "Документы" },
+  "benefit.analytics": { component: BarChart3, label: "Аналитика" },
+  "workflow.recipe": { component: BookOpenCheck, label: "Рецептура" },
+  "workflow.calculate": { component: Calculator, label: "Расчёт" },
+  "workflow.approve": { component: ClipboardCheck, label: "Проверка" },
+  "workflow.export": { component: PackageCheck, label: "Пакет документов" },
+  "standard.shield": { component: ShieldCheck, label: "Стандарты" },
+  "standard.check": { component: CheckCircle2, label: "Проверено" },
+  "brand.spark": { component: Sparkles, label: "AI" },
+  "brand.leaf": { component: Leaf, label: "Кухня" },
+};
+
+export function resolveIcon(iconKey: IconKey) {
+  return iconRegistry[iconKey];
+}

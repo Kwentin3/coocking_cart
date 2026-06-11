@@ -1,0 +1,9 @@
+export { AudienceSection } from "./AudienceSection";
+export { BenefitsSection } from "./BenefitsSection";
+export { DocumentsSection } from "./DocumentsSection";
+export { FinalCtaSection } from "./FinalCtaSection";
+export { HeaderSection } from "./HeaderSection";
+export { HeroSection } from "./HeroSection";
+export { StandardsSection } from "./StandardsSection";
+export { TestimonialsSection } from "./TestimonialsSection";
+export { WorkflowSection } from "./WorkflowSection";

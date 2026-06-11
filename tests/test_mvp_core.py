@@ -17,7 +17,9 @@ from typing import Any
 # Sticky test environment note: this local workspace is Windows-only and must not
 # be treated as Docker/Linux parity. Production Docker/Linux runs on the hosting
 # server; local tests verify code contracts, while runtime parity is checked by
-# a server-side build/artifact or an explicit artifact simulation.
+# a server-side build/artifact or an explicit artifact simulation. The current
+# server deploy path is release-artifact based because git is not installed on
+# the host; do not assume a server-side git pull.
 # Sticky Live Voice transport note: browser JS cannot receive SOCKS5 secrets or
 # force WebSocket/fetch through app-level SOCKS5. SOCKS5 is a backend-only
 # server_proxy concern, and direct_client remains the no-proxy browser path.

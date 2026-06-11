@@ -1,0 +1,23 @@
+{
+  "id": "landing.hero",
+  "eyebrow": "Target Product для технологичной кухни",
+  "title": "Технологические карты, расчёты и документы без кухонного хаоса",
+  "description": "ТехКухня помогает собрать рецептуры, расчёты, технологические карты и рабочие документы в управляемый процесс для общепита.",
+  "primaryActionId": "demo.request",
+  "secondaryActionId": "sample.project.view",
+  "trustItems": [
+    { "id": "recipes", "iconKey": "workflow.recipe", "text": "Рецептуры и шаги приготовления в одном контуре" },
+    { "id": "documents", "iconKey": "benefit.documents", "text": "Черновики технологических и рабочих документов" },
+    { "id": "standards", "iconKey": "standard.shield", "text": "Осторожная работа с требованиями и проверками" }
+  ],
+  "visual": {
+    "layoutKey": "hero.targetProduct.v1",
+    "productUiAssetKey": "hero.productUi",
+    "dishAssetKey": "hero.dish",
+    "metricTitle": "Карточка блюда",
+    "metricValue": "12 шагов",
+    "metricNote": "Рецептура, выход, расчёты и документы связаны между собой",
+    "mockupStatus": "Target Product preview"
+  },
+  "claimRefs": ["claim.target.techcards", "claim.target.recipeSystem", "claim.target.kitchenDocuments"]
+}

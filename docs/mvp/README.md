@@ -12,6 +12,18 @@ Demo MVP не является production-ready системой. Он не ут
 
 Для реализации использовать финальную документационную ветку `docs/mvp-final-docs-before-implementation` или cleanup-ветку после merge. Не стартовать реализацию с default branch, если он не содержит финальную MVP-документацию.
 
+## Связь MVP с Target Product
+
+Demo MVP — это первый проверочный срез движения к целевой продуктовой системе «ТехКухня», описанной в [Product Vision](../product/PRODUCT_VISION_v0.1.md) и [Capability Roadmap](../product/PRODUCT_CAPABILITY_ROADMAP_v0.1.md).
+
+MVP проверяет главный риск: сможет ли пользователь через управляемый диалог получить полезный проект ТК/ТТК, warnings, data statuses и structured JSON. Он намеренно не включает весь Target Product: себестоимость, калькуляционные карты, DOCX/PDF export, integrations, production approval, audit and full document lifecycle остаются roadmap/target capabilities.
+
+Это означает:
+
+* отсутствие capability в MVP не всегда является отказом от нее в целевом продукте;
+* public landing может описывать Target Product, если claim maturity закреплен в Product Vision / Roadmap;
+* MVP-документы остаются источником правды только для текущего проверочного среза и current implementation boundaries.
+
 Терминология MVP:
 
 - structured output - полный ответ LLM для runtime: `user_answer` и служебные поля;

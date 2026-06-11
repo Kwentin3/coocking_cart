@@ -1,0 +1,35 @@
+{
+  "id": "landing.benefits",
+  "title": "Практическая польза на кухне",
+  "description": "Фокус не на абстрактном AI, а на рабочем процессе: от блюда и рецептуры до документов и управляемых изменений.",
+  "items": [
+    {
+      "id": "time",
+      "title": "Меньше ручной сборки",
+      "description": "Команда не пересобирает одни и те же данные в таблицах, текстах и документах после каждой итерации.",
+      "iconKey": "benefit.time",
+      "claimRefs": ["claim.target.recipeSystem"]
+    },
+    {
+      "id": "cost",
+      "title": "Прозрачнее расчёты",
+      "description": "Себестоимость и показатели показываются осторожно как целевая возможность, а не как завершённый финансовый модуль.",
+      "iconKey": "benefit.cost",
+      "claimRefs": ["claim.roadmap.costControl"]
+    },
+    {
+      "id": "documents",
+      "title": "Документы рядом с рецептурой",
+      "description": "Технологическая карта, расчётная карточка и рабочие материалы собираются из одного структурированного контекста.",
+      "iconKey": "benefit.documents",
+      "claimRefs": ["claim.target.kitchenDocuments"]
+    },
+    {
+      "id": "analytics",
+      "title": "Понятная управляемость",
+      "description": "Изменения рецептуры, выхода и документов становятся видимыми, а спорные функции остаются помеченными по maturity.",
+      "iconKey": "benefit.analytics",
+      "claimRefs": ["claim.target.techcards"]
+    }
+  ]
+}

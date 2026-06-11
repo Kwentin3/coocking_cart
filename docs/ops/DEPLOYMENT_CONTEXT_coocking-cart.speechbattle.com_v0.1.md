@@ -1,15 +1,16 @@
 # Deployment context: coocking-cart.speechbattle.com v0.1
 
-- Статус документа: deployment context для будущего Demo MVP
+- Статус документа: актуальный deployment context Demo MVP
 - Дата: 2026-05-24
-- Deployment status: not deployed yet
+- Deployment status: deployed Demo MVP
 - Audit status: completed, read-only on 2026-05-24
+- Runtime status update: active production path verified on 2026-05-27
 
 ## Назначение
 
-Документ фиксирует известный deployment context для будущего деплоя Demo MVP AI-ассистента технологических карт.
+Документ фиксирует актуальный deployment context Demo MVP AI-ассистента технологических карт.
 
-Этот документ не является runbook деплоя и не разрешает менять сервер. Перед любыми изменениями нужен read-only server audit и отдельное deployment task.
+Этот документ не заменяет runbook деплоя. Текущий app-only deploy flow описан в `LOCAL_TESTING_AND_PRODUCTION_RUNBOOK_v0.1.md`.
 
 ## Known deployment target
 
@@ -21,6 +22,15 @@
 | SSH access | key-based, passwordless |
 | Container runtime | Docker already present |
 | Reverse proxy | Existing Traefik |
+| Deploy path | `/opt/coocking-cart` |
+| Runtime env | `/opt/coocking-cart/runtime/.env` |
+| Data path | `/opt/coocking-cart/data` |
+| Release root | `/opt/coocking-cart/releases/<commit>` |
+| Current release symlink | `/opt/coocking-cart/current` |
+| App container | `coocking-cart-app` |
+| Docker network | `edge` |
+| Traefik certresolver | `le` |
+| Server git | not installed; deploy uses release archives |
 
 ## Known warning
 
@@ -38,16 +48,21 @@
 
 ## Current status
 
-- Demo MVP application: not deployed yet.
+- Demo MVP application: deployed.
 - DNS/domain: known target domain.
 - Server access: key-based SSH context is known.
 - Docker: known to be present.
 - Traefik: known to be present.
-- Existing containers: present, exact list must be confirmed by read-only audit.
-- Existing containers: confirmed by read-only audit.
-- Deployment path: unknown.
+- Existing containers: confirmed by read-only audit; do not touch containers outside `coocking-cart`.
+- Deployment path: `/opt/coocking-cart`.
+- Runtime env path: `/opt/coocking-cart/runtime/.env`.
+- SQLite/data path: `/opt/coocking-cart/data`.
+- Current verified release at last update: `/opt/coocking-cart/releases/5b15136`.
+- Current symlink: `/opt/coocking-cart/current`.
+- App container: `coocking-cart-app`.
 - Traefik network: `edge`.
-- TLS/certresolver policy: unknown.
+- TLS/certresolver policy: Traefik `websecure` + certresolver `le`.
+- Server-side `git`: unavailable; deploy must use a local `git archive` release artifact.
 
 ## Read-only audit summary
 
@@ -66,23 +81,17 @@ Read-only audit confirmed:
 
 No server files were changed. Secret files were not read.
 
-## Unknowns / TODO
+## Remaining TODO
 
-- Confirm safe app deploy path.
-- Confirm Docker network for the app.
-- Confirm existing Traefik network name.
-- Confirm current TLS policy.
-- Confirm Traefik certresolver name.
-- Confirm Traefik email/resolver configuration without exposing secrets.
-- Confirm whether there is a shared external Docker network.
-- Decide where `.env` will live on the server.
-- Decide logs policy.
-- Decide backup policy for SQLite/demo data.
-- Identify containers and services that must not be touched.
+- Add a first-class deploy script for the release-artifact flow.
+- Add rollback command/runbook for `/opt/coocking-cart/current`.
+- Add backup/restore procedure for `/opt/coocking-cart/data/demo.sqlite`.
+- Decide logs retention policy.
+- Later replace root SSH with a dedicated deploy user.
 
 ## Allowed next action
 
-Only read-only server audit is allowed at this stage.
+For current Demo MVP iteration, allowed app-only action is release-artifact deploy of committed code under `/opt/coocking-cart/releases/<commit>`, followed by rebuild/restart of only `coocking-cart-app`. Do not change Traefik, Docker networks, unrelated containers, volumes, DNS, firewall or runtime secrets.
 
 See:
 

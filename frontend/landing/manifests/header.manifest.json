@@ -1,0 +1,11 @@
+{
+  "id": "landing.header",
+  "section": "HeaderSection",
+  "contentFile": "content/ru/header.json",
+  "schemaFile": "schemas/header.schema.ts",
+  "allowedAssetKeys": ["brand.logoMark"],
+  "allowedIconKeys": ["action.arrowRight", "action.lock"],
+  "allowedActionIds": ["demo.request", "nav.login"],
+  "riskLevel": "low",
+  "previewMode": "page"
+}

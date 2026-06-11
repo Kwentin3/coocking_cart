@@ -1,0 +1,12 @@
+{
+  "id": "landing.finalCta",
+  "section": "FinalCtaSection",
+  "contentFile": "content/ru/finalCta.json",
+  "schemaFile": "schemas/finalCta.schema.ts",
+  "allowedAssetKeys": ["cta.kitchenBoard"],
+  "allowedIconKeys": ["action.arrowRight", "action.lock"],
+  "allowedActionIds": ["demo.request", "signup.freeStart"],
+  "riskLevel": "medium",
+  "claimMaturityRefs": ["claim.decision.onboarding", "claim.decision.pricing"],
+  "previewMode": "isolated-and-page"
+}

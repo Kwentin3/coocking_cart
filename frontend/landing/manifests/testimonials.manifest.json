@@ -1,0 +1,12 @@
+{
+  "id": "landing.testimonials",
+  "section": "TestimonialsSection",
+  "contentFile": "content/ru/testimonials.json",
+  "schemaFile": "schemas/testimonials.schema.ts",
+  "allowedAssetKeys": [],
+  "allowedIconKeys": [],
+  "allowedActionIds": [],
+  "riskLevel": "high",
+  "previewMode": "internal-only",
+  "publicPolicy": "hidden-until-approved-real-quotes"
+}

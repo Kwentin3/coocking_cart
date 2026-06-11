@@ -1,0 +1,12 @@
+{
+  "id": "landing.hero",
+  "section": "HeroSection",
+  "contentFile": "content/ru/hero.json",
+  "schemaFile": "schemas/hero.schema.ts",
+  "allowedAssetKeys": ["hero.productUi", "hero.dish"],
+  "allowedIconKeys": ["workflow.recipe", "benefit.documents", "standard.shield", "action.arrowRight", "action.play"],
+  "allowedActionIds": ["demo.request", "sample.project.view"],
+  "riskLevel": "medium",
+  "claimMaturityRefs": ["claim.target.techcards", "claim.target.recipeSystem", "claim.target.kitchenDocuments"],
+  "previewMode": "isolated-and-page"
+}

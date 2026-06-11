@@ -1,15 +1,31 @@
 # Deployment preparation handoff v0.1
 
-- Статус: handoff для будущего deployment task
+- Статус: исторический handoff; актуальный app deploy flow см. в runbook
 - Дата: 2026-05-24
 - Target domain: `coocking-cart.speechbattle.com`
 - Target server: `91.132.48.224`
+- Status update: historical handoff; current app deploy flow is release-artifact based, see `LOCAL_TESTING_AND_PRODUCTION_RUNBOOK_v0.1.md`
+
+## Current status update 2026-05-27
+
+This document was originally written before the first deploy. Current confirmed state:
+
+- Demo MVP is deployed at `https://coocking-cart.speechbattle.com/`.
+- App path is `/opt/coocking-cart`.
+- Runtime env is `/opt/coocking-cart/runtime/.env`.
+- Data path is `/opt/coocking-cart/data`.
+- Releases live under `/opt/coocking-cart/releases/<commit>`.
+- Current app symlink is `/opt/coocking-cart/current`.
+- App container is `coocking-cart-app`.
+- Docker network is `edge`; Traefik certresolver is `le`.
+- Server-side `git` is not installed; do not use this handoff as a `git pull` deploy guide.
+- Current deploy procedure is documented in `LOCAL_TESTING_AND_PRODUCTION_RUNBOOK_v0.1.md`.
 
 ## Назначение
 
-Документ объясняет, с чего начинать будущий деплой Demo MVP и какие действия запрещены до отдельного подтверждения.
+Документ сохраняет исторический контекст подготовки первого деплоя Demo MVP и текущие запреты для app-only deploy.
 
-Это не deployment runbook и не production config. Приложение сейчас не деплоится.
+Это не deployment runbook и не production config. Актуальная процедура деплоя живет в `LOCAL_TESTING_AND_PRODUCTION_RUNBOOK_v0.1.md`.
 
 ## Что уже известно
 
@@ -27,7 +43,7 @@
 
 ## SSH access and hardening note
 
-`root@91.132.48.224` принят как текущий demo deployment context, потому что этот доступ был передан владельцем проекта для read-only audit и будущей подготовки деплоя.
+`root@91.132.48.224` принят как текущий demo deployment context, потому что этот доступ был передан владельцем проекта для read-only audit, первого деплоя и текущих app-only release обновлений.
 
 Правила:
 
@@ -65,28 +81,23 @@ Dedicated deploy user, sudo policy и SSH hardening остаются future ops 
 - Менять DNS.
 - Коммитить `.env`, secrets, tokens, API keys или SSH keys.
 
-## Минимальная будущая стратегия деплоя
+## Минимальная текущая стратегия app-only деплоя
 
 1. Выполнить или переиспользовать read-only server audit.
-2. Согласовать app deploy path.
-3. Согласовать Docker network strategy.
-4. Подготовить `.env.example` только с placeholders.
-5. Передать real `.env` вне Git.
-6. Подготовить compose/config в отдельной ветке и task.
-7. Подключить Traefik labels после review existing Traefik conventions.
-8. Сделать dry-run/review без остановки существующих сервисов.
-9. Выполнить deploy отдельным подтвержденным заданием.
-10. Проверить домен, health endpoint, logs и rollback path.
+2. Убедиться, что изменения закоммичены и отправлены в GitHub.
+3. Собрать локальный `git archive` из коммита.
+4. Загрузить архив на сервер в `/tmp`.
+5. Распаковать release в `/opt/coocking-cart/releases/<commit>`.
+6. Проверить `docker compose -f docker-compose.demo.yml config --quiet` внутри release.
+7. Пересобрать/перезапустить только `coocking-cart-app`.
+8. Переключить `/opt/coocking-cart/current` на новый release после успешного старта.
+9. Проверить домен, `/api/config`, demo login + `/api/sessions`, контейнерный импорт и logs.
+10. Не читать и не печатать `/opt/coocking-cart/runtime/.env`.
 
 ## Open questions
 
-- Какой final app deploy path использовать?
-- Можно ли подключать Demo MVP к network `edge` напрямую?
-- Нужна ли отдельная app internal network?
-- Какой Traefik certresolver использовать?
-- Какие entrypoints использовать: `web`, `websecure` или другие?
-- Где должен жить real `.env`?
-- Кто владелец `.env` и секретов?
+- Нужна ли отдельная app internal network позднее, если появятся новые backend services?
+- Кто долгосрочный владелец `.env` и секретов?
 - Какая политика logs retention?
 - Нужны ли backups для SQLite/demo data?
 - Какой rollback strategy достаточен для Demo MVP?

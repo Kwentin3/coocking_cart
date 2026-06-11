@@ -1,0 +1,13 @@
+{
+  "id": "landing.header",
+  "logoText": "ТехКухня",
+  "logoAssetKey": "brand.logoMark",
+  "navItems": [
+    { "id": "audience", "label": "Для кого", "href": "#audience" },
+    { "id": "workflow", "label": "Как работает", "href": "#workflow" },
+    { "id": "documents", "label": "Документы", "href": "#documents" },
+    { "id": "standards", "label": "Стандарты", "href": "#standards" }
+  ],
+  "primaryActionId": "demo.request",
+  "loginActionId": "nav.login"
+}

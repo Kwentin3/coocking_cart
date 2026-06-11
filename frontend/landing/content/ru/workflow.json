@@ -1,0 +1,35 @@
+{
+  "id": "landing.workflow",
+  "title": "Как это работает",
+  "description": "Процесс строится как управляемая цепочка: данные блюда фиксируются один раз и затем проходят проверку, расчёт и подготовку материалов.",
+  "steps": [
+    {
+      "id": "recipe",
+      "title": "Описать блюдо",
+      "description": "Ингредиенты, выход, этапы приготовления и технологические нюансы собираются в структурированный черновик.",
+      "iconKey": "workflow.recipe",
+      "claimRefs": ["claim.mvp.techcards"]
+    },
+    {
+      "id": "calculate",
+      "title": "Связать расчёты",
+      "description": "Показатели выводятся из контекста блюда и помечаются по зрелости, если зависят от будущего cost-control контура.",
+      "iconKey": "workflow.calculate",
+      "claimRefs": ["claim.roadmap.costControl"]
+    },
+    {
+      "id": "approve",
+      "title": "Проверить формулировки",
+      "description": "Система помогает собрать черновик, а финальная проверка нормативных и юридических формулировок остаётся за человеком.",
+      "iconKey": "workflow.approve",
+      "claimRefs": ["claim.cautious.standards"]
+    },
+    {
+      "id": "documents",
+      "title": "Получить пакет",
+      "description": "Документы показываются как целевой workflow; экспорт включается только после реализации и owner approval.",
+      "iconKey": "workflow.export",
+      "claimRefs": ["claim.target.kitchenDocuments", "claim.roadmap.exports"]
+    }
+  ]
+}

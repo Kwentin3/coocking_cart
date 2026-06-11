@@ -24,5 +24,7 @@ python -m app.main --host 127.0.0.1 --port 8000
 
 ```powershell
 python -m unittest discover -s tests
-python -m compileall app tests
+python -m compileall app tests scripts
+node --check app/static/app.js
+git diff --check
 ```

@@ -1,6 +1,7 @@
 ﻿# Technical Debt Audit: Demo MVP
 
 - Date: 2026-05-27
+- Last updated: 2026-05-27 after backend route split and release-artifact deploy
 - Branch: implementation/demo-mvp
 - Scope: repository code, docs, tests, deployment/runtime shape, current production health smoke
 - Out of scope: reading secrets, deep penetration testing, full product/domain validation, load testing
@@ -15,14 +16,14 @@ No finding requires a full rewrite. The right strategy is small hardening/refact
 
 | Domain | Current owner | Boundary today | Main debt signal |
 | --- | --- | --- | --- |
-| HTTP/API/session/websocket edge | `app/main.py` | `DemoMvpHandler` methods | Routing, auth, JSON parsing, static files and Live Voice WS handling are in one class. |
+| HTTP/API/session/websocket edge | `app/main.py`, `app/http/cookies.py`, `app/routes/*` | `DemoMvpHandler` entrypoint + `RouteContext` domain routes | JSON routes are split by domain; JSON/audio parsing, auth helpers, static files and Live Voice WS relay still live on the edge handler. |
 | Runtime orchestration | `app/runtime.py` | `DemoRuntime` | Good boundary; still synchronous and turn-level only. |
 | LLM/STT/Live provider calls | `app/llm.py`, `app/stt.py`, `app/live_voice.py`, `app/live_voice_proxy.py` | adapters/factory functions | Good adapter direction; Live proxy needs operational observability. |
-| Persistence | `app/storage.py` | `Storage` methods over SQLite | No migration/version layer; no indexes; some weak relational constraints. |
+| Persistence | `app/storage.py` | `Storage` facade over SQLite | Migration/version baseline and indexes exist; repository/domain split is still future work. |
 | Browser UI | `app/static/app.js`, `app/static/styles.css`, `app/templates/index.html` | one global state object and direct DOM rendering | Largest active-change surface; chat, admin, voice, markdown and layout are coupled. |
 | Context assets | `docs/mvp/context/*`, `app/context_loader.py` | manifest + markdown layers | Good explicit context boundary; parser and file-path guard are MVP-only. |
 | Tests | `tests/test_mvp_core.py` | unittest contract tests | Good breadth for backend contracts; UI is mostly static-text assertions. |
-| Ops/runtime | `Dockerfile`, `docker-compose.demo.yml`, `docs/ops/*` | server-side Docker/Traefik, local Windows workspace | Good documented split; deployment hardening remains future work. |
+| Ops/runtime | `Dockerfile`, `docker-compose.demo.yml`, `docs/ops/*` | local Windows workspace + server-side Docker/Traefik release artifacts | Runtime split is documented; server has no `git`, so deploy uses `git archive` release artifacts. Rollback/backup automation remains future work. |
 
 ## What Is Not Debt Right Now
 
@@ -53,36 +54,38 @@ No finding requires a full rewrite. The right strategy is small hardening/refact
   - Oversized chat message returns 413/400 and does not create a message row.
   - Existing normal chat flow stays unchanged.
 
-### TD-02: Session cookie policy is MVP-level, not HTTPS-hardened
+### TD-02: Session cookie policy was MVP-level, now HTTPS-hardened
 
-- Severity: P1
+- Severity: resolved for Demo MVP
 - Evidence:
-  - `app/main.py:596-604` sets session cookie with `HttpOnly`, `SameSite=Lax`, `Path=/`, `Max-Age`, but no `Secure` flag.
+  - `app/http/cookies.py` owns `build_session_cookie_header` and `should_use_secure_session_cookie`.
+  - `SESSION_COOKIE_SECURE=auto|true|false` is handled in `app/config.py`.
   - `docker-compose.demo.yml:11-13` and production route use HTTPS domain `coocking-cart.speechbattle.com`.
-- Risk: without `Secure`, a browser can send the session cookie over plain HTTP if a request to the same host happens before redirect. This is not catastrophic for a demo behind HTTPS redirect, but it is a cheap hardening win.
-- Recommended slice:
-  1. Add `SESSION_COOKIE_SECURE` config defaulting to true when `APP_BASE_URL` is https.
-  2. Include `Secure` in `_cookie_header` and `_clear_cookie_header` when enabled.
-  3. Add test coverage for secure and local non-secure modes.
+- Risk: current Demo MVP risk is addressed; future work is production IAM/session lifecycle, not the `Secure` flag.
+- Implemented slice:
+  1. Added `SESSION_COOKIE_SECURE` config defaulting to `auto`.
+  2. Included `Secure` for HTTPS/proxy requests and preserved local HTTP usability.
+  3. Added cookie tests and production smoke that confirmed `Secure` and `HttpOnly`.
 - Acceptance checks:
   - Production config emits `Set-Cookie` with `Secure`.
   - Local `http://127.0.0.1` remains usable when explicitly disabled.
 
-### TD-03: `app/main.py` mixes edge concerns and business route orchestration
+### TD-03: `app/main.py` still owns edge, but JSON route orchestration is split
 
-- Severity: P2
+- Severity: P2 remaining edge cleanup
 - Evidence:
-  - `DemoMvpHandler` starts at `app/main.py:50` and handles static files, config, auth, admin users, sessions, transcription, Live Voice token, WebSocket upgrade and cookie helpers through `app/main.py:620`.
-  - `do_GET`, `do_POST`, `do_PATCH`, `do_DELETE` each route by manual `if parsed.path` chains (`app/main.py:57`, `app/main.py:147`, `app/main.py:240`, `app/main.py:283`).
-- Risk: every new route increases chance of bypassing auth, returning inconsistent errors or forgetting terminal `return`. The current tests reduce risk, but the file is already past the point where manual routing stays cheap.
-- Recommended slice:
+  - JSON route behavior moved to `app/routes/config_routes.py`, `auth_routes.py`, `chat_routes.py`, `admin_routes.py`, and `voice_routes.py`.
+  - `app/routes/contracts.py` records method/path/domain/guard mapping.
+  - `DemoMvpHandler` still owns static files, body parsing, auth helpers, explicit dispatch and socket-bound Live Voice relay.
+- Risk: remaining risk is mostly edge consistency: JSON/body limits, helper extraction and eventual route table/router drift.
+- Remaining slice:
   1. Keep `http.server`; do not migrate framework yet.
-  2. Extract request helpers into `app/http_utils.py`: JSON body, response, cookies, path parsing.
-  3. Extract route handlers by domain: `auth_routes`, `session_routes`, `admin_routes`, `voice_routes` or equivalent small functions.
+  2. Extract JSON/audio body parsing and response helpers into `app/http/request_response.py`.
+  3. Keep socket-bound Live Voice relay on the handler unless a real WebSocket server layer is introduced.
   4. Preserve response shapes and route URLs.
 - Acceptance checks:
-  - Existing 27 tests remain green.
-  - Add a route table/static anti-drift test asserting every protected route calls user/admin guard.
+  - Existing 34 tests remain green.
+  - Anti-drift route contracts remain authoritative for protected routes.
 
 ### TD-04: Frontend is now the largest active-change monolith
 
@@ -119,20 +122,19 @@ No finding requires a full rewrite. The right strategy is small hardening/refact
   - Browser test asserts DOM terminal state, not screenshots only.
   - Test can be skipped or run only where browser tooling exists; local Windows/no-Docker constraint remains respected.
 
-### TD-06: SQLite schema has no migration/version layer and weak relational constraints
+### TD-06: SQLite schema baseline is hardened; repository split remains
 
-- Severity: P2
+- Severity: resolved baseline; P2 remaining repository split
 - Evidence:
-  - `app/storage.py:72-124` creates tables with `CREATE TABLE IF NOT EXISTS` only.
-  - `turn_results.user_message_id` and `turn_results.assistant_message_id` are stored at `app/storage.py:115-116` without foreign key references.
-  - `app/storage.py:481-495` uses `SELECT *` for latest turn result.
-  - There are no explicit indexes for common queries such as session messages and latest turn result.
-- Risk: schema changes will be manual and hard to reason about once real data matters. Query performance is fine for demo volume, but the absence of indexes and schema versioning becomes active debt when sessions accumulate.
-- Recommended slice:
-  1. Add a simple `schema_migrations` table with integer version.
-  2. Add indexes: `messages(session_id, id)`, `turn_results(session_id, id)`, `chat_sessions(owner_user_id, updated_at)`, `auth_sessions(token_hash)` already unique.
-  3. Add foreign keys from turn result message ids to messages if compatible with existing data.
-  4. Avoid moving away from SQLite until production storage requirements exist.
+- Evidence:
+  - `schema_migrations` and idempotent startup migration exist in `app/storage.py`.
+  - Product read indexes and `turn_results` foreign keys to `messages` are in place.
+  - Production DB was backed up before migration and verified with `foreign_key_check=0`.
+- Risk: schema-version debt is addressed for Demo MVP. Remaining debt is that `Storage` still mixes users, auth sessions, chat sessions, messages, turn results and admin metrics.
+- Remaining slice:
+  1. Keep one SQLite transaction owner.
+  2. Split repositories by domain behind the existing `Storage` facade.
+  3. Avoid moving away from SQLite until production storage requirements exist.
 - Acceptance checks:
   - Existing DB opens and migrates idempotently.
   - Fresh DB and old DB both pass storage tests.
@@ -190,7 +192,8 @@ No finding requires a full rewrite. The right strategy is small hardening/refact
 - Evidence:
   - Current compose runs behind Traefik and uses `/opt/coocking-cart/runtime/.env` outside Git in `docker-compose.demo.yml:8-18`.
   - Server smoke shows `coocking-cart-app Up` with restart policy `unless-stopped`.
-  - Existing docs already call out future deploy-user/backup/log policy in `docs/reports/MVP_IMPLEMENTATION_REPORT_v0.1.md` and ops runbooks.
+  - Server-side `git` is not installed, so current deploy uses local `git archive` release artifacts under `/opt/coocking-cart/releases/<commit>`.
+  - Existing docs call out future deploy-user/backup/log policy in `docs/reports/MVP_IMPLEMENTATION_REPORT_v0.1.md` and ops runbooks.
 - Risk: root SSH deployment, no formal backup/restore procedure for SQLite, and no release rollback command as a first-class script are acceptable for demo iteration but not for production claims.
 - Recommended slice:
   1. Add backup/restore runbook for `/opt/coocking-cart/data/demo.sqlite`.
@@ -231,11 +234,11 @@ Planning artifact added:
 - `docs/mvp/MVP_DOMAIN_LAYERED_REFACTORING_PLAN_v0.1.md` defines the domain/layer refactoring sequence for `app/main.py`, `app/storage.py` and `app/static/app.js`.
 ## Recommended Implementation Order
 
-1. TD-01 + TD-02: request/session hardening. Smallest high-value safety work.
+1. TD-01: request/body/message limits in the HTTP edge layer.
 2. TD-07: Live Voice observability. Needed because streaming is now an active feature and location/SOCKS5 failures are realistic.
 3. TD-04 + TD-05: frontend modularization plus one browser-level smoke. Do this before adding more chat/voice UI features.
-4. TD-06: SQLite migrations/indexes. Do before adding document versioning, exports or more admin analytics.
-5. TD-03: HTTP handler split. Do after request limits, so extraction preserves a clearer contract.
+4. TD-03 remaining edge cleanup: request/response helpers and optional route table, after request limits.
+5. TD-06 remaining storage repository split behind the `Storage` facade before adding exports/admin analytics.
 6. TD-08 + TD-11: context/vendor guardrails. Low risk, cheap cleanup.
 7. TD-09 + TD-10: provider factory parity and deploy hardening. Do when those tracks become active.
 

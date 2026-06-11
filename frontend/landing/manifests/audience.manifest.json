@@ -1,0 +1,10 @@
+{
+  "id": "landing.audience",
+  "section": "AudienceSection",
+  "contentFile": "content/ru/audience.json",
+  "schemaFile": "schemas/audience.schema.ts",
+  "allowedIconKeys": ["audience.restaurant", "audience.chef", "audience.production", "audience.manager"],
+  "allowedActionIds": [],
+  "riskLevel": "low",
+  "previewMode": "isolated-and-page"
+}

@@ -1,0 +1,11 @@
+{
+  "id": "landing.standards",
+  "section": "StandardsSection",
+  "contentFile": "content/ru/standards.json",
+  "schemaFile": "schemas/standards.schema.ts",
+  "allowedIconKeys": ["standard.check", "standard.shield", "benefit.analytics"],
+  "allowedActionIds": [],
+  "riskLevel": "high",
+  "claimMaturityRefs": ["claim.cautious.standards"],
+  "previewMode": "isolated-and-page"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "landing.benefits",
+  "section": "BenefitsSection",
+  "contentFile": "content/ru/benefits.json",
+  "schemaFile": "schemas/benefits.schema.ts",
+  "allowedIconKeys": ["benefit.time", "benefit.cost", "benefit.documents", "benefit.analytics"],
+  "allowedActionIds": [],
+  "riskLevel": "medium",
+  "previewMode": "isolated-and-page"
+}

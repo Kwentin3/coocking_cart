@@ -1,0 +1,21 @@
+{
+  "id": "landing.finalCta",
+  "title": "Соберите кухонные документы в управляемый процесс",
+  "description": "Engineering scaffold готовит лендинг к публичному запуску, но спорные CTA и claims остаются закрытыми до owner approval.",
+  "primaryActionId": "demo.request",
+  "secondaryActionId": "signup.freeStart",
+  "decorativeAssetKey": "cta.kitchenBoard",
+  "ownerGateTitle": "Перед public freeze нужно решить",
+  "ownerGateItems": [
+    "primary CTA первой публичной версии",
+    "free onboarding и возможность «Начать бесплатно»",
+    "модель тарифов и видимость pricing",
+    "DOCX/PDF/Excel export wording",
+    "формулировку себестоимости",
+    "точные document types первой витрины",
+    "legal wording блока стандартов",
+    "roadmap features в UI mockups",
+    "реальные testimonials или их скрытие"
+  ],
+  "claimRefs": ["claim.decision.onboarding", "claim.decision.pricing"]
+}
