@@ -1,4 +1,4 @@
-FROM node:24-slim AS build
+FROM node:22.19.0-slim AS build
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ ENV NEXT_PUBLIC_MVP_ENTRY_URL=${NEXT_PUBLIC_MVP_ENTRY_URL}
 RUN npm run build
 RUN npm prune --omit=dev
 
-FROM node:24-slim AS runtime
+FROM node:22.19.0-slim AS runtime
 
 WORKDIR /app
 
