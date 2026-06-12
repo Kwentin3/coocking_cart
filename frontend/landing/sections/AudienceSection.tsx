@@ -1,5 +1,5 @@
 import type { AudienceContent } from "@/landing/schemas";
-import { InfoCard } from "@/landing/components/landing";
+import { AudienceCard } from "@/landing/components/landing";
 import { Container, ResponsiveGrid, SectionShell, Stack } from "@/landing/components/primitives";
 
 type AudienceSectionProps = {
@@ -17,7 +17,14 @@ export function AudienceSection({ content }: AudienceSectionProps) {
           </div>
           <ResponsiveGrid variant="cards">
             {content.items.map((item) => (
-              <InfoCard key={item.id} title={item.title} description={item.description} iconKey={item.iconKey} />
+              <AudienceCard
+                key={item.id}
+                title={item.title}
+                description={item.description}
+                imageAssetKey={item.imageAssetKey}
+                iconKey={item.iconKey}
+                iconVariant={item.iconVariant}
+              />
             ))}
           </ResponsiveGrid>
         </Stack>

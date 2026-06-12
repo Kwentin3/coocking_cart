@@ -99,6 +99,59 @@ HERO_BACKDROP_KITCHEN = PromptTemplate(
 )
 
 
+AUDIENCE_CARD_MEDIA = PromptTemplate(
+    id="audience.card.media",
+    version="0.1",
+    display_name="Audience card media",
+    purpose="Generate an embedded card header image for an audience/persona landing card.",
+    target_section="audience",
+    target_asset_kind="contentImage",
+    recommended_provider="openai",
+    visual_contract=VisualAssetContract(
+        asset_kind="contentImage",
+        background_mode="embedded",
+        transparent_background=False,
+        layer_role="audienceCardMedia",
+        z_slot="none",
+        overlap_policy="none",
+        safe_area="preserveCardContent",
+        crop_policy="coverCrop",
+        shadow_policy="none",
+        aspect_ratio="16:9",
+        output_format="png",
+        constraints=(
+            "embedded background",
+            "stable 16:9 card header crop",
+            "recognizable food-service context",
+            "no baked text",
+            "no logos or readable labels",
+            "no third-party brand packaging",
+            "no fake product UI",
+            "generic staff only if people appear",
+        ),
+    ),
+    required_user_approval=True,
+    negative_prompt="text, logo, watermark, readable label, brand label, branded packaging, fake UI, celebrity, known person, dark blur",
+    contains_people=True,
+    template=(
+        "Create a production candidate image for a TechKitchen landing page audience card.\n"
+        "\n"
+        "Subject: {subject}\n"
+        "\n"
+        "Asset contract:\n"
+        "- kind: contentImage\n"
+        "- background: embedded food-service environment, no alpha requirement\n"
+        "- aspect ratio: 16:9 card header image\n"
+        "- composition: clear readable crop, important subject centered with safe margins for cover crop\n"
+        "- usage: top media area of an audience/persona card; UI-rendered icon badge overlaps below the image\n"
+        "- restrictions: no baked text, no logos, no readable labels, no third-party branded packaging, no fake product UI\n"
+        "- people: generic staff may appear, but avoid celebrity-like or recognizable portrait emphasis\n"
+        "- style: realistic professional food-service photography, warm natural light, clean and specific, not stock-like\n"
+        "- output: clean bitmap suitable for a compact web card header\n"
+    ),
+)
+
+
 FINAL_CTA_BRAND_BAND = PromptTemplate(
     id="finalCta.backdrop.brandBand",
     version="0.1",
@@ -149,6 +202,7 @@ FINAL_CTA_BRAND_BAND = PromptTemplate(
 
 
 PROMPT_TEMPLATES: dict[str, PromptTemplate] = {
+    AUDIENCE_CARD_MEDIA.id: AUDIENCE_CARD_MEDIA,
     FOOD_CUTOUT_SQUARE.id: FOOD_CUTOUT_SQUARE,
     FINAL_CTA_BRAND_BAND.id: FINAL_CTA_BRAND_BAND,
     HERO_BACKDROP_KITCHEN.id: HERO_BACKDROP_KITCHEN,

@@ -7,28 +7,36 @@
       "id": "restaurants",
       "title": "Рестораны и кафе",
       "description": "Быстрее собирать технологические карты, согласовывать рецептуры и держать рабочую документацию под рукой.",
+      "imageAssetKey": "audience.restaurant",
       "iconKey": "audience.restaurant",
+      "iconVariant": "action",
       "claimRefs": ["claim.target.techcards"]
     },
     {
       "id": "chefs",
       "title": "Шеф-повара",
       "description": "Фиксировать авторские блюда, этапы приготовления, выход и ключевые параметры без разрозненных файлов.",
+      "imageAssetKey": "audience.chef",
       "iconKey": "audience.chef",
+      "iconVariant": "brand",
       "claimRefs": ["claim.target.recipeSystem"]
     },
     {
       "id": "production",
       "title": "Цеха и производства",
       "description": "Готовить единый набор рабочих материалов для повторяемого выпуска и контроля процесса.",
+      "imageAssetKey": "audience.production",
       "iconKey": "audience.production",
+      "iconVariant": "action",
       "claimRefs": ["claim.target.kitchenDocuments"]
     },
     {
       "id": "managers",
       "title": "Технологи и менеджеры",
       "description": "Видеть связку рецептур, расчётов и документов без ручного сведения данных после каждой правки.",
+      "imageAssetKey": "audience.technologist",
       "iconKey": "audience.manager",
+      "iconVariant": "brand",
       "claimRefs": ["claim.roadmap.costControl"]
     }
   ]

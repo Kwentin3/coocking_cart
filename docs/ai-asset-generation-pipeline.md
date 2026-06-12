@@ -275,10 +275,7 @@ Minimum templates:
 * `hero.chef.visual`;
 * `hero.dish.visual`;
 * `hero.background.kitchen`;
-* `audience.restaurant.photo`;
-* `audience.chef.photo`;
-* `audience.production.photo`;
-* `audience.technologist.photo`;
+* `audience.card.media` with target asset keys `audience.restaurant`, `audience.chef`, `audience.production`, `audience.technologist`;
 * `documents.dish.sample`;
 * `finalCta.food.decor`;
 * `standards.food.decor`;

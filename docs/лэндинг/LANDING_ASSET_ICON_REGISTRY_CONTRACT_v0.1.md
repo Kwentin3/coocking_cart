@@ -102,6 +102,7 @@ export type LandingAssetLayerRole =
   | "heroProductUi"
   | "heroHumanCutout"
   | "heroForegroundObject"
+  | "audienceCardMedia"
   | "documentContent"
   | "finalCtaBrandBand"
   | "finalCtaEdgeDecor";
@@ -223,10 +224,10 @@ export type LandingAssetKey =
 | `hero.decor.backgroundKitchen` | `backdrop` / `environment` | Hero background | `decorative` | Desktop only или lazy background. |
 | `hero.decor.herbs` | `edgeDecor` / `transparent` | Hero, нижний край | `decorative` | Optional; скрывать на mobile. |
 | `hero.decor.spices` | `edgeDecor` / `transparent` | Hero или CTA | `decorative` | Optional. |
-| `audience.restaurant` | `contentImage` / `embedded` | Карточка «Рестораны и кафе» | `content` | Lazy. |
-| `audience.chef` | `contentImage` / `embedded` | Карточка «Шеф-повара» | `content` | Lazy. |
-| `audience.production` | `contentImage` / `embedded` | Карточка «Производства и цеха» | `content` | Lazy. |
-| `audience.technologist` | `contentImage` / `embedded` | Карточка «Технологи и менеджеры» | `content` | Lazy. |
+| `audience.restaurant` | `contentImage` / `embedded` | Карточка «Рестораны и кафе» | `content` / `audienceCardMedia` | Lazy. |
+| `audience.chef` | `contentImage` / `embedded` | Карточка «Шеф-повара» | `content` / `audienceCardMedia` | Lazy. |
+| `audience.production` | `contentImage` / `embedded` | Карточка «Производства и цеха» | `content` / `audienceCardMedia` | Lazy. |
+| `audience.technologist` | `contentImage` / `embedded` | Карточка «Технологи и менеджеры» | `content` / `audienceCardMedia` | Lazy. |
 | `documents.dishSample` | `contentImage` / `embedded` | Карточка блюда в блоке документов | `content` | Lazy. |
 | `documents.wordIcon` | `documentPreview` или `productUi` image | Карточка готового DOCX | `ui` | Всегда при наличии output document. |
 | `documents.preview.techCard` | `documentPreview` / `embedded` | Пример документа | `content` | Lazy; доступен для CTA «Посмотреть пример». |

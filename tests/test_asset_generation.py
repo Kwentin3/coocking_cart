@@ -123,6 +123,22 @@ class AssetGenerationContractsTest(unittest.TestCase):
         self.assertEqual(contract["safe_area"], "preserveTextAndCta")
         self.assertIn("no baked text", contract["constraints"])
 
+    def test_audience_card_media_contract_is_embedded_content_image(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_tmp:
+            service = make_asset_generation_service(make_test_config(Path(raw_tmp)))
+            context = service.generation_context("audience.card.media")
+
+        contract = context["visualContract"]
+        self.assertEqual(context["provider"]["recommendedProvider"], "openai")
+        self.assertEqual(contract["asset_kind"], "contentImage")
+        self.assertEqual(contract["background_mode"], "embedded")
+        self.assertFalse(contract["transparent_background"])
+        self.assertEqual(contract["layer_role"], "audienceCardMedia")
+        self.assertEqual(contract["safe_area"], "preserveCardContent")
+        self.assertEqual(contract["aspect_ratio"], "16:9")
+        self.assertIn("no baked text", contract["constraints"])
+        self.assertTrue(context["template"]["contains_people"])
+
     def test_mock_generation_persists_candidate_metadata_and_original_file(self) -> None:
         with tempfile.TemporaryDirectory() as raw_tmp:
             config = make_test_config(Path(raw_tmp))

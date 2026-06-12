@@ -144,7 +144,16 @@ export function validateLandingContent(): LandingValidationResult {
     if (asset.layerRole === "heroHumanCutout" && asset.assetKind !== "cutout") {
       errors.push(`Hero human layer ${asset.key} must be a cutout asset.`);
     }
-    if (asset.zSlot === "none" && asset.layerRole !== "none" && asset.layerRole !== "brandMark" && asset.layerRole !== "documentContent") {
+    if (asset.layerRole === "audienceCardMedia" && (asset.assetKind !== "contentImage" || asset.safeArea !== "preserveCardContent")) {
+      errors.push(`Audience card media asset ${asset.key} must be an embedded content image preserving card content.`);
+    }
+    if (
+      asset.zSlot === "none" &&
+      asset.layerRole !== "none" &&
+      asset.layerRole !== "brandMark" &&
+      asset.layerRole !== "audienceCardMedia" &&
+      asset.layerRole !== "documentContent"
+    ) {
       errors.push(`Layered asset ${asset.key} must declare a non-none zSlot.`);
     }
   }

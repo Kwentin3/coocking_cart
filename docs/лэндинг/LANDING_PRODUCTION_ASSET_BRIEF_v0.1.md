@@ -333,6 +333,42 @@ Registry target:
 | `cropPolicy` | `coverCrop` or `contained` |
 | `shadowPolicy` | `bakedShadowAllowed` |
 
+## 9.1. Audience Card Media
+
+Asset keys:
+
+- `audience.restaurant`;
+- `audience.chef`;
+- `audience.production`;
+- `audience.technologist`.
+
+Role:
+
+- top media layer inside an audience card;
+- communicates a concrete food-service work context;
+- not a product UI screenshot and not a transparent cutout.
+
+Visual direction:
+
+- realistic professional food-service photography;
+- stable 16:9 crop for compact cards;
+- no baked text, no logos, no readable labels, no third-party branded packaging;
+- generic staff may appear, but the image must not rely on a recognizable person.
+
+Registry target:
+
+| Field | Value |
+| --- | --- |
+| `assetKind` | `contentImage` |
+| `backgroundMode` | `embedded` |
+| `transparentBackground` | `false` |
+| `layerRole` | `audienceCardMedia` |
+| `zSlot` | `none` |
+| `overlapPolicy` | `none` |
+| `safeArea` | `preserveCardContent` |
+| `cropPolicy` | `coverCrop` |
+| `shadowPolicy` | `none` |
+
 ## 10. Prompt Requirements
 
 Every prompt or manual art request must include:

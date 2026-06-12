@@ -3,6 +3,7 @@
   "section": "AudienceSection",
   "contentFile": "content/ru/audience.json",
   "schemaFile": "schemas/audience.schema.ts",
+  "allowedAssetKeys": ["audience.restaurant", "audience.chef", "audience.production", "audience.technologist"],
   "allowedIconKeys": ["audience.restaurant", "audience.chef", "audience.production", "audience.manager"],
   "allowedActionIds": [],
   "riskLevel": "low",

@@ -36,6 +36,7 @@ class PromptTemplate:
     required_user_approval: bool
     template: str
     negative_prompt: str = ""
+    contains_people: bool = False
 
     def to_dict(self, *, include_template: bool = True) -> dict[str, Any]:
         payload = asdict(self)
@@ -67,4 +68,3 @@ class ProviderGenerationResponse:
     images: tuple[ProviderImage, ...]
     provider_request_id: str = ""
     metadata: dict[str, Any] | None = None
-

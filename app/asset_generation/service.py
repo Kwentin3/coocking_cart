@@ -127,7 +127,7 @@ class AssetGenerationService:
                         "promptStored": True,
                         "sourcePromptHash": draft["promptHash"],
                         "synthIdWatermarkExpected": response.provider == "gemini",
-                        "containsPeople": template.visual_contract.layer_role == "heroHumanCutout",
+                        "containsPeople": template.contains_people or template.visual_contract.layer_role == "heroHumanCutout",
                         "containsRecognizablePerson": False,
                         "containsBrandElements": False,
                         "containsThirdPartyLogo": False,

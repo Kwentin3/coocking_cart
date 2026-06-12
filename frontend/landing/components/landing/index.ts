@@ -1,3 +1,4 @@
+export { AudienceCard } from "./AudienceCard";
 export { DocumentCard } from "./DocumentCard";
 export { HeroVisual } from "./HeroVisual";
 export { InfoCard } from "./InfoCard";
