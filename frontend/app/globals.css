@@ -905,10 +905,13 @@ html[data-asset-debug-ids="true"] .assetDebugId {
   background:
     linear-gradient(
       90deg,
-      rgba(135, 52, 31, 0.62) 0%,
-      rgba(135, 52, 31, 0.9) 14%,
-      rgba(182, 74, 45, 0.88) 52%,
-      rgba(135, 52, 31, 0.58) 100%
+      transparent 0%,
+      transparent 17%,
+      rgba(135, 52, 31, 0.58) 27%,
+      rgba(135, 52, 31, 0.72) 50%,
+      rgba(135, 52, 31, 0.5) 67%,
+      transparent 83%,
+      transparent 100%
     );
 }
 
@@ -918,25 +921,27 @@ html[data-asset-debug-ids="true"] .assetDebugId {
 }
 
 #final-cta .sectionIntro {
-  max-width: 48rem;
+  max-width: 40rem;
 }
 
 #final-cta .sectionIntro h2 {
-  max-width: 28ch;
+  max-width: 24ch;
+  font-size: 2rem;
   text-wrap: balance;
 }
 
 #final-cta .sectionIntro p {
-  max-width: 44rem;
-  font-size: var(--type-body);
+  max-width: 34rem;
+  font-size: 0.95rem;
 }
 
 .finalCta {
   position: relative;
   z-index: 2;
   display: grid;
-  max-width: min(52rem, 100%);
+  max-width: min(40rem, 100%);
   align-items: center;
+  margin-inline: auto;
 }
 
 .finalCta__asset {
@@ -944,7 +949,6 @@ html[data-asset-debug-ids="true"] .assetDebugId {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.68;
 }
 
 .finalCta__asset .assetImageShell,
@@ -989,10 +993,16 @@ html[data-asset-debug-ids="true"] .assetDebugId {
     background:
       linear-gradient(
         90deg,
-        rgba(135, 52, 31, 0.9) 0%,
-        rgba(182, 74, 45, 0.88) 58%,
-        rgba(135, 52, 31, 0.66) 100%
+        rgba(135, 52, 31, 0.66) 0%,
+        rgba(135, 52, 31, 0.64) 47%,
+        rgba(135, 52, 31, 0.34) 70%,
+        transparent 100%
       );
+  }
+
+  .finalCta {
+    margin-inline: 0;
+    max-width: min(28rem, 100%);
   }
 }
 
@@ -1049,5 +1059,10 @@ html[data-asset-debug-ids="true"] .assetDebugId {
 
   .cluster .button {
     flex: 1 1 14rem;
+  }
+
+  #final-cta .sectionIntro h2 {
+    max-width: 18ch;
+    font-size: 1.75rem;
   }
 }
