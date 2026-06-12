@@ -330,7 +330,8 @@ Done:
 - MVP entry рендерится как icon-only action без видимого label; accessibility label: `Вход в MVP`.
 - URL берётся из `NEXT_PUBLIC_MVP_ENTRY_URL` через config/resolver, не из секций, компонентов или registry.
 - Если URL не задан, resolver оставляет `nav.login` hidden/owner_gated.
-- Коммерческие actions `signup.freeStart`, `pricing.view`, `docx.download` не удалены и не стали active available-now.
+- Коммерческие/lead actions `demo.request`, `signup.freeStart`, `pricing.view`, `docx.download` не удалены и не стали active available-now.
+- В `showcase` `demo.request` и `signup.freeStart` скрыты; безопасным публичным действием остаётся `sample.project.view`.
 - Добавлен `frontend/.env.example` с временным MVP URL как deployment example.
 - Sticky comments уточнены в config, resolver and header.
 
@@ -393,7 +394,7 @@ Done:
 - Проверено, что `NEXT_PUBLIC_MVP_ENTRY_URL` управляет `nav.login` через config/resolver, а не через section/component/registry hardcode.
 - С env `NEXT_PUBLIC_MVP_ENTRY_URL=https://coocking-cart.speechbattle.com/` MVP entry рендерится как icon-only service action: без visible text, с `aria-label="Вход в MVP"` and href из env.
 - Без env и с невалидным env validation проходит, а `nav.login` остается hidden/owner_gated.
-- Проверено, что commercial actions остаются gated: `signup.freeStart` disabled, `pricing.view` hidden, `docx.download` disabled roadmap action.
+- Проверено, что commercial/lead actions остаются gated: `demo.request` hidden, `signup.freeStart` hidden, `pricing.view` hidden, `docx.download` disabled roadmap action.
 - Проверено, что current asset registry содержит 6 scaffold records, все с `rightsStatus: "local-scaffold"`.
 - Проверено, что planned production keys (`hero.chef`, hero backdrop, final CTA edge decor, dish cutout/content image additions) не добавлены без файлов and approval.
 - Выполнен visual smoke desktop/mobile с env и без env; screenshots сохранены в `frontend/.next-logs/publish-*.png`.

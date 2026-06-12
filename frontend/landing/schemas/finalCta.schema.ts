@@ -11,8 +11,6 @@ export const finalCtaSchema = z.object({
   primaryActionId: actionIdSchema,
   secondaryActionId: actionIdSchema,
   decorativeAssetKey: assetKeySchema,
-  ownerGateTitle: limitedTextSchema(72),
-  ownerGateItems: z.array(limitedTextSchema(120)).min(3).max(9),
   claimRefs: claimRefsSchema,
 });
 

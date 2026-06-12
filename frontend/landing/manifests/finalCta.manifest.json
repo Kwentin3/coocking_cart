@@ -7,6 +7,6 @@
   "allowedIconKeys": ["action.arrowRight", "action.lock"],
   "allowedActionIds": ["demo.request", "signup.freeStart"],
   "riskLevel": "medium",
-  "claimMaturityRefs": ["claim.decision.onboarding", "claim.decision.pricing"],
+  "claimMaturityRefs": [],
   "previewMode": "isolated-and-page"
 }

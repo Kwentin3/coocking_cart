@@ -1,21 +1,9 @@
 {
   "id": "landing.finalCta",
-  "title": "Соберите кухонные документы в управляемый процесс",
-  "description": "Engineering scaffold готовит лендинг к публичному запуску, но спорные CTA и claims остаются закрытыми до owner approval.",
+  "title": "\u0422\u0435\u0445\u041a\u0443\u0445\u043d\u044f \u043a\u0430\u043a \u0435\u0434\u0438\u043d\u044b\u0439 \u043a\u043e\u043d\u0442\u0443\u0440 \u0434\u043b\u044f \u043a\u0443\u0445\u043e\u043d\u043d\u044b\u0445 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432",
+  "description": "\u0412\u0438\u0442\u0440\u0438\u043d\u0430 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0435\u0442 \u0446\u0435\u043b\u0435\u0432\u043e\u0439 \u0440\u0430\u0431\u043e\u0447\u0438\u0439 \u043a\u043e\u043d\u0442\u0443\u0440: \u043e\u0442 \u0431\u043b\u044e\u0434\u0430 \u0438 \u0440\u0435\u0446\u0435\u043f\u0442\u0443\u0440\u044b \u0434\u043e \u0440\u0430\u0441\u0447\u0451\u0442\u043e\u0432, \u043a\u0430\u0440\u0442 \u0438 \u0440\u0430\u0431\u043e\u0447\u0438\u0445 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442\u043e\u0432.",
   "primaryActionId": "demo.request",
   "secondaryActionId": "signup.freeStart",
   "decorativeAssetKey": "cta.kitchenBoard",
-  "ownerGateTitle": "Перед public freeze нужно решить",
-  "ownerGateItems": [
-    "primary CTA первой публичной версии",
-    "free onboarding и возможность «Начать бесплатно»",
-    "модель тарифов и видимость pricing",
-    "DOCX/PDF/Excel export wording",
-    "формулировку себестоимости",
-    "точные document types первой витрины",
-    "legal wording блока стандартов",
-    "roadmap features в UI mockups",
-    "реальные testimonials или их скрытие"
-  ],
-  "claimRefs": ["claim.decision.onboarding", "claim.decision.pricing"]
+  "claimRefs": []
 }

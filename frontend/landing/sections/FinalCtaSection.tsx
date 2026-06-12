@@ -1,7 +1,7 @@
 import type { FinalCtaContent } from "@/landing/schemas";
 import type { ResolvedLandingAction } from "@/landing/lib/actionVisibilityResolver";
 import type { LandingActionId } from "@/landing/registries/cta.registry";
-import { AssetImage, Button, Cluster, Container, Icon, SectionShell, Stack } from "@/landing/components/primitives";
+import { AssetImage, Button, Cluster, Container, SectionShell, Stack } from "@/landing/components/primitives";
 
 type FinalCtaSectionProps = {
   content: FinalCtaContent;
@@ -9,8 +9,18 @@ type FinalCtaSectionProps = {
 };
 
 export function FinalCtaSection({ content, actions }: FinalCtaSectionProps) {
+  const primaryAction = actions[content.primaryActionId];
+  const secondaryAction = actions[content.secondaryActionId];
+  const hasVisibleActions = primaryAction.visibility !== "hidden" || secondaryAction.visibility !== "hidden";
+
   return (
     <SectionShell id="final-cta" labelledBy="final-cta-title" spacing="regular" background="brand">
+      {/* STICKY-FINAL-CTA-BAND:
+          Final CTA backdrop is a full-viewport brand band with protected text safe area.
+          Edge/backdrop assets must not cover the heading, description or future buttons. */}
+      <div className="finalCta__asset" aria-hidden="true">
+        <AssetImage assetKey={content.decorativeAssetKey} fit="cover" sizesToken="banner" />
+      </div>
       <Container width="wide">
         <div className="finalCta">
           <Stack gap="lg">
@@ -18,28 +28,13 @@ export function FinalCtaSection({ content, actions }: FinalCtaSectionProps) {
               <h2 id="final-cta-title">{content.title}</h2>
               <p>{content.description}</p>
             </div>
-            <Cluster gap="md">
-              <Button action={actions[content.primaryActionId]} variant="primary" size="lg" iconRight="action.arrowRight" />
-              <Button action={actions[content.secondaryActionId]} variant="outline" size="lg" />
-            </Cluster>
-            <div className="ownerGate" id="owner-gates">
-              <h3>{content.ownerGateTitle}</h3>
-              <ul>
-                {content.ownerGateItems.map((item) => (
-                  <li key={item}>
-                    <Icon name="standard.check" variant="success" decorative />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {hasVisibleActions ? (
+              <Cluster gap="md">
+                <Button action={primaryAction} variant="primary" size="lg" iconRight="action.arrowRight" />
+                <Button action={secondaryAction} variant="outline" size="lg" />
+              </Cluster>
+            ) : null}
           </Stack>
-          {/* STICKY-FINAL-CTA-BAND:
-              Final CTA uses a high-contrast brand band with protected text/CTA safe area.
-              Edge/backdrop assets must not cover the heading, terms or buttons. */}
-          <div className="finalCta__asset" aria-hidden="true">
-            <AssetImage assetKey={content.decorativeAssetKey} fit="contain" sizesToken="decorative" />
-          </div>
         </div>
       </Container>
     </SectionShell>

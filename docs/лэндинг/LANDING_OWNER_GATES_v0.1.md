@@ -64,9 +64,9 @@ CTA типа signup/pricing/export/MVP-entry не вырезаются из до
 
 Текущее инженерное состояние:
 
-* `demo.request` enabled как безопасный scroll action.
+* `demo.request` hidden/owner-gated в `showcase`; это future lead/pilot action, а не безопасный публичный CTA.
 * `sample.project.view` enabled как безопасный scroll action к documents preview.
-* `signup.freeStart` disabled, maturity `decision_needed`, fallback на `demo.request`.
+* `signup.freeStart` hidden, maturity `decision_needed`.
 * `pricing.view` hidden, maturity `decision_needed`.
 * sections получают actions из registry/model и не должны удалять CTA локально.
 * sections получают resolved actions; CTA visibility решается resolver-слоем.

@@ -73,6 +73,9 @@ export function validateLandingContent(): LandingValidationResult {
     if (action.maturity === "roadmap_claim" && action.enabled) {
       errors.push(`Action ${action.id} is roadmap_claim but enabled as available-now.`);
     }
+    if (landingModeConfig.mode === "showcase" && action.role === "commercial" && action.visibility !== "hidden") {
+      errors.push(`Commercial action ${action.id} must be hidden in showcase mode.`);
+    }
   }
 
   // STICKY-ACTION-POLICY:
@@ -98,6 +101,9 @@ export function validateLandingContent(): LandingValidationResult {
     }
     if (landingModeConfig.mode !== "launch" && action.role === "commercial" && action.enabled) {
       errors.push(`Commercial action ${action.id} is enabled in non-launch mode ${landingModeConfig.mode}.`);
+    }
+    if (landingModeConfig.mode === "showcase" && action.role === "commercial" && action.visibility !== "hidden") {
+      errors.push(`Resolved commercial action ${action.id} must be hidden in showcase mode.`);
     }
     if (!landingModeConfig.ownerGates.mvpEntry && action.id === "nav.login" && action.enabled) {
       errors.push("MVP entry nav.login is enabled while MVP Entry Gate is not closed.");

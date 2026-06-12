@@ -6,7 +6,7 @@ type AssetImageProps = {
   assetKey: LandingAssetKey;
   fit?: "cover" | "contain";
   priority?: boolean;
-  sizesToken?: "hero" | "document" | "card" | "decorative";
+  sizesToken?: "hero" | "document" | "card" | "decorative" | "banner";
 };
 
 const sizesByToken: Record<NonNullable<AssetImageProps["sizesToken"]>, string> = {
@@ -14,6 +14,7 @@ const sizesByToken: Record<NonNullable<AssetImageProps["sizesToken"]>, string> =
   document: "(min-width: 1024px) 22rem, 70vw",
   card: "(min-width: 768px) 24rem, 100vw",
   decorative: "(min-width: 1024px) 34rem, 0vw",
+  banner: "100vw",
 };
 
 export function AssetImage({ assetKey, fit = "cover", priority = false, sizesToken = "card" }: AssetImageProps) {

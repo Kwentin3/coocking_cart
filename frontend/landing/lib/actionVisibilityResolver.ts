@@ -109,6 +109,10 @@ export function resolveLandingAction(action: LandingAction, config: LandingModeC
   }
 
   if (action.role === "commercial") {
+    if (config.mode === "showcase") {
+      return disabledAction(action, config, "owner_gated", "hidden", `Commercial action ${action.id} is hidden in showcase mode.`);
+    }
+
     if (config.mode === "launch" && canEnablePublicAction(action, config) && isOwnerGateOpen(action, config)) {
       return enabledAction(action, config);
     }

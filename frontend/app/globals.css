@@ -551,8 +551,7 @@ svg {
 }
 
 .trustList,
-.standardsList,
-.ownerGate ul {
+.standardsList {
   padding: 0;
   margin: 0;
   list-style: none;
@@ -564,7 +563,6 @@ svg {
 }
 
 .trustList li,
-.ownerGate li,
 .standardsBadge {
   display: flex;
   align-items: flex-start;
@@ -881,34 +879,71 @@ html[data-asset-debug-ids="true"] .assetDebugId {
   font-weight: 700;
 }
 
+#final-cta.sectionShell--brand {
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--color-action-strong);
+  color: var(--color-surface-raised);
+}
+
+#final-cta.sectionShell--regular {
+  padding-block: var(--space-6);
+}
+
+#final-cta::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(135, 52, 31, 0.96) 0%,
+      rgba(182, 74, 45, 0.9) 46%,
+      rgba(135, 52, 31, 0.7) 100%
+    );
+}
+
+#final-cta > .container {
+  position: relative;
+  z-index: 2;
+}
+
+#final-cta .sectionIntro {
+  max-width: 48rem;
+}
+
+#final-cta .sectionIntro h2 {
+  max-width: 28ch;
+  text-wrap: balance;
+}
+
+#final-cta .sectionIntro p {
+  max-width: 44rem;
+  font-size: var(--type-body);
+}
+
 .finalCta {
   position: relative;
+  z-index: 2;
   display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(18rem, 0.7fr);
-  gap: var(--space-6);
+  max-width: min(52rem, 100%);
   align-items: center;
 }
 
 .finalCta__asset {
-  opacity: 0.72;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.68;
 }
 
-.ownerGate {
-  padding: var(--space-5);
-  border: 1px solid color-mix(in srgb, var(--color-surface-raised) 28%, transparent);
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--color-surface-raised) 12%, transparent);
-}
-
-.ownerGate h3 {
-  margin: 0 0 var(--space-3);
-  font-size: var(--type-h3);
-  letter-spacing: 0;
-}
-
-.ownerGate ul {
-  display: grid;
-  gap: var(--space-2);
+.finalCta__asset .assetImageShell,
+.finalCta__asset .assetImage {
+  width: 100%;
+  height: 100%;
 }
 
 @media (max-width: 64rem) {
@@ -926,8 +961,7 @@ html[data-asset-debug-ids="true"] .assetDebugId {
   }
 
   .responsiveGrid--heroSplit,
-  .responsiveGrid--documents,
-  .finalCta {
+  .responsiveGrid--documents {
     grid-template-columns: 1fr;
   }
 
@@ -939,8 +973,8 @@ html[data-asset-debug-ids="true"] .assetDebugId {
     max-width: 42rem;
   }
 
-  .finalCta__asset {
-    display: none;
+  #final-cta.sectionShell--regular {
+    padding-block: var(--space-6);
   }
 }
 

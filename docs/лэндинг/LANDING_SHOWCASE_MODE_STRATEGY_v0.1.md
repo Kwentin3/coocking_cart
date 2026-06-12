@@ -78,9 +78,9 @@ Future/commercial actions не удаляются из документации,
 | Product framing | Target Product copy in docs/content | Correct for `showcase`. |
 | MVP runtime | Existing Python/static runtime remains separate | Correct; do not merge into landing. |
 | Header MVP entry | `header.json` references `nav.login`; resolver exposes it only when `NEXT_PUBLIC_MVP_ENTRY_URL` is configured | Icon-only service action approved; no visible label. |
-| Primary safe action | `demo.request` enabled as scroll to final CTA | Acceptable scaffold action. |
+| Lead/pilot action | `demo.request` hidden in `showcase` | Correct: no open lead/commercial funnel in presentation mode. |
 | Example action | `sample.project.view` enabled as scroll to documents | Acceptable showcase action. |
-| Signup/pricing | `decision_needed`; disabled/hidden | Correct for `showcase`. |
+| Signup/pricing | `decision_needed`; hidden | Correct for `showcase`. |
 | DOCX export | `roadmap_claim`; disabled | Correct for `showcase`. |
 | Testimonials | Section disabled | Correct until real approved quotes exist. |
 
@@ -88,7 +88,7 @@ Future/commercial actions не удаляются из документации,
 
 | Mode | Meaning | Public posture | MVP entry | Commercial CTA |
 | --- | --- | --- | --- | --- |
-| `showcase` | Target Product storefront without open commercial funnel | Can be published as a controlled product showcase if owner approves | Compact service entry, owner-gated | Mostly hidden/disabled unless safe and real |
+| `showcase` | Target Product storefront without open commercial funnel | Can be published as a controlled product showcase if owner approves | Compact service entry, owner-gated | Hidden |
 | `beta` | Showcase plus limited intake | Public value story plus controlled applications/demo | Visible if test users need it | Demo/request actions may be enabled after owner decision |
 | `launch` | Full public SaaS/commercial launch | Product is publicly available with conversion path | Secondary service action or account entry | Signup/pricing/onboarding/export can be enabled only if real |
 | `internal` | Internal review/stage mode | Not a public promise | May be visible for team/testing | Can expose diagnostics or gated actions for review |
@@ -129,7 +129,7 @@ Policy rules:
 5. `roadmap_claim` cannot become an active available-now CTA.
 6. `unsupported_claim` and `forbidden_claim` cannot render publicly.
 7. MVP entry is not a marketing CTA; it is a service path.
-8. Fallbacks point users to safe actions such as `demo.request` or `sample.project.view`.
+8. Fallbacks point users to safe non-commercial actions such as `sample.project.view`.
 
 ## 6. MVP Entry Model
 
@@ -161,9 +161,9 @@ Audit result: MVP Entry Gate is partially closed for service entry visibility an
 
 | Action id | Product role | Current maturity | Current scaffold state | `showcase` policy | Owner gate |
 | --- | --- | --- | --- | --- | --- |
-| `demo.request` | Safe discussion/pilot CTA | `mvp_scope` | enabled, visible, scroll | May remain visible/enabled if it does not imply open SaaS onboarding | Confirm target flow: form, mail, calendar, internal lead flow |
+| `demo.request` | Future lead/pilot CTA | `decision_needed` | hidden, owner-gated | Hidden in `showcase`; may be enabled only in a later beta/launch/intake mode | Confirm target flow: form, mail, calendar, internal lead flow |
 | `sample.project.view` | Safe sample/document preview | `mvp_scope` | enabled, visible, scroll | May remain visible/enabled as showcase evidence | Confirm sample scope and legal wording |
-| `signup.freeStart` | Future onboarding/commercial CTA | `decision_needed` | disabled, visible | Keep disabled or hidden; do not delete | Decide whether free onboarding exists |
+| `signup.freeStart` | Future onboarding/commercial CTA | `decision_needed` | hidden, owner-gated | Keep hidden in `showcase`; do not delete | Decide whether free onboarding exists |
 | `pricing.view` | Future pricing CTA | `decision_needed` | hidden | Keep hidden until pricing model is approved | Decide pricing model and visibility |
 | `docx.download` | Future export action | `roadmap_claim` | disabled, visible | Keep disabled or hidden; do not imply active export | Decide export status and wording |
 | `nav.login` | MVP/test contour entry | `mvp_scope` | env-configured icon-only service action | Visible/enabled only when `NEXT_PUBLIC_MVP_ENTRY_URL` is set | Keep service-only; auth handled by MVP |
