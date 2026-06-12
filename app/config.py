@@ -125,6 +125,16 @@ class AppConfig:
     traefik_network_name: str
     traefik_entrypoint: str
     traefik_certresolver: str
+    asset_generation_enabled: bool = False
+    asset_provider: str = "mock"
+    asset_model: str = ""
+    asset_gemini_api_key: str = ""
+    asset_openai_api_key: str = ""
+    asset_openai_base_url: str = "https://api.openai.com"
+    asset_base_url: str = ""
+    asset_timeout_seconds: int = 120
+    asset_storage_root: Path = REPO_ROOT / "data" / "generated-assets"
+    asset_max_candidates_per_run: int = 2
 
     @property
     def llm_ready(self) -> bool:
@@ -152,6 +162,23 @@ class AppConfig:
             and not _is_blank_or_placeholder(self.live_voice_api_key)
             and self.live_voice_transport in {"direct_client", "server_proxy"}
         )
+
+    @property
+    def asset_generation_ready(self) -> bool:
+        if self.asset_provider == "mock":
+            return True
+        return (
+            self.asset_generation_enabled
+            and self.asset_provider in {"gemini", "openai"}
+            and not _is_blank_or_placeholder(self.asset_model)
+            and not _is_blank_or_placeholder(self.asset_provider_api_key)
+        )
+
+    @property
+    def asset_provider_api_key(self) -> str:
+        if self.asset_provider == "openai":
+            return self.asset_openai_api_key
+        return self.asset_gemini_api_key
 
     @property
     def auth_ready(self) -> bool:
@@ -195,6 +222,26 @@ class AppConfig:
                 errors.append("Не настроен API key Live Voice.")
         if self.live_voice_enabled and self.live_voice_transport not in {"direct_client", "server_proxy"}:
             errors.append("Invalid LIVE_VOICE_TRANSPORT.")
+        if self.asset_generation_enabled and self.asset_provider not in {"mock", "gemini", "openai"}:
+            errors.append("Invalid ASSET_PROVIDER.")
+        if (
+            self.asset_generation_enabled
+            and self.asset_provider in {"gemini", "openai"}
+            and _is_blank_or_placeholder(self.asset_model)
+        ):
+            errors.append("Asset generation model is missing.")
+        if (
+            self.asset_generation_enabled
+            and self.asset_provider == "gemini"
+            and _is_blank_or_placeholder(self.asset_gemini_api_key)
+        ):
+            errors.append("Asset generation API key is missing.")
+        if (
+            self.asset_generation_enabled
+            and self.asset_provider == "openai"
+            and _is_blank_or_placeholder(self.asset_openai_api_key)
+        ):
+            errors.append("OpenAI asset generation API key is missing.")
         if self.session_cookie_secure not in {"auto", "true", "false"}:
             errors.append("Invalid SESSION_COOKIE_SECURE.")
         return errors
@@ -232,6 +279,26 @@ class AppConfig:
             diagnostics.append("LIVE_VOICE_API_KEY is missing, blank, or placeholder.")
         if self.live_voice_enabled and self.live_voice_transport not in {"direct_client", "server_proxy"}:
             diagnostics.append("LIVE_VOICE_TRANSPORT must be direct_client or server_proxy.")
+        if self.asset_generation_enabled and self.asset_provider not in {"mock", "gemini", "openai"}:
+            diagnostics.append("ASSET_PROVIDER must be mock, gemini, or openai.")
+        if (
+            self.asset_generation_enabled
+            and self.asset_provider in {"gemini", "openai"}
+            and _is_blank_or_placeholder(self.asset_model)
+        ):
+            diagnostics.append("ASSET_MODEL is missing, blank, or placeholder.")
+        if (
+            self.asset_generation_enabled
+            and self.asset_provider == "gemini"
+            and _is_blank_or_placeholder(self.asset_gemini_api_key)
+        ):
+            diagnostics.append("ASSET_GEMINI_API_KEY/GEMINI_API_KEY is missing, blank, or placeholder.")
+        if (
+            self.asset_generation_enabled
+            and self.asset_provider == "openai"
+            and _is_blank_or_placeholder(self.asset_openai_api_key)
+        ):
+            diagnostics.append("ASSET_OPENAI_API_KEY/OPENAI_API_KEY is missing, blank, or placeholder.")
         if self.session_cookie_secure not in {"auto", "true", "false"}:
             diagnostics.append("SESSION_COOKIE_SECURE must be auto, true, or false.")
         return diagnostics
@@ -259,6 +326,8 @@ def load_config() -> AppConfig:
     stt_model = get("STT_MODEL") or get("LLM_MODEL", "")
     live_voice_api_key = get("LIVE_VOICE_API_KEY") or stt_api_key
     live_voice_model = get("LIVE_VOICE_MODEL", "gemini-3.1-flash-live-preview")
+    asset_gemini_api_key = get("ASSET_GEMINI_API_KEY") or get("GEMINI_API_KEY") or llm_api_key
+    asset_openai_api_key = get("ASSET_OPENAI_API_KEY") or get("OPENAI_API_KEY")
     live_voice_socks5_host = (
         get("LIVE_VOICE_SOCKS5_HOST")
         or get("LIVE_VOICE_SOCKS5_IP")
@@ -333,6 +402,16 @@ def load_config() -> AppConfig:
         traefik_network_name=get("TRAEFIK_NETWORK_NAME", ""),
         traefik_entrypoint=get("TRAEFIK_ENTRYPOINT", ""),
         traefik_certresolver=get("TRAEFIK_CERTRESOLVER", ""),
+        asset_generation_enabled=_bool_value(get("ASSET_GENERATION_ENABLED"), False),
+        asset_provider=(get("ASSET_PROVIDER", "mock") or "mock").strip().lower(),
+        asset_model=get("ASSET_MODEL", ""),
+        asset_gemini_api_key=asset_gemini_api_key,
+        asset_openai_api_key=asset_openai_api_key,
+        asset_openai_base_url=(get("ASSET_OPENAI_BASE_URL", "https://api.openai.com") or "https://api.openai.com").rstrip("/"),
+        asset_base_url=get("ASSET_BASE_URL", ""),
+        asset_timeout_seconds=_int_value(get("ASSET_TIMEOUT_SECONDS"), 120),
+        asset_storage_root=repo_path(get("ASSET_STORAGE_ROOT"), "./data/generated-assets"),
+        asset_max_candidates_per_run=_int_value(get("ASSET_MAX_CANDIDATES_PER_RUN"), 2),
     )
 
 

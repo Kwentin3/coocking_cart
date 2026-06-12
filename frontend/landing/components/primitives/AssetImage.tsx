@@ -21,27 +21,41 @@ export function AssetImage({ assetKey, fit = "cover", priority = false, sizesTok
   const isPriority = priority || asset.priority;
 
   return (
-    <Image
-      src={asset.src}
-      alt={asset.alt}
-      width={asset.width}
-      height={asset.height}
-      priority={isPriority}
-      loading={isPriority ? undefined : asset.loading}
-      sizes={sizesByToken[sizesToken]}
-      unoptimized={asset.src.endsWith(".svg")}
-      aria-hidden={asset.role === "decorative"}
-      data-asset-kind={asset.assetKind}
-      data-background-mode={asset.backgroundMode}
-      data-layer-role={asset.layerRole}
-      data-z-slot={asset.zSlot}
+    <span
       className={cx(
-        "assetImage",
-        `assetImage--${fit}`,
-        `assetImage--${asset.visibility}`,
-        `assetImage--${asset.assetKind}`,
-        asset.transparentBackground && "assetImage--transparent",
+        "assetImageShell",
+        `assetImageShell--${asset.visibility}`,
+        `assetImageShell--${asset.assetKind}`,
+        asset.transparentBackground && "assetImageShell--transparent",
       )}
-    />
+      data-asset-key={asset.key}
+      data-asset-debug-id={asset.debugId}
+    >
+      <Image
+        src={asset.src}
+        alt={asset.alt}
+        width={asset.width}
+        height={asset.height}
+        priority={isPriority}
+        loading={isPriority ? undefined : asset.loading}
+        sizes={sizesByToken[sizesToken]}
+        unoptimized={asset.src.endsWith(".svg")}
+        aria-hidden={asset.role === "decorative"}
+        data-asset-kind={asset.assetKind}
+        data-background-mode={asset.backgroundMode}
+        data-layer-role={asset.layerRole}
+        data-z-slot={asset.zSlot}
+        className={cx(
+          "assetImage",
+          `assetImage--${fit}`,
+          `assetImage--${asset.visibility}`,
+          `assetImage--${asset.assetKind}`,
+          asset.transparentBackground && "assetImage--transparent",
+        )}
+      />
+      <span className="assetDebugId" aria-hidden="true">
+        {asset.debugId}
+      </span>
+    </span>
   );
 }

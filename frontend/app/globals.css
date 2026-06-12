@@ -192,6 +192,7 @@ svg {
   border-radius: var(--radius-sm);
 }
 
+.siteHeader__logo .assetImageShell,
 .siteHeader__logo .assetImage {
   width: 100%;
   height: 100%;
@@ -610,6 +611,13 @@ svg {
   background: var(--color-surface-muted);
 }
 
+.assetImageShell {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .assetImage {
   display: block;
   width: 100%;
@@ -622,6 +630,40 @@ svg {
 
 .assetImage--contain {
   object-fit: contain;
+}
+
+.assetDebugId {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 5;
+  display: none;
+  max-width: calc(100% - var(--space-4));
+  padding: 0.15rem 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--color-focus) 36%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-surface-raised) 88%, transparent);
+  color: var(--color-focus);
+  box-shadow: 0 0.35rem 1rem rgba(35, 31, 26, 0.12);
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  line-height: 1.1;
+  overflow: hidden;
+  pointer-events: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-asset-debug-ids="true"] .assetDebugId {
+  display: block;
+}
+
+.siteHeader__logo .assetDebugId {
+  top: 0;
+  left: 0;
+  padding: 0.05rem 0.2rem;
+  font-size: 0.55rem;
 }
 
 .floatingPanel {
@@ -651,8 +693,10 @@ svg {
   bottom: calc(var(--space-8) * -1);
   z-index: 2;
   width: min(44%, 18rem);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-soft);
+}
+
+.heroVisual__dish .assetImage {
+  filter: drop-shadow(0 1.25rem 1.8rem rgba(47, 42, 34, 0.2));
 }
 
 .metricCard__label,
@@ -871,6 +915,7 @@ svg {
   .heroVisual,
   .heroVisual__dish,
   .floatingPanel--hideCompact,
+  .assetImageShell--hideCompact,
   .assetImage--hideCompact {
     display: none;
   }

@@ -5,6 +5,7 @@ services:
       dockerfile: frontend/Dockerfile
       args:
         NEXT_PUBLIC_MVP_ENTRY_URL: /mvp
+        NEXT_PUBLIC_LANDING_ASSET_DEBUG_IDS: "true"
     container_name: coocking-cart-landing
     restart: unless-stopped
     networks:
@@ -38,6 +39,7 @@ services:
       APP_BASE_PATH: /mvp
       PUBLIC_DOMAIN: coocking-cart.speechbattle.com
       SQLITE_DB_PATH: /app/data/demo.sqlite
+      ASSET_STORAGE_ROOT: /app/data/generated-assets
       CONTEXT_MANIFEST_PATH: /app/docs/mvp/context/context_manifest.yml
       CONTEXT_LAYERS_DIR: /app/docs/mvp/context
     volumes:

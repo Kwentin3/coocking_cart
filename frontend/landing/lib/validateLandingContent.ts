@@ -107,10 +107,19 @@ export function validateLandingContent(): LandingValidationResult {
     }
   }
 
+  const assetDebugIds = new Map<string, string>();
   for (const asset of Object.values(assetRegistry)) {
     if (!asset.src.startsWith("/landing/assets/")) {
       errors.push(`Asset ${asset.key} must be served from /landing/assets/.`);
     }
+    if (!/^A\d{2}$/.test(asset.debugId)) {
+      errors.push(`Asset ${asset.key} debugId must use A00 format.`);
+    }
+    const existingAssetKey = assetDebugIds.get(asset.debugId);
+    if (existingAssetKey) {
+      errors.push(`Asset debugId ${asset.debugId} is duplicated by ${existingAssetKey} and ${asset.key}.`);
+    }
+    assetDebugIds.set(asset.debugId, asset.key);
     if (asset.role === "decorative" && asset.alt !== "") {
       errors.push(`Decorative asset ${asset.key} must use empty alt.`);
     }

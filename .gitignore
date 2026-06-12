@@ -6,6 +6,7 @@ docs/out/
 *.sqlite3
 data/*.sqlite
 data/*.sqlite3
+data/generated-assets/
 audio/
 __pycache__/
 *.pyc

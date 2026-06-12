@@ -33,6 +33,7 @@ export type LandingAssetShadowPolicy = "none" | "cssShadowAllowed" | "bakedShado
 
 export type LandingAsset = {
   key: LandingAssetKey;
+  debugId: string;
   src: string;
   alt: string;
   width: number;
@@ -57,6 +58,7 @@ export type LandingAsset = {
 export const assetRegistry: Record<LandingAssetKey, LandingAsset> = {
   "brand.logoMark": {
     key: "brand.logoMark",
+    debugId: "A01",
     src: "/landing/assets/logo-mark.svg",
     alt: "Знак ТехКухня",
     width: 96,
@@ -79,6 +81,7 @@ export const assetRegistry: Record<LandingAssetKey, LandingAsset> = {
   },
   "hero.productUi": {
     key: "hero.productUi",
+    debugId: "A02",
     src: "/landing/assets/product-ui-preview.svg",
     alt: "Интерфейс ТехКухни с карточкой блюда, расчётами и документами",
     width: 960,
@@ -101,28 +104,30 @@ export const assetRegistry: Record<LandingAssetKey, LandingAsset> = {
   },
   "hero.dish": {
     key: "hero.dish",
-    src: "/landing/assets/dish-card.svg",
-    alt: "Карточка блюда с выходом, себестоимостью и технологическим статусом",
-    width: 720,
-    height: 540,
+    debugId: "A03",
+    src: "/landing/assets/hero-dish-borscht.png",
+    alt: "Тарелка борща на прозрачном фоне",
+    width: 1024,
+    height: 1024,
     role: "content",
-    assetKind: "contentImage",
-    backgroundMode: "embedded",
-    transparentBackground: false,
+    assetKind: "cutout",
+    backgroundMode: "transparent",
+    transparentBackground: true,
     layerRole: "heroForegroundObject",
     zSlot: "foreground",
     overlapPolicy: "productUiOnly",
-    safeArea: "preserveCardContent",
-    cropPolicy: "contained",
+    safeArea: "preserveProductUiCore",
+    cropPolicy: "mayBleed",
     shadowPolicy: "cssShadowAllowed",
     loading: "lazy",
     priority: false,
     visibility: "hideCompact",
-    aspectRatio: "4 / 3",
-    rightsStatus: "local-scaffold",
+    aspectRatio: "1 / 1",
+    rightsStatus: "approved",
   },
   "documents.techCardPreview": {
     key: "documents.techCardPreview",
+    debugId: "A04",
     src: "/landing/assets/tech-card-preview.svg",
     alt: "Предпросмотр технологической карты",
     width: 720,
@@ -145,6 +150,7 @@ export const assetRegistry: Record<LandingAssetKey, LandingAsset> = {
   },
   "documents.costCardPreview": {
     key: "documents.costCardPreview",
+    debugId: "A05",
     src: "/landing/assets/cost-card-preview.svg",
     alt: "Предпросмотр расчётной карточки блюда",
     width: 720,
@@ -167,25 +173,26 @@ export const assetRegistry: Record<LandingAssetKey, LandingAsset> = {
   },
   "cta.kitchenBoard": {
     key: "cta.kitchenBoard",
-    src: "/landing/assets/kitchen-board.svg",
+    debugId: "A06",
+    src: "/landing/assets/cta-kitchen-board.generated.webp",
     alt: "",
-    width: 900,
-    height: 520,
+    width: 1536,
+    height: 864,
     role: "decorative",
     assetKind: "backdrop",
     backgroundMode: "embedded",
     transparentBackground: false,
     layerRole: "finalCtaBrandBand",
     zSlot: "backdrop",
-    overlapPolicy: "edgeOnly",
+    overlapPolicy: "none",
     safeArea: "preserveTextAndCta",
-    cropPolicy: "mayBleed",
+    cropPolicy: "coverCrop",
     shadowPolicy: "none",
     loading: "lazy",
     priority: false,
     visibility: "decorativeOnly",
     aspectRatio: "16 / 9",
-    rightsStatus: "local-scaffold",
+    rightsStatus: "approved",
   },
 };
 
