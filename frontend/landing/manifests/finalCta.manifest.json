@@ -3,7 +3,7 @@
   "section": "FinalCtaSection",
   "contentFile": "content/ru/finalCta.json",
   "schemaFile": "schemas/finalCta.schema.ts",
-  "allowedAssetKeys": ["cta.kitchenBoard"],
+  "allowedAssetKeys": ["cta.kitchenBoard.desktop", "cta.kitchenBoard.mobile"],
   "allowedIconKeys": ["action.arrowRight", "action.lock"],
   "allowedActionIds": ["demo.request", "signup.freeStart"],
   "riskLevel": "medium",

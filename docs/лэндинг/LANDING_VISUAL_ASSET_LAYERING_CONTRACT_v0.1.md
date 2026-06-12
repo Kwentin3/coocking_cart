@@ -85,7 +85,8 @@ Final CTA должен работать как high-contrast brand band:
 - CTA/buttons имеют отдельные inverse/brand variants;
 - food/edge decor находится по краям и не перекрывает смысловой центр;
 - safe area защищает heading, description, terms/owner gate и buttons;
-- на mobile декоративные объекты могут скрываться или уходить ниже текста.
+- desktop и mobile используют разные backdrop derivatives, если full-width crop иначе выталкивает edge decor за пределы viewport;
+- на mobile декоративные объекты могут скрываться или уходить ниже текста, но mobile backdrop не должен быть простым crop desktop-файла, если из-за этого пропадает контекст.
 
 Это не обычный footer и не просто decorative image. Это финальная конверсионная сцена.
 
@@ -167,7 +168,8 @@ Current scaffold assets are local SVGs, not production-ready generated/approved 
 | `hero.dish` | `contentImage`, embedded background, current scaffold foreground object/card. | `local-scaffold`; do not reclassify as `cutout` without transparent file. |
 | `documents.techCardPreview` | `documentPreview`, embedded background. | `local-scaffold`; not final approved document sample. |
 | `documents.costCardPreview` | `documentPreview`, embedded background. | `local-scaffold`; not final approved cost card sample. |
-| `cta.kitchenBoard` | `backdrop`, embedded brand band/decor scaffold with text/CTA safe area requirement. | `local-scaffold`; acceptable for showcase placeholder. |
+| `cta.kitchenBoard.desktop` | `backdrop`, embedded full-width desktop brand band/decor with text/CTA safe area requirement. | `approved`; generated desktop derivative for current showcase. |
+| `cta.kitchenBoard.mobile` | `backdrop`, embedded mobile brand band/decor with text/CTA safe area requirement. | `approved`; generated mobile derivative for current showcase. |
 
 Current showcase publish may use these placeholder/scaffold assets. This is not a production asset freeze and does not create provenance/rights approval.
 

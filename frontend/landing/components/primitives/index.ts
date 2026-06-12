@@ -7,6 +7,7 @@ export { Cluster } from "./Cluster";
 export { Container } from "./Container";
 export { FloatingPanel } from "./FloatingPanel";
 export { Icon } from "./Icon";
+export { ResponsiveAssetImage } from "./ResponsiveAssetImage";
 export { ResponsiveGrid } from "./ResponsiveGrid";
 export { SectionShell } from "./SectionShell";
 export { Split } from "./Split";

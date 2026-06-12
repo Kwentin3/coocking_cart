@@ -8,12 +8,13 @@ export const assetKeys = [
   "audience.technologist",
   "documents.techCardPreview",
   "documents.costCardPreview",
-  "cta.kitchenBoard",
+  "cta.kitchenBoard.desktop",
+  "cta.kitchenBoard.mobile",
 ] as const;
 
 export type LandingAssetKey = (typeof assetKeys)[number];
 export type LandingAssetRole = "brand" | "content" | "product-ui" | "document-preview" | "decorative";
-export type LandingAssetVisibility = "always" | "hideCompact" | "decorativeOnly";
+export type LandingAssetVisibility = "always" | "hideCompact" | "decorativeOnly" | "desktop-only" | "mobile-only";
 // STICKY-ASSET-LAYERS:
 // Cutout assets require transparent backgrounds; content images usually keep embedded backgrounds.
 // Layering belongs in registry metadata + composed visuals, not in section-local z-index hacks.
@@ -268,13 +269,13 @@ export const assetRegistry: Record<LandingAssetKey, LandingAsset> = {
     aspectRatio: "3 / 4",
     rightsStatus: "local-scaffold",
   },
-  "cta.kitchenBoard": {
-    key: "cta.kitchenBoard",
+  "cta.kitchenBoard.desktop": {
+    key: "cta.kitchenBoard.desktop",
     debugId: "A06",
-    src: "/landing/assets/cta-kitchen-board.generated.webp",
+    src: "/landing/assets/cta-kitchen-board-desktop.webp",
     alt: "",
-    width: 1536,
-    height: 864,
+    width: 3840,
+    height: 440,
     role: "decorative",
     assetKind: "backdrop",
     backgroundMode: "embedded",
@@ -287,8 +288,31 @@ export const assetRegistry: Record<LandingAssetKey, LandingAsset> = {
     shadowPolicy: "none",
     loading: "lazy",
     priority: false,
-    visibility: "decorativeOnly",
-    aspectRatio: "16 / 9",
+    visibility: "desktop-only",
+    aspectRatio: "96 / 11",
+    rightsStatus: "approved",
+  },
+  "cta.kitchenBoard.mobile": {
+    key: "cta.kitchenBoard.mobile",
+    debugId: "A11",
+    src: "/landing/assets/cta-kitchen-board-mobile.webp",
+    alt: "",
+    width: 1560,
+    height: 1096,
+    role: "decorative",
+    assetKind: "backdrop",
+    backgroundMode: "embedded",
+    transparentBackground: false,
+    layerRole: "finalCtaBrandBand",
+    zSlot: "backdrop",
+    overlapPolicy: "none",
+    safeArea: "preserveTextAndCta",
+    cropPolicy: "coverCrop",
+    shadowPolicy: "none",
+    loading: "lazy",
+    priority: false,
+    visibility: "mobile-only",
+    aspectRatio: "195 / 137",
     rightsStatus: "approved",
   },
 };

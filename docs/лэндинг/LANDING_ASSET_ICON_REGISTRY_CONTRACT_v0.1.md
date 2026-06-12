@@ -235,6 +235,8 @@ export type LandingAssetKey =
 | `testimonials.avatar.chef` | `avatar` | Отзывы | `content` | Lazy; fallback initials. |
 | `testimonials.avatar.manager` | `avatar` | Отзывы | `content` | Lazy; fallback initials. |
 | `testimonials.avatar.technologist` | `avatar` | Отзывы | `content` | Lazy; fallback initials. |
+| `cta.kitchenBoard.desktop` | `backdrop` / `embedded` | Финальный CTA desktop band | `decorative` / `finalCtaBrandBand` | Desktop-only; full-width short footer ratio. |
+| `cta.kitchenBoard.mobile` | `backdrop` / `embedded` | Финальный CTA mobile band | `decorative` / `finalCtaBrandBand` | Mobile-only; separate mobile composition, not desktop crop. |
 | `finalCta.decor.tomatoes` | `edgeDecor` / `transparent` | Финальный CTA | `decorative` | Desktop/tablet, optional. |
 | `finalCta.decor.pepper` | `edgeDecor` / `transparent` | Финальный CTA | `decorative` | Desktop/tablet, optional. |
 | `finalCta.decor.spices` | `edgeDecor` / `transparent` | Финальный CTA | `decorative` | Optional. |
@@ -302,7 +304,8 @@ Current code registry scaffold set:
 | `hero.dish` | `local-scaffold` |
 | `documents.techCardPreview` | `local-scaffold` |
 | `documents.costCardPreview` | `local-scaffold` |
-| `cta.kitchenBoard` | `local-scaffold` |
+| `cta.kitchenBoard.desktop` | `approved` |
+| `cta.kitchenBoard.mobile` | `approved` |
 
 ## 9. IconKey
 

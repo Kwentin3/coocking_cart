@@ -164,6 +164,22 @@ export function validateLandingContent(): LandingValidationResult {
     }
   }
 
+  const finalCtaDesktopAsset = assetRegistry[content.finalCta.decorativeAssetKeys.desktop];
+  const finalCtaMobileAsset = assetRegistry[content.finalCta.decorativeAssetKeys.mobile];
+
+  if (finalCtaDesktopAsset.key === finalCtaMobileAsset.key) {
+    errors.push("Final CTA must use separate desktop and mobile backdrop asset keys.");
+  }
+  if (finalCtaDesktopAsset.layerRole !== "finalCtaBrandBand" || finalCtaMobileAsset.layerRole !== "finalCtaBrandBand") {
+    errors.push("Final CTA responsive backdrop assets must use finalCtaBrandBand layerRole.");
+  }
+  if (finalCtaDesktopAsset.visibility !== "desktop-only") {
+    errors.push(`Final CTA desktop backdrop ${finalCtaDesktopAsset.key} must use desktop-only visibility.`);
+  }
+  if (finalCtaMobileAsset.visibility !== "mobile-only") {
+    errors.push(`Final CTA mobile backdrop ${finalCtaMobileAsset.key} must use mobile-only visibility.`);
+  }
+
   for (const [key, icon] of Object.entries(iconRegistry)) {
     if (!icon.component || icon.label.length === 0) {
       errors.push(`Icon ${key} is incomplete.`);

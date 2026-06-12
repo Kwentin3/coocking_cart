@@ -422,3 +422,32 @@ Next:
 - Add analytics dispatch if click metrics are required for showcase.
 - Run production asset workflow separately before asset freeze.
 - Keep public launch blocked until commercial/legal/accessibility/asset gates are closed.
+
+## Phase 17 — Responsive final CTA brand band assets
+
+Status: done
+
+Done:
+- Final CTA single-backdrop contract replaced with explicit desktop/mobile backdrop keys.
+- Generated two bitmap derivatives with built-in image generation, not project OpenAI/Gemini API:
+  - `cta.kitchenBoard.desktop` -> `frontend/public/landing/assets/cta-kitchen-board-desktop.webp`;
+  - `cta.kitchenBoard.mobile` -> `frontend/public/landing/assets/cta-kitchen-board-mobile.webp`.
+- `FinalCtaSection` now renders the brand band through a registry-backed responsive `<picture>` primitive.
+- Validation now fails if final CTA uses the same backdrop key for desktop/mobile or if the variant visibility does not match `desktop-only` / `mobile-only`.
+- Visual contracts updated in Production Asset Brief, Visual Asset Layering Contract and Asset/Icon Registry Contract.
+- Overlay adjusted so desktop edge decor remains visible while preserving the text-safe area.
+
+Validation:
+- `npm run validate` — pass; expected showcase/owner warnings only.
+- `npm run lint` — pass.
+- `npm run build` — pass.
+- `git diff --check` — pass.
+- Browser smoke:
+  - desktop viewport uses `cta-kitchen-board-desktop.webp`;
+  - mobile viewport uses `cta-kitchen-board-mobile.webp`;
+  - final CTA remains full-width in both viewports;
+  - showcase commercial CTA text and owner-gate text remain absent.
+
+Deviations:
+- Full production visual freeze is still not declared.
+- Future final CTA edge decor cutouts remain separate planned assets.

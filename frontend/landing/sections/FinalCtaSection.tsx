@@ -1,7 +1,7 @@
 import type { FinalCtaContent } from "@/landing/schemas";
 import type { ResolvedLandingAction } from "@/landing/lib/actionVisibilityResolver";
 import type { LandingActionId } from "@/landing/registries/cta.registry";
-import { AssetImage, Button, Cluster, Container, SectionShell, Stack } from "@/landing/components/primitives";
+import { Button, Cluster, Container, ResponsiveAssetImage, SectionShell, Stack } from "@/landing/components/primitives";
 
 type FinalCtaSectionProps = {
   content: FinalCtaContent;
@@ -19,7 +19,11 @@ export function FinalCtaSection({ content, actions }: FinalCtaSectionProps) {
           Final CTA backdrop is a full-viewport brand band with protected text safe area.
           Edge/backdrop assets must not cover the heading, description or future buttons. */}
       <div className="finalCta__asset" aria-hidden="true">
-        <AssetImage assetKey={content.decorativeAssetKey} fit="cover" sizesToken="banner" />
+        <ResponsiveAssetImage
+          desktopAssetKey={content.decorativeAssetKeys.desktop}
+          mobileAssetKey={content.decorativeAssetKeys.mobile}
+          fit="cover"
+        />
       </div>
       <Container width="wide">
         <div className="finalCta">

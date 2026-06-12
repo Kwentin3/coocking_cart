@@ -60,7 +60,8 @@ Cutout/edge decor требуют прозрачный фон; content image вн
 | `hero.dish` | embedded content image/card placeholder | Not a transparent food cutout. |
 | `documents.techCardPreview` | document preview placeholder | Not final approved document sample. |
 | `documents.costCardPreview` | document preview placeholder | Not final approved cost card sample. |
-| `cta.kitchenBoard` | embedded final CTA brand band placeholder | Not production final CTA backdrop. |
+| `cta.kitchenBoard.desktop` | generated desktop final CTA brand band backdrop | Approved for current showcase; not a full production visual freeze. |
+| `cta.kitchenBoard.mobile` | generated mobile final CTA brand band backdrop | Approved for current showcase; not a full production visual freeze. |
 
 Production Asset Brief remains the future contract for generated/manual candidates, provenance, rights review and replacement. It is not a blocker for the current showcase stage.
 
@@ -81,7 +82,8 @@ Production Asset Brief remains the future contract for generated/manual candidat
 | `hero.decor.backgroundKitchen` | `backdrop` | `environment` | `heroBackdrop` | `backdrop` | Среда hero-сцены | planned |
 | `hero.chef` | `cutout` | `transparent` | `heroHumanCutout` | `midground` / `foreground` | Человеческий слой hero | planned, high-risk |
 | `hero.dishCutout` or replacement `hero.dish` | `cutout` | `transparent` | `heroForegroundObject` | `foreground` | Блюдо поверх сцены/UI | planned |
-| `cta.kitchenBoard` production replacement | `backdrop` | `embedded` / `environment` | `finalCtaBrandBand` | `backdrop` | Контрастная финальная CTA-подложка | planned replacement |
+| `cta.kitchenBoard.desktop` | `backdrop` | `embedded` | `finalCtaBrandBand` | `backdrop` | Контрастная финальная CTA-подложка desktop | generated/approved for showcase |
+| `cta.kitchenBoard.mobile` | `backdrop` | `embedded` | `finalCtaBrandBand` | `backdrop` | Контрастная финальная CTA-подложка mobile | generated/approved for showcase |
 | `finalCta.decor.*` | `edgeDecor` | `transparent` | `finalCtaEdgeDecor` | `foreground` | Декор по краям final CTA | planned |
 | `documents.dishSample` or `documents.saladCaesar` | `contentImage` | `embedded` | `documentContent` | `none` | Карточка/калькуляционное изображение | optional |
 
@@ -218,7 +220,9 @@ Registry target:
 
 ## 7. Final CTA Brand Band Brief
 
-Target key: production replacement for `cta.kitchenBoard`, or future `finalCta.backdrop.brandBand`.
+Target keys: `cta.kitchenBoard.desktop` and `cta.kitchenBoard.mobile`.
+
+Legacy single-key note: `cta.kitchenBoard` is no longer sufficient for the full-width footer band because a 16:9 backdrop loses edge decor when cover-cropped into the desktop footer ratio.
 
 Role:
 
@@ -238,7 +242,9 @@ Output:
 
 - WebP/JPEG or CSS-backed bitmap depending on final implementation;
 - no alpha requirement for the band itself;
-- separate desktop/mobile crops;
+- separate desktop/mobile raster derivatives, not one shared image scaled into both contexts;
+- desktop derivative targets the short full-viewport footer band ratio;
+- mobile derivative targets the compact mobile footer band ratio and preserves visible edge decor inside the narrow crop;
 - enough contrast for inverse text tokens.
 
 Registry target:
@@ -414,6 +420,6 @@ Before public use:
 
 - Generate/review candidates for `hero.decor.backgroundKitchen`, `hero.chef`, hero food cutout and final CTA edge decor.
 - Decide whether `hero.dish` is replaced in place or a new `hero.dishCutout` key is introduced.
-- Decide whether final CTA keeps `cta.kitchenBoard` key or receives a new `finalCta.backdrop.brandBand` key.
+- Keep final CTA brand band as separate `cta.kitchenBoard.desktop` and `cta.kitchenBoard.mobile` derivatives unless a future art direction changes the section ratio.
 - Add asset provenance records before any public visual freeze.
 - Re-run mobile/desktop screenshots after production assets are wired.
